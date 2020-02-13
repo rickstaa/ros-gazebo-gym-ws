@@ -1,9 +1,12 @@
 <launch>
 
     <!-- Load the gazebo simulation -->
-    <include file="$(find panda_simulation)/launch/simulation.launch" />
+    <include file="$(find panda_simulation)/launch/simulation.launch">
+        <!-- Spawn grasp training environment
+        Which contains the table -->
+        <arg name="world_name" value="$(find panda_grasp_training)/worlds/grasp_training.world"/>
+    </include>
 
-    <!-- Spawn objects -->
-    <node name="spawn_model_table" pkg="gazebo_ros" type="spawn_model" args="-file $(find my_fetch_robot_training)/urdf/table.urdf -urdf -x 1 -model table" />
-    <node name="spawn_model_cube" pkg="gazebo_ros" type="spawn_model" args="-file $(find fetch_gazebo)/models/demo_cube/model.sdf -sdf -x 0.70 -y 0 -z 0.394169 -model grasp_cube" />
+    <!-- Spawn grasp objects -->
+    <node name="spawn_model_cube" pkg="gazebo_ros" type="spawn_model" args="-file $(find panda_grasp_training)/models/demo_cube/model.sdf -sdf -x 0.40 -y 0 -z 0.394169 -model grasp_cube" />
 </launch>

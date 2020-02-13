@@ -7,6 +7,4 @@
     <!-- Launch moveit services -->
     <node pkg="panda_grasp_training" type="execute_trajectories_server.py" name="execute_trajectory_server"></node>
 
-    <!-- Launch her algorithm (Make sure it includes the right python3 shebang -->
-    <!-- <node pkg="my_fetch_robot_training" type="train_her" name="training_algorithm_py3" /> -->
 </launch>

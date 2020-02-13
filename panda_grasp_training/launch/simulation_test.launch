@@ -1,0 +1,131 @@
+<!-- Main panda Autograsp launchfile
+    This launch file launches all the required ROS nodes except the panda_grasp_training_cli.py command line interface (CLI).
+    This CLI can be opened using the 'rosrun panda_grasp_training panda_grasp_training_cli.py' command.
+-->
+<launch>
+
+    <!-- Launch file arguments-->
+    <!-- Main launch file arguments -->
+    <arg name="base_name" default="panda_grasp_training"/>
+    <arg name="output" default="log"/>
+    <arg name="rviz_gui" default="true"/>
+    <arg name="joint_state_gui" default="false"/>
+    <arg name="gazebo" default="true"/>
+    <arg name="world_name" default="$(find panda_grasp_training)/worlds/grasp_training.world"/>
+    <!-- Real robot arguments -->
+    <arg name="real" default="false"/>
+    <arg name="external_franka_control" default="false"/>
+    <arg name="robot_ip" default="172.16.0.2"/>
+    <!-- panda_grasp_simulator algorithm arguments -->
+    <arg name="grasp_solution" default=""/>
+    <arg name="use_bounding_box" default="false"/>
+    <arg name="calib_type" default="aruco_board"/>
+    <arg name="grasp_detect_color_quality" default="sd"/>
+    <arg name="grasp_detect_depth_quality" default="sd"/>
+    <arg name="gripper_center" default="true"/>
+    <!-- Gripper center joint location (x: roll, y: pitch, z: yaw) -->
+    <arg name="gripper_center_xyz" default="0.0 0.015 0.11"/>
+    <arg name="gripper_r" value="$(eval radians(0))"/>
+    <arg name="gripper_p" value="$(eval radians(-90))"/>
+    <arg name="gripper_y" value="$(eval radians(0))"/>
+    <!-- <arg name="gripper_center_rpy" default="$(arg gripper_r) $(arg gripper_p) $(arg gripper_y)"/> -->
+    <arg name="gripper_center_rpy" default="$(arg gripper_r) $(arg gripper_p) $(arg gripper_y)"/>
+    <!-- Moveit planning scene options  -->
+    <!-- <arg name="moveit_add_scene_collision_objects" default="true"/> -->
+    <!-- <arg name="moveit_perception" default="false"/> -->
+    <!-- <arg name="moveit_perception_frame" default="kinect2_ir_optical_frame"/> -->
+    <!-- <arg name="octomap_type" value="depthmap"/> -->
+    <!-- <arg name="octomap_resolution" value="0.01"/> -->
+    <!-- GAZEBO arguments -->
+    <arg name="paused" default="false"/>
+    <arg name="use_sim_time" default="true"/>
+    <arg name="gui" default="true"/>
+    <arg name="headless" default="false"/>
+    <arg name="load_gripper" default="true"/>
+    <!-- GDB Debug Option -->
+    <arg name="debug" default="false" />
+    <arg unless="$(arg debug)" name="launch_prefix" value="" />
+    <arg if="$(arg debug)" name="launch_prefix" value="gdb -x $(find panda_grasp_simulator)/launch/gdb_settings.gdb --ex run --args" />
+    <!-- Change loggin formatg -->
+    <env name="ROSCONSOLE_FORMAT" value="[${severity}] [WallTime: ${time}]: [${node}] ${message}" if="$(arg debug)"/>
+
+    <!-- Load panda simulation and visualization -->
+    <include file="$(find panda_grasp_training)/launch/panda_moveit_config.launch">
+        <arg name="real" value="$(arg real)"/>
+        <arg name="gazebo" value="$(arg gazebo)"/>
+        <arg name="load_gripper" value="$(arg load_gripper)"/>
+        <arg name="load_robot_description" default="true" />
+        <arg name="gripper_center" value="$(arg gripper_center)" />
+        <arg name="gripper_center_xyz" value="$(arg gripper_center_xyz)" />
+        <arg name="gripper_center_rpy" value="$(arg gripper_center_rpy)" />
+        <arg name="rviz_gui" value="$(arg rviz_gui)"/>
+        <arg name="joint_state_gui" value="$(arg joint_state_gui)"/>
+        <!-- <arg name="moveit_perception_frame" value="$(arg moveit_perception_frame)"/> -->
+        <!-- <arg name="moveit_perception" value="$(arg moveit_perception)" /> -->
+        <!-- <arg name="octomap_type" value="$(arg octomap_type)"/> -->
+        <!-- <arg name="octomap_resolution" value="$(arg octomap_resolution)"/> -->
+        <arg name="external_franka_control" value="$(arg external_franka_control)"/>
+    </include>
+
+    <!-- Load gazebo simulation if real==false-->
+    <include file="$(find panda_grasp_training)/launch/panda_gazebo.launch" if="$(eval not arg('real') and arg('gazebo'))">
+        <arg name="world_name" value="$(arg world_name)"/>
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="headless" value="$(arg headless)"/>
+        <arg name="debug" value="$(arg debug)"/>
+        <arg name="load_gripper" value="$(arg load_gripper)"/>
+    </include>
+
+    <!-- Start the Kinect processing ROS nodes
+        The IAI_kinect2 package was used for the kinect processing.
+    -->
+    <!-- <include file="$(find panda_grasp_training)/launch/kinect2_bridge.launch" unless="$(arg gazebo)"> -->
+        <!-- <arg name="output" value="$(arg output)" /> -->
+    <!-- </include> -->
+
+    <!-- Load dynamic reconfigure GUI -->
+    <!-- <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="dyn_reconf_gui" respawn="true" output="$(arg output)"/> -->
+
+    <!-- Create static TF for the calibration board (CB)
+        The pose for this static TF can be set in the calib_frames_poses.yaml file.
+        TF broadcaster conventions:
+            yaw: is rotation about Z (blue axis)
+            pitch: is rotation about Y (red axis)
+            roll: is rotation about X (green axis)
+    -->
+    <!-- <node name="tf2_broadcaster" launch-prefix="$(arg launch_prefix)" pkg="panda_grasp_training" type="tf2_broadcaster.py" args="panda_link0 calib_frame" required="true" output="$(arg output)"> -->
+        <!--Load calibration parameters-->
+        <!-- <rosparam command="load" file="$(find panda_grasp_training)/cfg/calib_frames_poses.yaml"/> -->
+    <!-- </node> -->
+
+    <!-- Modify parameters if simulated robot is required -->
+    <!-- <arg name="image_color_topic" value="kinect2/rgb/image_raw" if="$(arg gazebo)"/> -->
+    <!-- <arg name="image_color_topic" value="kinect2/hd/image_color" unless="$(arg gazebo)"/> -->
+    <!-- <arg name="image_color_rect_topic" value="kinect2/rgb/image_raw" if="$(arg gazebo)"/> -->
+    <!-- <arg name="image_color_rect_topic" value="kinect2/$(arg grasp_detect_color_quality)/image_color_rect" unless="$(arg gazebo)"/> -->
+    <!-- <arg name="image_depth_rect_32FC1_topic" value="kinect2/depth/image_raw" if="$(arg gazebo)"/> -->
+    <!-- <arg name="image_depth_rect_32FC1_topic" value="kinect2/$(arg grasp_detect_depth_quality)/image_depth_rect_32FC1" unless="$(arg gazebo)"/> -->
+    <!-- <arg name="hd_camera_info_topic" value="kinect2/rgb/camera_info" if="$(arg gazebo)"/> -->
+    <!-- <arg name="hd_camera_info_topic" value="kinect2/hd/camera_info" unless="$(arg gazebo)"/> -->
+    <!-- <arg name="qhd_camera_info_topic" value="kinect2/rgb/camera_info" if="$(arg gazebo)"/> -->
+    <!-- <arg name="qhd_camera_info_topic" value="kinect2/qhd/camera_info" unless="$(arg gazebo)"/> -->
+    <!-- <arg name="sd_camera_info_topic" value="kinect2/rgb/camera_info" if="$(arg gazebo)"/> -->
+    <!-- <arg name="sd_camera_info_topic" value="kinect2/sd/camera_info" unless="$(arg gazebo)"/> -->
+
+    <!-- Load panda_grasp_training services
+        panda_grasp_training services:
+           - panda_grasp_training: Main panda_grasp_training server. Used for calling all the other services.
+           - moveit_planner_server: Used for controlling the robot.
+           - grasp_planner_server: Used for computing the grasps.
+    -->
+
+    <!-- Load franka controller -->
+    <include file="$(find franka_control)/launch/franka_control.launch" if="$(eval arg('real') and not arg('external_franka_control'))">
+        <arg name="robot_ip" value="$(arg robot_ip)"/>
+        <arg name="load_gripper" value="$(arg load_gripper)"/>
+        <arg name="load_robot_description" default="false" />
+    </include>
+
+</launch>

@@ -1,12 +1,12 @@
+[submodule "openai_ros"]
+	path = openai_ros
+	url = git@bitbucket.org:rickstaa/openai_ros.git
+[submodule "franka_ros"]
+	path = franka_ros
+	url = git@github.com:rickstaa/franka_ros.git
 [submodule "panda_moveit_config"]
 	path = panda_moveit_config
 	url = git@github.com:rickstaa/panda_moveit_config.git
 [submodule "panda_simulation"]
 	path = panda_simulation
 	url = git@github.com:rickstaa/panda_simulation.git
-[submodule "openai_ros"]
-	path = openai_ros
-	url = git@bitbucket.org:rickstaa/openai_ros.git
-[submodule "franka_ros"]
-	path = franka_ros
-	url = https://github.com/rickstaa/franka_ros

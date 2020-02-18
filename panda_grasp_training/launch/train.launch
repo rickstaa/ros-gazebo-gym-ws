@@ -1,11 +1,26 @@
 <!-- Launch file for training the RL algorithm -->
 <launch>
 
+    <!-- Load robot description -->
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find franka_description)/robots/panda_arm_hand.urdf.xacro" />
+
     <!--## ARGUMENTS ##-->
     <!-- Simulation arguments -->
     <arg name="moveit" default="false" />
     <arg name="world_name" default="worlds/empty.world" />
     <arg name="rviz_file" default="$(find panda_grasp_training)/launch/moveit.rviz" />
+    <arg name="controller_type" default="trajectory" />
+    <arg name="load_gripper" default="true" />
+
+    <!-- Find right controller arguments -->
+    <group if="$(eval arg('controller_type') == 'effort')">
+        <arg name="controller_file" value="$(find panda_grasp_training)/config/panda_effort_joints_effort_control.yaml" />
+        <param name="controller_type" value="effort"/>
+    </group>
+    <group unless="$(eval arg('controller_type') == 'effort')">
+        <arg name="controller_file" value="$(find panda_grasp_training)/config/panda_effort_joint_trajectory_control.yaml" />
+        <param name="controller_type" value="trajectory"/>
+    </group>
 
     <!--## SIMULATION ##-->
     <!-- Launch simulation -->
@@ -13,5 +28,8 @@
         <arg name="moveit" value="$(arg moveit)" />
         <arg name="world_name" value="$(arg world_name)" />
         <arg name="rviz_file" value="$(arg rviz_file)" />
-    </include>/>
+        <arg name="load_robot_state_publisher" default="false" />
+        <arg name="load_controllers" value="false" />
+        <arg name="controller_file" value="$(arg controller_file)" />
+    </include>
 </launch>

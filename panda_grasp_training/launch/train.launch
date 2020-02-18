@@ -1,10 +1,17 @@
-<!-- Launch file for fetch training with the HER algorithm -->
+<!-- Launch file for training the RL algorithm -->
 <launch>
 
-    <!-- Launch simulation and moveit -->
-    <include file="$(find panda_grasp_training)/launch/simulation.launch" />
+    <!--## ARGUMENTS ##-->
+    <!-- Simulation arguments -->
+    <arg name="moveit" default="false" />
+    <arg name="world_name" default="worlds/empty.world" />
+    <arg name="rviz_file" default="$(find panda_grasp_training)/launch/moveit.rviz" />
 
-    <!-- Launch moveit services -->
-    <node pkg="panda_grasp_training" type="execute_trajectories_server.py" name="execute_trajectory_server"></node>
-
+    <!--## SIMULATION ##-->
+    <!-- Launch simulation -->
+    <include file="$(find panda_simulation)/launch/simulation.launch">
+        <arg name="moveit" value="$(arg moveit)" />
+        <arg name="world_name" value="$(arg world_name)" />
+        <arg name="rviz_file" value="$(arg rviz_file)" />
+    </include>/>
 </launch>

@@ -1,4 +1,5 @@
 # Folders to ignore
-.vscode
+.vscode/
+.egg-info/
 
 # Files to ignore

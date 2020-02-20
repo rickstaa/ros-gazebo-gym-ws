@@ -1,8 +1,11 @@
----------------------HOW TO USE-----------------------------------
-rosrun actionlib axclient.py /panda_arm_controller/follow_joint_trajectory
+# Example commands for joint trajectory control
 
----------------------EXAMPLE POSE 1 (Positions)-------------------
-trajectory: 
+The following effort command array is valid:
+
+## EXAMPLE POSE 1 (Positions)
+
+```txt
+trajectory:
  header:
    seq: 19357
    stamp:
@@ -19,9 +22,12 @@ trajectory:
      time_from_start:
        secs: 1
        nsecs:         0
-------------------------------------------------------------------
----------------------EXAMPLE POSE 2 (Positions)-------------------
-trajectory: 
+```
+
+## EXAMPLE POSE 2 (Positions)
+
+```txt
+trajectory:
  header:
    seq: 19357
    stamp:
@@ -38,9 +44,12 @@ trajectory:
      time_from_start:
        secs: 1
        nsecs:         0
-------------------------------------------------------------------
----------------------EXAMPLE POSE 3 (Positions)-------------------
-trajectory: 
+```
+
+## EXAMPLE POSE 3 (Positions)
+
+```txt
+trajectory:
  header:
    seq: 19357
    stamp:
@@ -57,4 +66,11 @@ trajectory:
      time_from_start:
        secs: 1
        nsecs:         0
-------------------------------------------------------------------
+```
+
+## How to use
+You can use the `actionlib axclient.py` to send the commands:
+
+```bash
+rosrun actionlib axclient.py /panda_arm_controller/follow_joint_trajectory
+```

@@ -1,4 +1,0 @@
-trajectory_msgs/JointTrajectoryPoint point
----
-bool success
-string message

@@ -1,8 +1,0 @@
-<!-- Launch file for training using the DDQG method -->
-<launch>
-    <!-- Load learning parameters -->
-    <rosparam file="$(find panda_reach_training)/config/ddpg_config.yaml" command="load" />
-
-    <!-- Launch panda openai simulator -->
-    <include file="$(find panda_reach_training)/launch/panda_openai_sim.launch" />
-</launch>

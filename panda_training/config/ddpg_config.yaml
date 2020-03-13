@@ -1,0 +1,22 @@
+reach_sim: #namespace
+
+  # Learning General Parameters
+  n_actions: 4
+  has_object: False
+  block_gripper: True
+  n_substeps: 20
+  gripper_extra_height: 0.2
+  target_in_the_air: True
+  target_offset: 0.0
+  obj_range: 0.15
+  target_range: 0.15
+  distance_threshold: 0.05
+  reward_type: sparse
+  init_pos:
+    panda_joint1: 1.1
+    panda_joint2: 0.0
+    panda_joint3: -0.6
+    panda_joint4: -1.5
+    panda_joint5: 0.0
+    panda_joint6: 1.5
+    panda_joint7: 0.0

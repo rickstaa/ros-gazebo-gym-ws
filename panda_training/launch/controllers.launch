@@ -1,0 +1,26 @@
+<!-- Launch file for launching the robot controllers -->
+<launch>
+
+    <!--## ARGUMENTS ##-->
+    <arg name="load_gripper" default="true" />
+
+    <!-- Controller YAML file locations -->
+    <arg name="joint_traj_controller_file" value="$(find panda_training)/config/panda_effort_joints_trajectory_control.yaml" />
+    <arg name="joint_group_position_controller_file" value="$(find panda_training)/config/panda_effort_joints_position_control.yaml" />
+    <arg name="joint_group_effort_controller_file" value="$(find panda_training)/config/panda_effort_joints_effort_control.yaml" />
+
+    <!--## LOAD CONTROLLER ##-->
+    <!-- Load controllers YAML files -->
+    <rosparam file="$(arg joint_traj_controller_file)" command="load" />
+    <rosparam file="$(arg joint_group_position_controller_file)" command="load" />
+    <rosparam file="$(arg joint_group_effort_controller_file)" command="load" />
+
+    <!-- load the controllers GROUP-->
+    <!-- NOTE: The joint trajectory controller is named `panda_arm_controller` instead of `panda_arm_joint_trajectory_controller' to
+        keep this package compatible with the melodic branch of the panda_moveit_config pacakge -->
+    <node name="joint_trajectory_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller panda_arm_controller" />
+    <node name="joint_group_position_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_arm_joint_group_position_controller" />
+    <node name="joint_group_effort_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_arm_joint_group_effort_controller" />
+    <node if="$(arg load_gripper)" name="controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="panda_hand_controller" />
+
+</launch>

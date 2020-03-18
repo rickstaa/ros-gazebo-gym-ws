@@ -1,7 +1,5 @@
-# Publish joint states
-joint_state_controller:
-    type: joint_state_controller/JointStateController
-    publish_rate: 50
+# Configuration file for creating a panda arm joint trajectory controller which
+# can be used to control all the panda (effort) joints.
 
 panda_arm_controller:
     type: effort_controllers/JointTrajectoryController
@@ -25,17 +23,5 @@ panda_arm_controller:
 
     constraints:
         goal_time: 2.0
-
-    state_publish_rate: 25
-
-panda_hand_controller:
-    type: effort_controllers/JointTrajectoryController
-    joints:
-        - panda_finger_joint1
-        - panda_finger_joint2
-
-    gains:
-        panda_finger_joint1: { p: 5, d: 3.0, i: 0, i_clamp: 1 }
-        panda_finger_joint2: { p: 5, d: 1.0, i: 0, i_clamp: 1 }
 
     state_publish_rate: 25

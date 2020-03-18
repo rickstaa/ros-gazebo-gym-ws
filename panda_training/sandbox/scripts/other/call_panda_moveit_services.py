@@ -20,9 +20,9 @@ if __name__ == "__main__":
 
     # Connect to services
     get_ee_client = rospy.ServiceProxy(
-        "/panda_moveit_planner_server/set_ee_pose", setEePose
+        "/panda_moveit_planner_server/set_joint_pose", setJointPose
     )
-    req = setEePoseRequest()
+    req = setJointPoseRequest()
     ee_name = get_ee_client(req)
     print(ee_name)
 

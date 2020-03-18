@@ -209,42 +209,74 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
     def _check_all_systems_ready(self):
         """Checks that all the sensors, publishers and other simulation systems are
         operational.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _set_init_pose(self):
         """Sets the Robot in its init pose.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _get_obs(self):
         """Returns the observation.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _init_env_variables(self):
         """Inits variables needed to be initialised each time we reset at the start
         of an episode.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _set_action(self, action):
         """Applies the given action to the simulation.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _is_done(self, observations):
         """Indicates whether or not the episode is done ( the robot has fallen for example).
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _compute_reward(self, observations, done):
         """Calculates the reward to give based on the observations given.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _env_setup(self, initial_qpos):
         """Initial configuration of the environment. Can be used to configure initial state
         and extract information from the simulation.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()

@@ -613,12 +613,16 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 self._arm_joint_traj_control_client.wait_for_result()
                 self.controller_switcher.switch(
                     control_group="arm",
-                    controller="panda_arm_joint_group_position_controller",
+                    controller="panda_arm_joint_group_effort_controller",
                 )  # Switch back to joint_effort controller
                 return True
             elif self._services_connected["arm_set_joint_positions_client"]:
 
                 # Send goal to the joint position service
+                self.controller_switcher.switch(
+                    control_group="arm",
+                    controller="panda_arm_joint_group_positions_controller",
+                )  # Switch to joint_trajectory controller
                 req = setJointPositionsRequest()
                 req.joint_positions = [
                     joint_positions["panda_joint1"],
@@ -630,9 +634,13 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                     joint_positions["panda_joint7"],
                 ]
                 self._arm_set_joint_positions_client.call(req)
+                self.controller_switcher.switch(
+                    control_group="arm",
+                    controller="panda_arm_joint_group_effort_controller",
+                )  # Switch back to joint_effort controller
                 return True
             elif self._services_connected["set_joint_pose_client"]:
-                # Test
+                # TEST
 
                 # Send joint positions goal to the moveit joint pose client
                 joint_point = setJointPoseRequest()
@@ -734,7 +742,6 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             Array containing the joint states.
         """
 
-        # TODO: Fix except
         self.joints = None
         while self.joints is None and not rospy.is_shutdown():
             try:
@@ -743,8 +750,8 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 )
                 rospy.logdebug("Current /joint_states READY=>" + str(self.joints))
 
-            except:  # TODO: Fix exception type
-                rospy.logerr(
+            except ROSException:
+                rospy.logwarn(
                     "Current /joint_states not ready yet, retrying for getting "
                     "joint_states"
                 )
@@ -816,23 +823,45 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
     def _init_env_variables(self):
         """Inits variables needed to be initialised each time we reset at the start
         of an episode.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _compute_reward(self, observations, done):
         """Calculates the reward to give based on the observations given.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _set_action(self, action):
         """Applies the given action to the simulation.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()
 
     def _get_obs(self):
+        """Gets obervation data
+
+        Raises
+        ------
+        NotImplementedError
+        """
         raise NotImplementedError()
 
     def _is_done(self, observations):
         """Checks if episode done based on observations given.
+
+        Raises
+        ------
+        NotImplementedError
         """
         raise NotImplementedError()

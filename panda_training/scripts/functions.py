@@ -1,5 +1,8 @@
 """Some additional helpfull helper functions for the panda_training package."""
 
+# Main python imports
+import copy
+
 # Import ROS python packages
 import rospy
 from rospy.exceptions import ROSException
@@ -19,6 +22,11 @@ def action_server_exists(topic_name):
     ----------
     topic_name : string
         Action server topic name.
+
+    Returns
+    -------
+    bool
+        Bool specifying whether the action service exists.
     """
 
     # Strip action server specific topics from topic name
@@ -44,3 +52,28 @@ def action_server_exists(topic_name):
             else:
                 exists = False
     return exists
+
+
+def controller_list_array_2_dict(controller_list_msgs):
+    """Converts a controller_manager list_controllers message into a
+    controller information dictionary.
+
+    Parameters
+    ----------
+    controller_list_msgs : controller_manager_msgs.srv.ListControllersResponse
+        Controller_manager/list_controllers service response message.
+
+    Returns
+    -------
+    dict
+        Dictionary containing information about all the available controllers.
+    """
+
+    # Create controller_list dictionary
+    controller_list_dict = {}
+    for controller in controller_list_msgs.controller:
+        controller_name = controller.name
+        controller_list_dict[controller_name] = copy.deepcopy(controller)
+
+    # Return dictionary
+    return controller_list_dict

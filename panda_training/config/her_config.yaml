@@ -1,3 +1,5 @@
+# Configuration file for training the panda robot using the her algorithm
+
 reach_sim: #namespace
 
   # Learning General Parameters

@@ -24,7 +24,7 @@
 
     <!--## LOAD MOVEIT CONTROL SERVICES ##-->
     <node if="$(arg moveit)" pkg="panda_training" type="panda_moveit_server.py" name="panda_moveit_planner_server" />
-    <node pkg="panda_training" type="panda_control_server.py" name="panda_control_server" />
+    <!-- <node pkg="panda_training" type="panda_control_server.py" name="panda_control_server" /> -->
 
     <!--## SIMULATION ##-->
     <!-- Launch simulation -->

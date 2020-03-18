@@ -51,8 +51,12 @@ class MoveitPlannerServer(object):
         # Initialize Moveit/Robot/Scene and group commanders
         rospy.logdebug("Initialize Moveit Robot/Scene and group commanders.")
         try:
-            moveit_commander.roscpp_initialize([])  # NOTE: Uncomment to debug
-            # moveit_commander.roscpp_initialize(sys.argv)  # NOTE: Comment to debug
+
+            # NOTE: Fix arguments to solve `C++ converter` error when debugging in ptvsd
+            cleaned_args = [
+                a for a in sys.argv if not a.endswith("my_script_name_here.py")
+            ]
+            moveit_commander.roscpp_initialize(cleaned_args)
             self.robot = moveit_commander.RobotCommander()
             self.scene = moveit_commander.PlanningSceneInterface()
             self.move_group = moveit_commander.MoveGroupCommander(self._move_group_name)

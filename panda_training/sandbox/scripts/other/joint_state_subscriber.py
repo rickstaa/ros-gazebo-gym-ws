@@ -17,10 +17,10 @@ if __name__ == "__main__":
 
     # Test joint message
     try:
-        joints = rospy.wait_for_message("/joint_states", JointState, timeout=3.0)
+        joints = rospy.wait_for_message("/joint_states3", JointState, timeout=3.0)
         rospy.logdebug("Current /joint_states READY=>" + str(joints))
 
-    except ROSException as e:  # TODO: Fix exception type
+    except ROSException as e:
         rospy.logerr(
             "Current /joint_states not ready yet, retrying for getting " "joint_states"
         )

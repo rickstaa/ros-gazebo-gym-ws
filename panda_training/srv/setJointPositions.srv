@@ -2,6 +2,7 @@
 # panda_control_server. This is done by publishing the joint efforts commands
 # to the right topic.
 
+string[] joint_names
 std_msgs/Float64MultiArray joint_positions
 std_msgs/Bool wait
 ---

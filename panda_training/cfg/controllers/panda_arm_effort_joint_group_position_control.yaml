@@ -26,8 +26,3 @@ panda_arm_joint_group_position_controller:
         pid: { p: 7000, d: 50, i: 0.01, i_clamp: 1 }
     panda_joint7:
         pid: { p: 2000, d: 20, i: 0.0, i_clamp: 1 }
-
-    constraints:
-        goal_time: 2.0
-
-    state_publish_rate: 50

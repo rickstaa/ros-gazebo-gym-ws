@@ -6,10 +6,10 @@
     <arg name="robot_control_type" default="joint_trajectory" />
 
     <!-- Find right controller arguments -->
-    <arg if="$(eval arg('robot_control_type') == 'joint_group_position')" name="controller_file" value="$(find panda_training)/config/panda_effort_joints_position_control.yaml" />
+    <arg if="$(eval arg('robot_control_type') == 'joint_group_position')" name="controller_file" value="$(find panda_training)/cfg/panda_effort_joints_position_control.yaml" />
     <param if="$(eval arg('robot_control_type') == 'joint_group_position')" name="robot_control_type" value="joint_group_effort" />
-    <arg if="$(eval arg('robot_control_type') == 'joint_group_effort')" name="controller_file" value="$(find panda_training)/config/panda_effort_joints_effort_control.yaml" />
-    <arg unless="$(eval arg('robot_control_type') == 'joint_group_effort' and arg('robot_control_type') == 'joint_group_position)" name="controller_file" value="$(find panda_training)/config/panda_effort_joints_trajectory_control.yaml" />
+    <arg if="$(eval arg('robot_control_type') == 'joint_group_effort')" name="controller_file" value="$(find panda_training)/cfg/panda_effort_joints_effort_control.yaml" />
+    <arg unless="$(eval arg('robot_control_type') == 'joint_group_effort' and arg('robot_control_type') == 'joint_group_position)" name="controller_file" value="$(find panda_training)/cfg/panda_effort_joints_trajectory_control.yaml" />
     <param unless="$(eval arg('robot_control_type') == 'joint_group_effort' and arg('robot_control_type') == 'joint_group_position)" name="robot_control_type" value="joint_trajectory" />
 
     <!--## LOAD CONTROLLER ##-->

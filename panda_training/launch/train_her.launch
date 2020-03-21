@@ -2,13 +2,20 @@
 <launch>
 
     <!--## ARGUMENTS ##-->
+    <!-- Main args -->
     <arg name="moveit" default="true" />
 
+    <!-- Controller args -->
+    <arg name="use_group_controller" default="false" /> <!-- Wheter to use group controllers -->
+    <arg name="preload_controllers" default="false" /> <!-- Wheter to preload all non essential controllers -->
+
     <!-- Load learning parameters -->
-    <rosparam file="$(find panda_training)/config/her_config.yaml" command="load" />
+    <rosparam file="$(find panda_training)/cfg/algorithms/her_config.yaml" command="load" />
 
     <!-- Launch panda openai simulator -->
     <include file="$(find panda_training)/launch/panda_openai_sim.launch">
         <arg name="moveit" value="$(arg moveit)" />
+        <arg name="use_group_controller" value="$(arg use_group_controller)" />
+        <arg name="preload_controllers" value="$(arg preload_controllers)" />
     </include>
 </launch>

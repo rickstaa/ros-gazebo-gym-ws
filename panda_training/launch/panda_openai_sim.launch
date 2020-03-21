@@ -13,6 +13,10 @@
     <arg name="grip_site_xyz" default="0.0 0.0 0.10" />
     <arg name="grip_site_rpy" default="0.0 0.0 0.0" />
 
+    <!-- Control arguments -->
+    <arg name="use_group_controller" default="false" /> <!-- Wheter to use group controllers -->
+    <arg name="preload_controllers" default="false" /> <!-- Wheter to preload all non essential controllers -->
+
     <!-- ## LOAD ROBOT DESCRIPTION ## -->
     <param name="robot_description" command="$(find xacro)/xacro --inorder $(find franka_description)/robots/panda_arm_hand.urdf.xacro" />
 
@@ -20,11 +24,15 @@
         NOTE: Make sure the load_controllers argument is set to false if this block is uncommented -->
     <include file="$(find panda_training)/launch/controllers.launch">
         <arg name="load_gripper" value="$(arg load_gripper)" />
+        <arg name="use_group_controller" value="$(arg use_group_controller)" />
+        <arg name="preload_controllers" value="$(arg preload_controllers)" />
     </include>
 
     <!--## LOAD MOVEIT CONTROL SERVICES ##-->
     <node if="$(arg moveit)" pkg="panda_training" type="panda_moveit_server.py" name="panda_moveit_planner_server" />
-    <!-- <node pkg="panda_training" type="panda_control_server.py" name="panda_control_server" /> -->
+    <!-- <node pkg="panda_training" type="panda_control_server.py" name="panda_control_server"> -->
+    <!-- <param name="use_group_controller" value="$(arg use_group_controller)" /> -->
+    <!-- </node> -->
 
     <!--## SIMULATION ##-->
     <!-- Launch simulation -->

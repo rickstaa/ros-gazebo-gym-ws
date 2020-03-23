@@ -8,7 +8,7 @@ for interaction with the robot (Control and Sensors).
 import sys
 import panda_robot_gazebo_goal_env
 from functions import action_server_exists
-from panda_controller_switcher import PandaControllerSwitcher
+from panda_controller_switcher import PandaControlSwitcher
 
 # ROS python imports
 import rospy
@@ -23,31 +23,50 @@ from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryG
 from trajectory_msgs.msg import JointTrajectoryPoint
 from geometry_msgs.msg import PoseStamped
 from panda_training.srv import (
-    getEe,
-    getEeRequest,
-    getEePose,
-    getEePoseRequest,
-    getEeRpy,
-    getEeRpyRequest,
-    setEe,
-    setEeRequest,
-    setEePose,
-    setJointEfforts,
-    setJointEffortsRequest,
-    setEePoseRequest,
-    setJointPose,
-    setJointPoseRequest,
-    setJointPositions,
-    setJointPositionsRequest,
+    GetEe,
+    GetEeRequest,
+    GetEePose,
+    GetEePoseRequest,
+    GetEeRpy,
+    GetEeRpyRequest,
+    SetEe,
+    SetEeRequest,
+    SetEePose,
+    SetJointEfforts,
+    SetJointEffortsRequest,
+    SetEePoseRequest,
+    SetJointPose,
+    SetJointPoseRequest,
+    SetJointPositions,
+    SetJointPositionsRequest,
 )
 
 # General script parameters
 ROBOT_CONTROL_TYPES = [
+    "joint_trajectory_control",
     "joint_position_control",
-    "joint_traj_control",
     "joint_effort_control",
+    "joint_group_position_control",
+    "joint_group_effort_control",
     "ee_control",
 ]
+REQUIRED_SERVICES_DICT = {
+    "joint_trajectory_control": ["arm_joint_traj_control_client"],
+    "joint_position_control": ["arm_set_joint_positions_client"],
+    "joint_effort_control": ["arm_set_joint_efforts_client"],
+    "joint_group_position_control": ["arm_set_joint_positions_client"],
+    "joint_group_effort_control": ["arm_set_joint_efforts_client"],
+    "ee_control": [
+        "set_ee_pose_client",
+        "set_joint_pose_client",
+        "get_ee_pose_client",
+        "get_ee_rpy_client",
+        "set_ee_client",
+        "get_ee_client",
+    ],
+}
+
+# TODO: Add panda_hand_control_type
 
 
 #################################################
@@ -57,7 +76,8 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
     def __init__(
         self,
         robot_EE_link="panda_grip_site",
-        robot_control_type="joint_position_control",
+        robot_arm_control_type="joint_position_control",
+        robot_hand_control_type="joint_position_control",
         robot_name_space="",
         controllers_list=[],
     ):
@@ -67,11 +87,16 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         ----------
         robot_EE_link : str, optional
             Robot end effector link name, by default "panda_grip_site"
-        robot_control_type : str, optional
-            Whether you the robot to be controlled using joint positions
-            "joint_position_control", joint trajectories "joint_traj_control",
-            joint efforts "joint_effort_control" or end effector position "ee_control",
-            by default "joint_position_control".
+        robot_arm_control_type : str, optional
+            The type of control you want to use for the robot arm. Options are
+            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
+            'joint_group_position_control', 'joint_group_effort_control' or 'ee_control'
+            , by default 'joint_position_control'.
+        robot_hand_control_type : str, optional
+            The type of control you want to use for the robot hand. Options are
+            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
+            'joint_group_position_control', 'joint_group_effort_control' or 'ee_control'
+            , by default 'joint_position_control'.
         robot_name_space : str, optional
             Robot namespace, by default "".
         controllers_list : list, optional
@@ -83,11 +108,17 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         rospy.loginfo("Initializing Panda Robot environment.")
 
         # Check constructor arguments
-        if robot_control_type.lower() not in ROBOT_CONTROL_TYPES:
+        # TODO: ADD HAND
+        control_type_invallid = []
+        if robot_arm_control_type.lower() not in ROBOT_CONTROL_TYPES:
             rospy.logerr(
                 "Shutting down '%s' because robot control type that was specified '%s' "
                 "is invalid please use one of the following robot control types: %s."
-                % (rospy.get_name(), robot_control_type.lower(), ROBOT_CONTROL_TYPES)
+                % (
+                    rospy.get_name(),
+                    robot_arm_control_type.lower(),
+                    ROBOT_CONTROL_TYPES,
+                )
             )
             sys.exit(0)
 
@@ -95,7 +126,8 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         self.controllers_list = controllers_list
         self.robot_name_space = robot_name_space
         self.robot_EE_link = robot_EE_link
-        self.robot_control_type = robot_control_type
+        self.robot_arm_control_type = robot_arm_control_type
+        self.robot_hand_control_type = robot_hand_control_type
 
         # Initiate other class members
         self._arm_joint_traj_control_topic = (
@@ -123,7 +155,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         )
 
         # Create controller switcher
-        self.controller_switcher = PandaControllerSwitcher(
+        self.controller_switcher = PandaControlSwitcher(
             connection_timeout=self._controller_switcher_connection_timeout
         )
 
@@ -149,7 +181,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 timeout=self._panda_moveit_planner_connection_timeout,
             )
             self._set_ee_pose_client = rospy.ServiceProxy(
-                "panda_moveit_planner_server/set_ee_pose", setEePose
+                "panda_moveit_planner_server/set_ee_pose", SetEePose
             )
             rospy.logdebug(
                 "Connected to 'panda_moveit_planner_server/set_ee_pose' service!"
@@ -173,7 +205,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 timeout=self._panda_moveit_planner_connection_timeout,
             )
             self._set_joint_pose_client = rospy.ServiceProxy(
-                "panda_moveit_planner_server/set_joint_pose", setJointPose
+                "panda_moveit_planner_server/set_joint_pose", SetJointPose
             )
             rospy.logdebug(
                 "Connected to 'panda_moveit_planner_server/set_joint_pose' service!"
@@ -197,7 +229,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 timeout=self._panda_moveit_planner_connection_timeout,
             )
             self._get_ee_pose_client = rospy.ServiceProxy(
-                "panda_moveit_planner_server/get_ee_pose", getEePose
+                "panda_moveit_planner_server/get_ee_pose", GetEePose
             )
             rospy.logdebug(
                 "Connected to 'panda_moveit_planner_server/get_ee_pose' service!"
@@ -221,7 +253,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 timeout=self._panda_moveit_planner_connection_timeout,
             )
             self._get_ee_pose_client = rospy.ServiceProxy(
-                "panda_moveit_planner_server/get_ee_rpy", getEeRpy
+                "panda_moveit_planner_server/get_ee_rpy", GetEeRpy
             )
             rospy.logdebug(
                 "Connected to 'panda_moveit_planner_server/get_ee_rpy' service!"
@@ -245,7 +277,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 timeout=self._panda_moveit_planner_connection_timeout,
             )
             self._set_ee_client = rospy.ServiceProxy(
-                "panda_moveit_planner_server/set_ee", setEe
+                "panda_moveit_planner_server/set_ee", SetEe
             )
             rospy.logdebug("Connected to 'panda_moveit_planner_server/set_ee' service!")
             self._services_connected["set_ee_client"] = True
@@ -266,12 +298,12 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 timeout=self._panda_moveit_planner_connection_timeout,
             )
             self._get_ee_client = rospy.ServiceProxy(
-                "panda_moveit_planner_server/get_ee", getEe
+                "panda_moveit_planner_server/get_ee", GetEe
             )
             rospy.logdebug("Connected to 'panda_moveit_planner_server/get_ee' service!")
 
             # Validate class set EE with moveit end effector
-            self._moveit_ee = self._get_ee_client(getEeRequest()).ee_name
+            self._moveit_ee = self._get_ee_client(GetEeRequest()).ee_name
             if self._moveit_ee != self.robot_EE_link:
                 rospy.logwarn(
                     "Moveit control end effector was set to '%s' while "
@@ -281,7 +313,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 )
 
                 # Set moveit EE
-                req = setEeRequest()
+                req = SetEeRequest()
                 req.ee_name = self.robot_EE_link
                 response = self._set_ee_client(req)
 
@@ -345,7 +377,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 timeout=self._panda_moveit_planner_connection_timeout,
             )
             self._arm_set_joint_positions_client = rospy.ServiceProxy(
-                self._arm_joint_positions_control_topic, setJointPositions
+                self._arm_joint_positions_control_topic, SetJointPositions
             )
             rospy.logdebug(
                 "Connected to '%s' service!" % self._arm_joint_positions_control_topic
@@ -369,7 +401,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 timeout=self._panda_moveit_planner_connection_timeout,
             )
             self._arm_set_joint_efforts_client = rospy.ServiceProxy(
-                self._arm_joint_efforts_control_topic, setJointEfforts
+                self._arm_joint_efforts_control_topic, SetJointEfforts
             )
             rospy.logdebug(
                 "Connected to '%s service!" % self._arm_joint_efforts_control_topic
@@ -397,7 +429,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             rospy.logerr(
                 "Shutting down '%s' because services '%s' which are needed for "
                 "controlling the robot using '%s' control are not available."
-                % (rospy.get_name(), missing_srvs, self.robot_control_type)
+                % (rospy.get_name(), missing_srvs, self.robot_arm_control_type)
             )
             sys.exit(0)
 
@@ -407,26 +439,12 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
 
         # Switch to the right controller
         rospy.loginfo("Switching to required controller.")
-        if self.robot_control_type == "joint_traj_control":
-
-            # Load right controller and unload other controllers
-            self.controller_switcher.switch(
-                control_group="arm", controller="panda_arm_controller"
-            )
-        elif self.robot_control_type == "joint_position_control":
-
-            # Load right controller and unload other controllers
-            self.controller_switcher.switch(
-                control_group="arm",
-                controller="panda_arm_joint_group_position_controller",
-            )
-        elif self.robot_control_type == "joint_effort_control":
-
-            # Load right controller and unload other controllers
-            self.controller_switcher.switch(
-                control_group="arm",
-                controller="panda_arm_joint_group_effort_controller",
-            )
+        self.controller_switcher.switch(
+            control_group="arm", controller=self.robot_arm_control_type
+        )
+        self.controller_switcher.switch(
+            control_group="hand", controller=self.robot_hand_control_type
+        )
 
         #########################################
         # Initialize parent class ###############
@@ -492,7 +510,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         pose.pose.position = grip_site_trans.transform.translation
 
         # Retrieve end effector pose 2
-        gripper_pose_req = getEePoseRequest()
+        gripper_pose_req = GetEePoseRequest()
         gripper_pose = self.ee_pose_client(gripper_pose_req)
 
         return gripper_pose
@@ -507,7 +525,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         """
 
         # TODO: use tf
-        gripper_rpy_req = getEeRpyRequest()
+        gripper_rpy_req = GetEeRpyRequest()
         gripper_rpy = self._get_ee_pose_client(gripper_rpy_req)
 
         return gripper_rpy
@@ -518,7 +536,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         """
 
         # Set up a trajectory message to publish.
-        ee_target = setEePoseRequest()
+        ee_target = SetEePoseRequest()
         ee_target.pose.orientation.w = 1.0
         ee_target.pose.position.x = action[0]
         ee_target.pose.position.y = action[1]
@@ -544,8 +562,8 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         # Set up a trajectory message to publish
         # Add Joint_Trajectory control
         # TODO: Add gripper control
-        if self.robot_control_type == "ee_control":  # Use moveit service
-            joint_point = setJointPoseRequest()
+        if self.robot_arm_control_type == "ee_control":  # Use moveit service
+            joint_point = SetJointPoseRequest()
             joint_point.point.positions = [None] * 7
             joint_point.point.positions[0] = joint_positions["panda_joint1"]
             joint_point.point.positions[1] = joint_positions["panda_joint2"]
@@ -557,7 +575,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             self._set_joint_pose_client(joint_point)
             return True
         elif (
-            self.robot_control_type == "joint_traj_control"
+            self.robot_arm_control_type == "joint_trajectory_control"
         ):  # Use joint traj action service
 
             # Convert joint_positions to joint_traj_action goal message
@@ -572,11 +590,11 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             )
             return True
         if (
-            self.robot_control_type == "joint_position_control"
+            self.robot_arm_control_type == "joint_position_control"
         ):  # Use joint traj action service
 
             # Send goal to the joint position service
-            req = setJointPositionsRequest()
+            req = SetJointPositionsRequest()
             req.joint_positions.data = [
                 joint_positions["panda_joint1"],
                 joint_positions["panda_joint2"],
@@ -595,6 +613,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             # switch to the right controller then perform the command and then switch
             # back to the joint_effort controller.
 
+            # TODO See if this can be done easier
             # Check which control service is available
             if self._services_connected["arm_joint_traj_control_client"]:
 
@@ -623,7 +642,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                     control_group="arm",
                     controller="panda_arm_joint_group_positions_controller",
                 )  # Switch to joint_trajectory controller
-                req = setJointPositionsRequest()
+                req = SetJointPositionsRequest()
                 req.joint_positions = [
                     joint_positions["panda_joint1"],
                     joint_positions["panda_joint2"],
@@ -643,7 +662,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 # TEST
 
                 # Send joint positions goal to the moveit joint pose client
-                joint_point = setJointPoseRequest()
+                joint_point = SetJointPoseRequest()
                 joint_point.point.positions = [None] * 7
                 joint_point.point.positions[0] = joint_positions["panda_joint1"]
                 joint_point.point.positions[1] = joint_positions["panda_joint2"]
@@ -659,7 +678,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
     # Panda Robot env helper methods ############
     #############################################
     def _required_services_available(self):
-        """Checks if all services required for the current 'robot_control_type' are
+        """Checks if all services required for the current 'robot_arm_control_type' are
         available.
 
         Returns
@@ -671,7 +690,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         """
 
         # Check services for each control type
-        if self.robot_control_type == "ee_control":
+        if self.robot_arm_control_type == "ee_control":
 
             # Check if all needed services for 'ee_control' are ready
             missing_srvs = [
@@ -683,21 +702,21 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 return (False, missing_srvs)
             else:
                 return (True, missing_srvs)
-        elif self.robot_control_type == "joint_traj_control":
+        elif self.robot_arm_control_type == "joint_trajectory_control":
 
-            # Check if all needed services for 'joint_traj_control' are ready
+            # Check if all needed services for 'joint_trajectory_control' are ready
             if not self._services_connected["arm_joint_traj_control_client"]:
                 return (False, ["arm_joint_traj_control_client"])
             else:
                 return (True, [])
-        elif self.robot_control_type == "joint_position_control":
+        elif self.robot_arm_control_type == "joint_position_control":
 
             # Check if all needed services for 'joint_position_control' are ready
             if not self._services_connected["arm_set_joint_positions_client"]:
                 return (False, ["arm_set_joint_positions_client"])
             else:
                 return (True, [])
-        elif self.robot_control_type == "joint_effort_control":
+        elif self.robot_arm_control_type == "joint_effort_control":
 
             # Check if all needed services for 'joint_position_control' are ready
             if not self._services_connected["arm_set_joint_efforts_client"]:

@@ -13,14 +13,14 @@ import numpy as np
 import my_fetch_robot_env
 from sensor_msgs.msg import JointState
 from my_fetch_train.srv import (
-    getEePose,
-    getEePoseRequest,
-    getEeRpy,
-    getEeRpyRequest,
-    setEePose,
-    setEePoseRequest,
-    setJointPose,
-    setJointPoseRequest,
+    GetEePose,
+    GetEePoseRequest,
+    GetEeRpy,
+    GetEeRpyRequest,
+    SetEePose,
+    SetEePoseRequest,
+    SetJointPose,
+    SetJointPoseRequest,
 )
 
 

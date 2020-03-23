@@ -6,14 +6,14 @@ from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from nav_msgs.msg import Odometry
 from my_fetch_train.srv import (
-    getEePose,
-    getEePoseRequest,
-    getEeRpy,
-    getEeRpyRequest,
-    setEePose,
-    setEePoseRequest,
-    setJointPose,
-    setJointPoseRequest,
+    GetEePose,
+    GetEePoseRequest,
+    GetEeRpy,
+    GetEeRpyRequest,
+    SetEePose,
+    SetEePoseRequest,
+    SetJointPose,
+    SetJointPoseRequest,
 )
 
 
@@ -47,10 +47,10 @@ class FetchEnv(robot_gazebo_env_goal.RobotGazeboEnv):
         )
         self.joints = JointState()
 
-        self.ee_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/set_ee_pose", setEePose)
-        self.joint_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/set_joint_pose", setJointPose)
-        self.ee_pose_client = rospy.ServiceProxy("panda_moveit_planner_server/get_ee_pose", getEePose)
-        self.ee_rpy_client = rospy.ServiceProxy("panda_moveit_planner_server/get_ee_rpy", getEeRpy)
+        self.ee_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/set_ee_pose", SetEePose)
+        self.joint_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/set_joint_pose", SetJointPose)
+        self.ee_pose_client = rospy.ServiceProxy("panda_moveit_planner_server/get_ee_pose", GetEePose)
+        self.ee_rpy_client = rospy.ServiceProxy("panda_moveit_planner_server/get_ee_rpy", GetEeRpy)
 
         # Variables that we give through the constructor.
 
@@ -85,14 +85,14 @@ class FetchEnv(robot_gazebo_env_goal.RobotGazeboEnv):
     
     def get_ee_pose(self):
 
-        gripper_pose_req = getEePoseRequest()
+        gripper_pose_req = GetEePoseRequest()
         gripper_pose = self.ee_pose_client(gripper_pose_req)
 
         return gripper_pose
 
     def get_ee_rpy(self):
 
-        gripper_rpy_req = getEeRpyRequest()
+        gripper_rpy_req = GetEeRpyRequest()
         gripper_rpy = self.ee_rpy_client(gripper_rpy_req)
 
         return gripper_rpy
@@ -129,7 +129,7 @@ class FetchEnv(robot_gazebo_env_goal.RobotGazeboEnv):
         """
         # Set up a trajectory message to publish.
 
-        ee_target = setEePoseRequest()
+        ee_target = SetEePoseRequest()
         ee_target.pose.orientation.w = 1.0
         ee_target.pose.position.x = action[0]
         ee_target.pose.position.y = action[1]
@@ -146,7 +146,7 @@ class FetchEnv(robot_gazebo_env_goal.RobotGazeboEnv):
         """
         # Set up a trajectory message to publish.
 
-        joint_point = setJointPoseRequest()
+        joint_point = SetJointPoseRequest()
 
         joint_point.point.positions = [None] * 7
         joint_point.point.positions[0] = initial_qpos["joint0"]

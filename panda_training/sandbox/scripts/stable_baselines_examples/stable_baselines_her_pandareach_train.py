@@ -49,7 +49,7 @@ if __name__ == "__main__":
     env = gym.make(
         "PandaReach-v1",
         robot_EE_link="panda_grip_site",
-        robot_control_type="joint_effort_control",
+        robot_arm_control_type="joint_effort_control",
     )
 
     # Wrap the model

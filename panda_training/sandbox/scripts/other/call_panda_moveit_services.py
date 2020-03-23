@@ -3,14 +3,14 @@ as expceted."""
 
 import rospy
 from panda_training.srv import (
-    getEe,
-    getEeRequest,
-    setEe,
-    setEeRequest,
-    setJointPose,
-    setJointPoseRequest,
-    setEePose,
-    setEePoseRequest,
+    GetEe,
+    GetEeRequest,
+    SetEe,
+    SetEeRequest,
+    SetJointPose,
+    SetJointPoseRequest,
+    SetEePose,
+    SetEePoseRequest,
 )
 
 if __name__ == "__main__":
@@ -20,18 +20,18 @@ if __name__ == "__main__":
 
     # Connect to services
     get_ee_client = rospy.ServiceProxy(
-        "/panda_moveit_planner_server/set_joint_pose", setJointPose
+        "/panda_moveit_planner_server/set_joint_pose", SetJointPose
     )
-    req = setJointPoseRequest()
+    req = SetJointPoseRequest()
     ee_name = get_ee_client(req)
     print(ee_name)
 
-    # set_ee_client = rospy.ServiceProxy("panda_moveit_planner_server/set_ee", setEe)
-    # req = setEeRequest()
+    # set_ee_client = rospy.ServiceProxy("panda_moveit_planner_server/set_ee", SetEe)
+    # req = SetEeRequest()
     # req.ee_name = "testestestesresresrserse"
     # response = set_ee_client(req)
 
-    # get_ee_client = rospy.ServiceProxy("panda_moveit_planner_server/get_ee", getEe)
-    # req = getEeRequest()
+    # get_ee_client = rospy.ServiceProxy("panda_moveit_planner_server/get_ee", GetEe)
+    # req = GetEeRequest()
     # ee_name = get_ee_client(req)
     # print(ee_name)

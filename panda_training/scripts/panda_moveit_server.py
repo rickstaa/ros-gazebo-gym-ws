@@ -16,18 +16,18 @@ from moveit_commander.exception import MoveItCommanderException
 import moveit_msgs.msg
 import geometry_msgs.msg
 from panda_training.srv import (
-    getEe,
-    getEeResponse,
-    getEePose,
-    getEePoseResponse,
-    getEeRpy,
-    getEeRpyResponse,
-    setEe,
-    setEeResponse,
-    setEePose,
-    setEePoseResponse,
-    setJointPose,
-    setJointPoseResponse,
+    GetEe,
+    GetEeResponse,
+    GetEePose,
+    GetEePoseResponse,
+    GetEeRpy,
+    GetEeRpyResponse,
+    SetEe,
+    SetEeResponse,
+    SetEePose,
+    SetEePoseResponse,
+    SetJointPose,
+    SetJointPoseResponse,
 )
 
 
@@ -97,32 +97,32 @@ class MoveitPlannerServer(object):
         rospy.logdebug("Creating '%s/set_ee_pose' service." % rospy.get_name())
         self.set_ee_pose_srv = rospy.Service(
             "%s/set_ee_pose" % rospy.get_name()[1:],
-            setEePose,
+            SetEePose,
             self.set_ee_pose_callback,
         )
         rospy.logdebug("Creating '%s/set_joint_pose' service." % rospy.get_name())
         self.set_joint_traj_srv = rospy.Service(
             "%s/set_joint_pose" % rospy.get_name()[1:],
-            setJointPose,
+            SetJointPose,
             self.set_joint_pose_callback,
         )
         rospy.logdebug("Creating '%s/get_ee_pose' service." % rospy.get_name())
         self.get_ee_pose_srv = rospy.Service(
             "%s/get_ee_pose" % rospy.get_name()[1:],
-            getEePose,
+            GetEePose,
             self.get_ee_pose_callback,
         )
         rospy.logdebug("Creating '%s/get_ee_rpy' service." % rospy.get_name())
         self.get_ee_rpy_srv = rospy.Service(
-            "%s/get_ee_rpy" % rospy.get_name()[1:], getEeRpy, self.get_ee_rpy_callback
+            "%s/get_ee_rpy" % rospy.get_name()[1:], GetEeRpy, self.get_ee_rpy_callback
         )
         rospy.logdebug("Creating '%s/get_ee' service." % rospy.get_name())
         self.get_ee = rospy.Service(
-            "%s/get_ee" % rospy.get_name()[1:], getEe, self.get_ee_callback
+            "%s/get_ee" % rospy.get_name()[1:], GetEe, self.get_ee_callback
         )
         rospy.logdebug("Creating '%s/set_ee' service." % rospy.get_name())
         self.set_ee = rospy.Service(
-            "%s/set_ee" % rospy.get_name()[1:], setEe, self.set_ee_callback
+            "%s/set_ee" % rospy.get_name()[1:], SetEe, self.set_ee_callback
         )
         rospy.loginfo("'%s' services created successfully." % rospy.get_name())
 
@@ -163,13 +163,13 @@ class MoveitPlannerServer(object):
 
         Returns
         -------
-        panda_train.srv.setEePoseResponse
+        panda_train.srv.SetEePoseResponse
             Response message containing (success bool, message).
         """
 
         # Fill trajectory message
         rospy.logdebug("Setting ee pose.")
-        response = setEePoseResponse()
+        response = SetEePoseResponse()
         self.pose_target.orientation.w = request.pose.orientation.w
         self.pose_target.position.x = request.pose.position.x
         self.pose_target.position.y = request.pose.position.y
@@ -199,13 +199,13 @@ class MoveitPlannerServer(object):
 
         Returns
         -------
-        panda_train.srv.setJointPoseResponse
+        panda_train.srv.SetJointPoseResponse
             Response message containing (success bool, message).
         """
 
         # Create response message
         rospy.logdebug("Setting joint position targets.")
-        response = setJointPoseResponse()
+        response = SetJointPoseResponse()
 
         # Retrieve current joint positions
         joint_positions = self.move_group.get_current_joint_values()
@@ -259,7 +259,7 @@ class MoveitPlannerServer(object):
         # Retrieve and return gripper pose
         rospy.logdebug("Retrieving ee pose.")
         gripper_pose = self.move_group.get_current_pose()
-        gripper_pose_res = getEePoseResponse()
+        gripper_pose_res = GetEePoseResponse()
         gripper_pose_res = gripper_pose.pose
         return gripper_pose_res
 
@@ -273,7 +273,7 @@ class MoveitPlannerServer(object):
 
         Returns
         -------
-        panda_train.srv.getEeResponse
+        panda_train.srv.GetEeResponse
             Response message containing containing the roll (z), yaw (y), pitch (x)
             euler angles.
         """
@@ -281,7 +281,7 @@ class MoveitPlannerServer(object):
         # Retrieve and return gripper orientation
         rospy.logdebug("Retrieving ee orientation.")
         gripper_rpy = self.move_group.get_current_rpy()
-        gripper_rpy_res = getEeRpyResponse()
+        gripper_rpy_res = GetEeRpyResponse()
         gripper_rpy_res.r = gripper_rpy[0]
         gripper_rpy_res.y = gripper_rpy[1]
         gripper_rpy_res.p = gripper_rpy[2]
@@ -297,13 +297,13 @@ class MoveitPlannerServer(object):
 
         Returns
         -------
-        panda_train.srv.getEeResponse
+        panda_train.srv.GetEeResponse
             Response message containing the name of the current EE.
         """
 
         # Return EE name
         rospy.logdebug("Retrieving ee name.")
-        response = getEeResponse()
+        response = GetEeResponse()
         response.ee_name = self.move_group.get_end_effector_link()
         return response
 
@@ -312,18 +312,18 @@ class MoveitPlannerServer(object):
 
         Parameters
         ----------
-        request : panda_train.srv.setEe
+        request : panda_train.srv.SetEe
             Request message containing the name of the end effector you want to be set.
 
         Returns
         -------
-        panda_train.srv.setEeResponse
+        panda_train.srv.SetEeResponse
             Response message containing (success bool, message).
         """
 
         # Set end effector and return response
         rospy.logdebug("Setting ee.")
-        response = setEeResponse()
+        response = SetEeResponse()
         if self.link_exists(request.ee_name):  # Check if vallid
             try:
                 self.move_group.set_end_effector_link(request.ee_name)

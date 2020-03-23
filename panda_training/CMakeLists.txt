@@ -62,14 +62,16 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  getEe.srv
-  setEe.srv
-  getEePose.srv
-  getEeRpy.srv
-  setEePose.srv
-  setJointEfforts.srv
-  setJointPose.srv
-  setJointPositions.srv
+  GetEe.srv
+  SetEe.srv
+  GetEePose.srv
+  GetEeRpy.srv
+  SetEePose.srv
+  SetJointEfforts.srv
+  SetJointPose.srv
+  SetJointPositions.srv
+  ListControlType.srv
+  SwitchControlType.srv
 )
 
 ## Generate actions in the 'action' folder

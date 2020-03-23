@@ -23,14 +23,14 @@ import rospy
 # ROS msgs and srvs
 from sensor_msgs.msg import JointState
 from panda_training.srv import (
-    getEePose,
-    getEePoseRequest,
-    getEeRpy,
-    getEeRpyRequest,
-    setEePose,
-    setEePoseRequest,
-    setJointPose,
-    setJointPoseRequest,
+    GetEePose,
+    GetEePoseRequest,
+    GetEeRpy,
+    GetEeRpyRequest,
+    SetEePose,
+    SetEePoseRequest,
+    SetJointPose,
+    SetJointPoseRequest,
 )
 
 # Register openai gym environment
@@ -48,7 +48,8 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
     def __init__(
         self,
         robot_EE_link="panda_grip_site",
-        robot_control_type="joint_position_control",
+        robot_arm_control_type="joint_position_control",
+        robot_hand_control_type="joint_position_control",
     ):
         """Initializes a Panda Reach task environment.
 
@@ -57,11 +58,16 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         ----------
         robot_EE_link : str, optional
             Robot end effector link name, by default "panda_grip_site"
-        robot_control_type : str, optional
-            Whether you the robot to be controlled using joint positions
-            "joint_position_control", joint trajectories "joint_traj_control",
-            joint efforts "joint_effort_control" or end effector position "ee_control",
-            by default "joint_position_control".
+        robot_arm_control_type : str, optional
+            The type of control you want to use for the robot arm. Options are
+            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
+            'joint_group_position_control', 'joint_group_effort_control' or 'ee_control'
+            , by default 'joint_position_control'.
+        robot_hand_control_type : str, optional
+            The type of control you want to use for the robot hand. Options are
+            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
+            'joint_group_position_control', 'joint_group_effort_control' or 'ee_control'
+            , by default 'joint_position_control'.
         """
 
         # Retrieve parameters from parameter server
@@ -72,7 +78,8 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         panda_robot_env.PandaRobotEnv.__init__(
             self,
             robot_EE_link=robot_EE_link,
-            robot_control_type=robot_control_type.lower(),
+            robot_arm_control_type=robot_arm_control_type.lower(),
+            robot_hand_control_type=robot_hand_control_type.lower(),
         )
         utils.EzPickle.__init__(self)
 

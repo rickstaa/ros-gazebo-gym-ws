@@ -1,0 +1,483 @@
+"""This class is responsible for switching the control type that is used for
+controlling the Panda Robot robot 'arm' and 'hand'. It serves as a wrapper around the
+services created by the ROS `controller_manager` class. It allows the user to switch
+between the following control types:
+    - joint_trajectory_control
+    - joint_position_control
+    - joint_effort_control
+    - joint_group_position_control
+    - joint_group_effort_control
+"""
+
+# Main python imports
+import sys
+from functions import dict_clean, flatten_list
+from controller_info_dict import ControllerInfoDict
+from itertools import compress
+
+# ROS python imports
+import rospy
+from rospy.exceptions import ROSException, ROSInterruptException
+
+# ROS msgs and srvs
+from controller_manager_msgs.srv import (
+    SwitchController,
+    SwitchControllerRequest,
+    ListControllers,
+    ListControllersRequest,
+    LoadController,
+    LoadControllerRequest,
+)
+from panda_training.srv import (
+    SwitchControlType,
+    SwitchControlTypeRequest,
+    ListControlType,
+    ListControlTypeRequest,
+)
+
+# Global variables
+CONTROL_TYPES = [
+    "joint_trajectory_control",
+    "joint_position_control",
+    "joint_effort_control",
+    "joint_group_position_control",
+    "joint_group_effort_control",
+]
+ARM_CONTROLLERS = {
+    "joint_trajectory_control": "panda_arm_controller",
+    "joint_position_control": [
+        "panda_arm_joint1_position_controller",
+        "panda_arm_joint2_position_controller",
+        "panda_arm_joint3_position_controller",
+        "panda_arm_joint4_position_controller",
+        "panda_arm_joint5_position_controller",
+        "panda_arm_joint6_position_controller",
+        "panda_arm_joint7_position_controller",
+    ],
+    "joint_effort_control": [
+        "panda_arm_joint1_effort_controller",
+        "panda_arm_joint2_effort_controller",
+        "panda_arm_joint3_effort_controller",
+        "panda_arm_joint4_effort_controller",
+        "panda_arm_joint5_effort_controller",
+        "panda_arm_joint6_effort_controller",
+        "panda_arm_joint7_effort_controller",
+    ],
+    "joint_group_position_control": "panda_arm_joint_group_position_controller",
+    "joint_group_effort_control": "panda_arm_joint_group_effort_controller",
+}
+HAND_CONTROLLERS = {
+    "joint_trajectory_control": "panda_hand_controller",
+    "joint_position_control": [
+        "panda_hand_finger1_position_controller",
+        "panda_hand_finger2_position_controller",
+    ],
+    "joint_effort_control": [
+        "panda_hand_finger1_effort_controller",
+        "panda_hand_finger2_effort_controller",
+    ],
+    "joint_group_position_control": "panda_hand_joint_group_position_controller",
+    "joint_group_effort_control": "panda_hand_joint_group_effort_controller",
+}
+CONTROLLER_DICT = {"arm": ARM_CONTROLLERS, "hand": HAND_CONTROLLERS}
+
+
+#################################################
+# Panda Controller Switcher #####################
+#################################################
+class PandaControlSwitcher(object):
+    def __init__(self, connection_timeout=10):
+        """Initializes the MoveitPlannerServer object.
+
+        Parameters
+        ----------
+        connection_timeout : str, optional
+            The timeout for connecting to the controller_manager services,
+            by default 3 sec.
+        """
+
+        # Connect to controller_manager services
+        try:
+
+            # Connect to switch service
+            rospy.logdebug(
+                "Connecting to '/controller_manager/switch_controller' service."
+            )
+            rospy.wait_for_service(
+                "/controller_manager/switch_controller", timeout=connection_timeout
+            )
+            self._switch_controller_client = rospy.ServiceProxy(
+                "/controller_manager/switch_controller", SwitchController
+            )
+            rospy.logdebug(
+                "Connected to '/controller_manager/switch_controller' service!"
+            )
+
+            # Connect to list service
+            rospy.logdebug(
+                "Connecting to '/controller_manager/list_controllers' service."
+            )
+            rospy.wait_for_service(
+                "/controller_manager/list_controllers", timeout=connection_timeout
+            )
+            self._list_controller_client = rospy.ServiceProxy(
+                "/controller_manager/list_controllers", ListControllers
+            )
+            rospy.logdebug(
+                "Connected to '/controller_manager/list_controllers' service!"
+            )
+
+            # Connect to load controller service
+            rospy.logdebug(
+                "Connecting to '/controller_manager/load_controller' service."
+            )
+            rospy.wait_for_service(
+                "/controller_manager/load_controller", timeout=connection_timeout
+            )
+            self._load_controller_client = rospy.ServiceProxy(
+                "/controller_manager/load_controller", LoadController
+            )
+            rospy.logdebug(
+                "Connected to '/controller_manager/load_controller' service!"
+            )
+
+            # Connect to panda_control_server/switch_control_type service
+            rospy.logdebug(
+                "Connecting to '/panda_control_server/switch_control_type' service."
+            )
+            rospy.wait_for_service(
+                "/panda_control_server/switch_control_type", timeout=connection_timeout
+            )
+            self._panda_control_server_switch_control_type_client = rospy.ServiceProxy(
+                "/panda_control_server/switch_control_type", SwitchControlType
+            )
+            rospy.logdebug(
+                "Connected to '/panda_control_server/switch_control_type' service!"
+            )
+
+            # Connect to panda_control_server/list_control_type service
+            rospy.logdebug(
+                "Connecting to '/panda_control_server/list_control_type' service."
+            )
+            rospy.wait_for_service(
+                "/panda_control_server/list_control_type", timeout=connection_timeout
+            )
+            self._panda_control_server_list_control_type_client = rospy.ServiceProxy(
+                "/panda_control_server/list_control_type", ListControlType
+            )
+            rospy.logdebug(
+                "Connected to '/panda_control_server/switch_control_type' service!"
+            )
+        except (rospy.ServiceException, ROSException, ROSInterruptException) as e:
+            rospy.logerr(
+                "Shutting down '%s' because no connection could be established "
+                "with the '%s' service and this service is needed "
+                "when using 'joint_position_control'."
+                % (
+                    rospy.get_name(),
+                    e.args[0].strip("timeout exceeded while waiting for service"),
+                )
+            )
+            sys.exit(0)
+
+    def _list_controllers_state(self):
+        """Get information about the currently running and loaded controllers.
+
+        Returns
+        -------
+        dict
+            Dictionary containing information about which controllers are currently
+            running or initialized divided by control group (arm/hand and other).
+        """
+
+        # Get the controller that is currently running
+        list_controllers_resp = self._list_controller_client.call(
+            ListControllersRequest()
+        )
+
+        # Check which panda controllers are running
+        controllers_state = ControllerInfoDict()
+        for controller in list_controllers_resp.controller:
+            categorized = False
+
+            # Add Panda controllers to controllers_state
+            for control_group, control_group_vals in CONTROLLER_DICT.items():
+                for control_type, controller_names in control_group_vals.items():
+                    if controller.name in controller_names:
+                        categorized = True
+                        if controller.state == "running":
+                            controllers_state[control_group]["running"][
+                                control_type
+                            ].append(controller.name)
+                        elif controller.state == "initialized":
+                            controllers_state[control_group]["loaded"][
+                                control_type
+                            ].append(controller.name)
+                        elif controller.state == "stopped":
+                            controllers_state[control_group]["stopped"][
+                                control_type
+                            ].append(controller.name)
+
+            # Add non panda controllers to controllers_state
+            if not categorized:
+                if controller.state == "running":
+                    controllers_state["other"]["running"][control_type].append(
+                        controller.name
+                    )
+                elif controller.state == "initialized":
+                    controllers_state["other"]["loaded"][control_type].append(
+                        controller.name
+                    )
+                elif controller.state == "stopped":
+                    controllers_state["other"]["stopped"][control_type].append(
+                        controller.name
+                    )
+
+        # Remove empty fields from dictionary
+        controllers_state = dict_clean(controllers_state)
+
+        # Return list with running and initialized controllers
+        return controllers_state
+
+    def _load(self, controllers):
+        """Load controllers. For this to work the parameters of the controllers
+        have to be loaded onto the ROS parameter server.
+
+        Parameters
+        ----------
+        controllers : str or list
+            The name of the controller you want to load.
+
+        Returns
+        -------
+        bool
+            Success boolean or success boolean list.
+        """
+
+        # Create load_controller request
+        if type(controllers) is str:
+            req = LoadControllerRequest()
+            req.name = controllers
+
+            # Send load controller request
+            resp = self._load_controller_client(req)
+            return [resp.ok]
+        elif type(controllers) is list:
+            # Loop through controllers and request to load them
+            resp = []
+            for controller in controllers:
+                req = LoadControllerRequest()
+                req.name = controller
+
+                # Send load controller request
+                resp.append(self._load_controller_client(req).ok)
+
+            # Return result
+            return resp
+        else:
+            rospy.logwarn(
+                "Controllers could not be loaded as the data type of the 'controllers' "
+                " variable was %s while the 'PandaControlSwitcher' only takes an "
+                "argument of type 'str' or 'list'." % type(controllers)
+            )
+            return [False]
+
+    def switch(self, control_group, control_type, load_controllers=True):
+        """
+
+        Parameters
+        ----------
+        control_group : str
+            The control group of which you want the switch the control type.
+        control_type : str
+            The robot control type you want to switch to for the given `control_group`.
+            Options are: `joint_trajectory_control`, `joint_position_control`, `joint_effort_control`,
+            `joint_group_position_control` and `joint_group_effort_control`.
+        load_controllers : bool
+            Try to load the required controllers for a given control_type if they are
+            not yet loaded.
+
+        Returns
+        -------
+        bool
+            Success boolean.
+        """
+
+        # Validate input arguments
+        control_type = control_type.lower()
+        control_group = control_group.lower()
+        if type(control_group) == list:
+            if len(control_group) > 1:
+                rospy.loginfo(
+                    "Please specify a single control group you want to switch the "
+                    "control type for."
+                )
+                return False
+            else:
+                control_group = control_group[0]
+        if control_group not in CONTROLLER_DICT.keys():
+            rospy.loginfo(
+                "The '%s' control group you specified is not valid. Valid control "
+                "groups for the Panda robot are %s"
+                % (control_group, CONTROLLER_DICT.keys())
+            )
+            return False
+        if control_type not in CONTROL_TYPES:
+            rospy.loginfo(
+                "The '%s' control type you specified is not valid. Valid control types "
+                "for the Panda robot are %s" % (control_type, CONTROL_TYPES)
+            )
+            return False
+
+        # Get active controllers
+        controllers_state = self._list_controllers_state()
+
+        # Generate switch controller msg
+        controller_already_running = False
+        switch_controller_msg = SwitchControllerRequest()
+        if (
+            "running" in controllers_state[control_group].keys()
+            and control_type in controllers_state[control_group]["running"].keys()
+        ):  # If control type controllers are already running
+            controller_already_running = True
+        elif (
+            "stopped" in controllers_state[control_group].keys()
+            and control_type in controllers_state[control_group]["stopped"].keys()
+        ):  # If controller was stopped
+
+            # Fill the start_controllers field of the switch control message
+            switch_controller_msg.start_controllers = (
+                CONTROLLER_DICT[control_group][control_type]
+                if type(CONTROLLER_DICT[control_group][control_type]) is list
+                else [CONTROLLER_DICT[control_group][control_type]]
+            )
+
+            # Fill the stop_controllers field of the switch control message
+            switch_controller_msg.stop_controllers = flatten_list(
+                controllers_state[control_group]["running"].values()
+            )
+        elif (
+            "loaded" not in controllers_state[control_group].keys()
+            or control_type not in controllers_state[control_group]["loaded"].keys()
+        ):  # Try to load the controllers if not yet loaded
+
+            # Load the required controllers
+            if load_controllers:
+                retval = self._load(CONTROLLER_DICT[control_group][control_type])
+                failed_controllers = list(
+                    compress(
+                        CONTROLLER_DICT[control_group][control_type],
+                        [not val for val in retval],
+                    )
+                )
+            else:
+
+                # Print warning and return
+                rospy.logwarn(
+                    "The panda %s control type was not switch to '%s' because the %s "
+                    "controllers could not be loaded as 'load_controllers' was set to "
+                    "argument was set to False."
+                    % (
+                        control_group,
+                        control_type,
+                        CONTROLLER_DICT[control_group][control_type],
+                    )
+                )
+                return False
+
+            # Check if all controllers were loaded successfully
+            if len(failed_controllers) == 0:
+
+                # Fill the start_controllers field of the switch control message
+                switch_controller_msg.start_controllers = (
+                    CONTROLLER_DICT[control_group][control_type]
+                    if type(CONTROLLER_DICT[control_group][control_type]) is list
+                    else [CONTROLLER_DICT[control_group][control_type]]
+                )
+
+                # Fill the stop_controllers field of the switch control message
+                switch_controller_msg.stop_controllers = flatten_list(
+                    controllers_state[control_group]["running"].values()
+                )
+            else:
+
+                # Print warning and return
+                rospy.logwarn(
+                    "The panda %s control type was not switch to '%s' as the %s "
+                    "controllers could not be loaded."
+                    % (control_group, control_type, failed_controllers)
+                )
+                return False
+        else:
+
+            # Fill the start_controllers field of the switch control message
+            switch_controller_msg.start_controllers = (
+                CONTROLLER_DICT[control_group][control_type]
+                if type(CONTROLLER_DICT[control_group][control_type]) is list
+                else [CONTROLLER_DICT[control_group][control_type]]
+            )
+
+            # Fill the stop_controllers field of the switch control message
+            switch_controller_msg.stop_controllers = flatten_list(
+                controllers_state[control_group]["running"].values()
+            )
+
+        # Fill the other fields of the switch_control message
+        switch_controller_msg.strictness = SwitchControllerRequest.STRICT
+        switch_controller_msg.timeout = 3
+
+        # Send switch_controller msgs
+        if not controller_already_running:
+            rospy.loginfo(
+                "Switching panda %s control type to '%s'."
+                % (control_group, control_type)
+            )
+            retval = self._switch_controller_client(switch_controller_msg)
+
+            # Change panda_controller_server control type if needed and switch was
+            # successfull
+            if retval.ok:
+
+                # Print success message
+                rospy.loginfo(
+                    "Switching panda %s control type to '%s' successfull."
+                    % (control_group, control_type)
+                )
+
+                # Request 'panda_controller_server' to use group control
+                if control_type in [
+                    "joint_group_position_control",
+                    "joint_group_effort_control",
+                ]:
+                    if (
+                        self._panda_control_server_list_control_type_client(
+                            ListControlTypeRequest()
+                        ).control_type
+                        != "joint_group_control"
+                    ):
+                        self._panda_control_server_switch_control_type_client(
+                            SwitchControlTypeRequest()
+                        )
+                elif control_type in ["joint_position_control", "joint_effort_control"]:
+                    if (
+                        self._panda_control_server_list_control_type_client(
+                            ListControlTypeRequest()
+                        ).control_type
+                        != "joint_control"
+                    ):
+                        self._panda_control_server_switch_control_type_client(
+                            SwitchControlTypeRequest()
+                        )
+            else:
+                rospy.logwarn(
+                    "Switching panda %s control type to '%s' failed."
+                    % (control_group, control_type)
+                )
+            # Return success boolean
+            return retval.ok
+        else:
+            rospy.loginfo(
+                "Panda %s control type not switch to '%s' as the panda robot was "
+                "already using '%s'." % (control_group, control_type, control_type)
+            )
+            return True

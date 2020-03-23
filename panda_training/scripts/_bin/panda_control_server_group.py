@@ -13,10 +13,10 @@ from rospy.exceptions import ROSException, ROSInterruptException
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray
 from panda_training.srv import (
-    setJointPositions,
-    setJointPositionsResponse,
-    setJointEfforts,
-    setJointEffortsResponse,
+    SetJointPositions,
+    SetJointPositionsResponse,
+    SetJointEfforts,
+    SetJointEffortsResponse,
 )
 from controller_manager_msgs.srv import ListControllers, ListControllersRequest
 
@@ -126,7 +126,7 @@ class PandaControlServer(object):
         )
         self.set_ee_pose_srv = rospy.Service(
             "%s/panda_arm/set_joint_positions" % rospy.get_name()[1:],
-            setJointPositions,
+            SetJointPositions,
             self.arm_set_joint_positions_callback,
         )
         rospy.logdebug(
@@ -134,7 +134,7 @@ class PandaControlServer(object):
         )
         self.set_ee_pose_srv = rospy.Service(
             "%s/panda_arm/set_joint_efforts" % rospy.get_name()[1:],
-            setJointEfforts,
+            SetJointEfforts,
             self.arm_set_joint_efforts_callback,
         )
         rospy.loginfo("'%s' services created successfully." % rospy.get_name())
@@ -171,12 +171,12 @@ class PandaControlServer(object):
 
         Parameters
         ----------
-        joint_positions_req : panda_training.srv.setJointPositionsRequest
+        joint_positions_req : panda_training.srv.SetJointPositionsRequest
             Service request message specifying the positions for the robot arm joints.
 
         Returns
         -------
-        panda_training.srv.setJointPositionsResponse
+        panda_training.srv.SetJointPositionsResponse
             Service response.
         """
 
@@ -184,7 +184,7 @@ class PandaControlServer(object):
         self.joint_positions_setpoint = joint_positions_req.joint_positions.data
 
         # create service response message
-        resp = setJointPositionsResponse()
+        resp = SetJointPositionsResponse()
 
         # Check input size
         if (
@@ -222,12 +222,12 @@ class PandaControlServer(object):
 
         Parameters
         ----------
-        joint_effort : panda_training.srv.setJointEffortsRequest
+        joint_effort : panda_training.srv.SetJointEffortsRequest
             Service request message specifying the efforts for the robot arm joints.
 
         Returns
         -------
-        panda_training.srv.setJointPositionsResponse
+        panda_training.srv.SetJointPositionsResponse
             Service response.
         """
 
@@ -235,7 +235,7 @@ class PandaControlServer(object):
         self.joint_efforts_setpoint = joint_efforts
 
         # create service response message
-        resp = setJointEffortsResponse()
+        resp = SetJointEffortsResponse()
 
         # Check input size
         if len(joint_efforts.joint_efforts.data) != self._arm_joint_effort_input_size:

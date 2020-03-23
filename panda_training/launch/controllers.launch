@@ -5,7 +5,6 @@
     <arg name="load_gripper" default="true" />
 
     <!-- Controller args -->
-    <arg name="use_group_controller" default="false" /> <!-- Wheter to use group controllers -->
     <arg name="preload_controllers" default="false" /> <!-- Wheter to preload all non essential controllers -->
 
     <!-- Controller YAML file locations -->
@@ -44,22 +43,22 @@
     <node name="joint_state_controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="joint_state_controller" />
     <node name="joint_trajectory_controller_spawner_arm" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="panda_arm_controller" />
     <group if="$(arg preload_controllers)">
-        <node unless="$(arg use_group_controller)" name="joint_position_controller_spawner_arm" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped
+        <node name="joint_position_controller_spawner_arm" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped
             panda_arm_joint1_position_controller panda_arm_joint2_position_controller panda_arm_joint3_position_controller panda_arm_joint4_position_controller
             panda_arm_joint5_position_controller panda_arm_joint6_position_controller panda_arm_joint7_position_controller" />
-        <node if="$(arg use_group_controller)" name="joint_group_position_controller_spawner_arm" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_arm_joint_group_position_controller" />
-        <node unless="$(arg use_group_controller)" name="joint_effort_controller_spawner_arm" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped
+        <node name="joint_group_position_controller_spawner_arm" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_arm_joint_group_position_controller" />
+        <node name="joint_effort_controller_spawner_arm" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped
             panda_arm_joint1_effort_controller panda_arm_joint2_effort_controller panda_arm_joint3_effort_controller panda_arm_joint4_effort_controller
             panda_arm_joint5_effort_controller panda_arm_joint6_effort_controller panda_arm_joint7_effort_controller" />
-        <node if="$(arg use_group_controller)" name="joint_group_effort_controller_spawner_arm" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_arm_joint_group_effort_controller" />
+        <node name="joint_group_effort_controller_spawner_arm" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_arm_joint_group_effort_controller" />
     </group>
     <group if="$(arg load_gripper)">
         <node name="joint_trajectory_controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="panda_hand_controller" />
         <group if="$(arg preload_controllers)">
-            <node unless="$(arg use_group_controller)" name="joint_position_controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_hand_finger1_position_controller panda_hand_finger2_position_controller" />
-            <node if="$(arg use_group_controller)" name="joint_group_position_controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_hand_joint_group_position_controller" />
-            <node unless="$(arg use_group_controller)" name="joint_effort_controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_hand_finger1_effort_controller panda_hand_finger2_effort_controller" />
-            <node if="$(arg use_group_controller)" name="joint_group_effort_controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_hand_joint_group_effort_controller" />
+            <node name="joint_position_controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_hand_finger1_position_controller panda_hand_finger2_position_controller" />
+            <node name="joint_group_position_controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_hand_joint_group_position_controller" />
+            <node name="joint_effort_controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_hand_finger1_effort_controller panda_hand_finger2_effort_controller" />
+            <node name="joint_group_effort_controller_spawner_hand" pkg="controller_manager" type="spawner" respawn="false" output="screen" args="--stopped panda_hand_joint_group_effort_controller" />
         </group>
     </group>
 </launch>

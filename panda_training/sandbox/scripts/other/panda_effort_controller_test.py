@@ -5,7 +5,7 @@ panda effort_controllers"""
 import rospy
 from dynamic_reconfigure.server import Server
 from panda_training.cfg import JointEffortConfig
-from panda_training.srv import setJointEfforts, setJointEffortsRequest
+from panda_training.srv import SetJointEfforts, SetJointEffortsRequest
 
 
 #################################################
@@ -23,7 +23,7 @@ class JointEffortTester(object):
             "/panda_control_server/panda_arm/set_joint_efforts", timeout=10
         )
         self.set_joint_efforts_client = rospy.ServiceProxy(
-            "/panda_control_server/panda_arm/set_joint_efforts", setJointEfforts
+            "/panda_control_server/panda_arm/set_joint_efforts", SetJointEfforts
         )
         rospy.logdebug(
             "Connected to 'panda_control_server/panda_arm/set_joint_efforts' service!"
@@ -46,7 +46,7 @@ class JointEffortTester(object):
         ]
 
         # Call set_joint_efforts service
-        set_joint_efforts_msg = setJointEffortsRequest()
+        set_joint_efforts_msg = SetJointEffortsRequest()
         set_joint_efforts_msg.joint_efforts.data = self.joint_efforts_setpoint
         self.set_joint_efforts_client.call(set_joint_efforts_msg)
 
@@ -86,7 +86,7 @@ class JointEffortTester(object):
         ]
 
         # Call set_joint_efforts service
-        set_joint_efforts_msg = setJointEffortsRequest()
+        set_joint_efforts_msg = SetJointEffortsRequest()
         set_joint_efforts_msg.joint_efforts.data = self.joint_efforts_setpoint
         self.set_joint_efforts_client.call(set_joint_efforts_msg)
 
@@ -104,7 +104,7 @@ class JointEffortTester(object):
         """
 
         # Call set_joint_efforts service
-        set_joint_efforts_msg = setJointEffortsRequest()
+        set_joint_efforts_msg = SetJointEffortsRequest()
         set_joint_efforts_msg.joint_efforts.data = self.joint_efforts_setpoint
         self.set_joint_efforts_client.call(set_joint_efforts_msg)
 

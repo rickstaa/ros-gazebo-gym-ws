@@ -1,22 +1,22 @@
 import rospy
 from my_fetch_robot_training.srv import (
-    getEePose,
-    getEePoseRequest,
-    getEeRpy,
-    getEeRpyRequest,
-    setEePose,
-    setEePoseRequest,
-    setJointPose,
-    setJointPoseRequest,
+    GetEePose,
+    GetEePoseRequest,
+    GetEeRpy,
+    GetEeRpyRequest,
+    SetEePose,
+    SetEePoseRequest,
+    SetJointPose,
+    SetJointPoseRequest,
 )
 
 # Connect to service
 joint_traj_client = rospy.ServiceProxy(
-    "panda_moveit_planner_server/set_joint_pose", setJointPose
+    "panda_moveit_planner_server/set_joint_pose", SetJointPose
 )
 
 # Set up a trajectory message to publish.
-joint_point = setJointPoseRequest()
+joint_point = SetJointPoseRequest()
 
 joint_point.point.positions = [None] * 7
 joint_point.point.positions[0] = 0.0

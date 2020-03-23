@@ -77,3 +77,47 @@ def controller_list_array_2_dict(controller_list_msgs):
 
     # Return dictionary
     return controller_list_dict
+
+
+def flatten_list(input_list):
+    """Function used to flatten a list containing sublists. It does this by calling
+    itself recursively.
+
+    Parameters
+    ----------
+    input_list : list of lists
+        A list containing strings or other lists.
+    """
+
+    # Convert list of list to flattened lists
+    flattened_list = []
+    for list_item in input_list:
+        if type(list_item) is list:
+            flattened_list.extend(
+                flatten_list(list_item)
+            )  # NOTE: Calls itself recursively
+        else:
+            flattened_list.append(list_item)
+
+    # Return flattened list
+    return flattened_list
+
+
+def dict_clean(input_dict):
+    """Removes empty dictionary keys from a dictionary and returns a cleaned up
+    dictionary. Empty meaning an empty list, string or dict or a None value.
+
+    Parameters
+    ----------
+    input_dict : [type]
+        [description]
+    """
+
+    # Strip dictionary from empty keys
+    stripped_dict = {}
+    for k, v in input_dict.items():
+        if isinstance(v, dict):
+            v = dict_clean(v)
+        if v not in (u"", None, {}, []):
+            stripped_dict[k] = v
+    return stripped_dict

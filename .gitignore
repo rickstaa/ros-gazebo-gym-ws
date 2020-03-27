@@ -2,5 +2,7 @@
 .vscode/
 .egg-info/
 logs/
+__pycache__/
 
 # Files to ignore
+*.pyc

@@ -1,8 +1,6 @@
-#! /usr/bin/env python
-"""Panda RobotGazeboGoal environment
-This class is responsible for creating the link between the gazebo
-simulator and the openAI package. It is different from the RobotGazebo env
-as here the gym.GoalEnv is used instead of the gym.Env. This is done
+"""This Robot Gazebo Goal environment class is responsible for creating the link
+between the gazebo simulator and the openAI package. It is different from the
+RobotGazebo env as here the gym.GoalEnv is used instead of the gym.Env. This is done
 since the goal of the robot task now is changing with each episode.
 """
 
@@ -16,7 +14,8 @@ from openai_ros.gazebo_connection import GazeboConnection
 from openai_ros.controllers_connection import ControllersConnection
 
 # ROS msgs and srvs
-# NOTE: Found at https://bitbucket.org/theconstructcore/theconstruct_msgs/src/master/msg/RLExperimentInfo.msg
+# NOTE: Found at https://bitbucket.org/theconstructcore/theconstruct_msgs/src/master/
+# msg/RLExperimentInfo.msg
 from theconstruct_msgs.msg import RLExperimentInfo
 
 
@@ -24,18 +23,42 @@ from theconstruct_msgs.msg import RLExperimentInfo
 # Panda Robot Gazebo Environment Class ##########
 #################################################
 class RobotGazeboGoalEnv(gym.GoalEnv):
-    def __init__(self, robot_name_space, controllers_list, reset_controls):
+    """Class responsible for the communication between gazebo and the openai gym
+    environment.
+
+    Attributes
+    ----------
+    gazebo : openai_ros.gazebo_connection.GazeboConnection
+        The openai_ros gazebo connection object.
+    controllers_object : openai_ros.controllers_connection.ControllersConnection
+        The openai_ros controller manager object.
+    episode_num : str
+        The episode number.
+
+    Methods
+    ----------
+    close():
+        Function executed when closing the environment.
+    reset():
+        Function used for resetting the simulation.
+    seed(seed=None):
+        Function used for generating a random gym seed.
+    step(action):
+        Function executed each time step.
+    """
+
+    def __init__(self, robot_name_space, reset_controls, reset_control_list):
         """Initializes a new Panda Robot Gazebo Goal environment.
 
         Parameters
         ----------
         robot_name_space : str
             Namespace of the robot.
-        controllers_list : np.array
-            Names of the controllers of the robot.
         reset_controls : bool
             Boolean specifying whether to reset the controllers when the simulation
             is reset.
+        reset_control_list : np.array
+            Names of the controllers of the robot.
         """
 
         # To reset Simulations
@@ -44,7 +67,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
             start_init_physics_parameters=False, reset_world_or_sim="WORLD"
         )
         self.controllers_object = ControllersConnection(
-            namespace=robot_name_space, controllers_list=controllers_list
+            namespace=robot_name_space, controllers_list=reset_control_list
         )
         self.reset_controls = reset_controls
         rospy.loginfo(self.reset_controls)
@@ -52,7 +75,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
 
         # Set up ROS related variables
         self.episode_num = 0
-        self.reward_pub = rospy.Publisher(
+        self._reward_pub = rospy.Publisher(
             "/openai/reward", RLExperimentInfo, queue_size=10
         )
 
@@ -69,7 +92,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         ----------
         seed : int, optional
             Random seed, by default None (seeds from an operating system
-            specific randomness source).
+            specific randomness source), by default None.
 
         Returns
         -------
@@ -200,7 +223,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         reward_msg = RLExperimentInfo()
         reward_msg.episode_number = episode_number
         reward_msg.episode_reward = reward
-        self.reward_pub.publish(reward_msg)
+        self._reward_pub.publish(reward_msg)
 
     #############################################
     # Setup virtual methods #####################

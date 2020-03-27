@@ -23,7 +23,7 @@ from geometry_msgs.msg import PoseStamped
 #################################################
 class PandaRobotEnv(panda_robot_gazebo_env.RobotGazeboEnv):
     def __init__(
-        self, robot_EE_link="panda_link8", robot_name_space="", controllers_list=[]
+        self, robot_EE_link="panda_link8", robot_name_space="", reset_control_list=[]
     ):
         """Initializes a new Panda Robot environment.
 
@@ -33,7 +33,7 @@ class PandaRobotEnv(panda_robot_gazebo_env.RobotGazeboEnv):
             Robot end effector link name, by default "panda_link8"
         robot_name_space : str, optional
             Robot namespace, by default "".
-        controllers_list : list, optional
+        reset_control_list : list, optional
             List containing the robot controllers you want to reset each time
             the simulation is reset, by default [].
         """
@@ -42,7 +42,7 @@ class PandaRobotEnv(panda_robot_gazebo_env.RobotGazeboEnv):
         rospy.loginfo("Initializing Panda Robot environment...")
 
         # Variables that we give through the constructor.
-        self.controllers_list = controllers_list
+        self.reset_control_list = reset_control_list
         self.robot_name_space = robot_name_space
         self.robot_EE_link = robot_EE_link
 
@@ -88,7 +88,7 @@ class PandaRobotEnv(panda_robot_gazebo_env.RobotGazeboEnv):
 
         # Initialize parent Class to setup the Gazebo environment)
         super(PandaRobotEnv, self).__init__(
-            controllers_list=self.controllers_list,
+            reset_control_list=self.reset_control_list,
             robot_name_space=self.robot_name_space,
             reset_controls=False,
         )
@@ -125,7 +125,7 @@ class PandaRobotEnv(panda_robot_gazebo_env.RobotGazeboEnv):
         return self.joints
 
     def set_arm_joints_positions(self, initial_qpos):
-        """Set joint positions of the panda arm.
+        """Set joint positions of the Panda arm.
 
         Returns
         -------

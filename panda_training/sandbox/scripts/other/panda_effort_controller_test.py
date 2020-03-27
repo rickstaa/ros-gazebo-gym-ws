@@ -1,5 +1,5 @@
 """Script that creates a dynamic parameter server which can be used to test out the
-panda effort_controllers"""
+Panda effort_controllers"""
 
 # Import ROS python packages
 import rospy

@@ -18,41 +18,41 @@ if __name__ == "__main__":
     # Initiate ROS nodetypes
     rospy.init_node("panda_control_server_test")
 
-    # ######## - TEST LIST CONTROLLER TYPE SERVICE - #########
-    # %% /panda_control_server/list_control_type test
-    # Connect to /panda_control_server/list_control_type
-    rospy.logdebug("Connecting to '/panda_control_server/list_control_type' service.")
-    rospy.wait_for_service("/panda_control_server/list_control_type", timeout=10)
-    list_control_type_srv = rospy.ServiceProxy(
-        "/panda_control_server/list_control_type", ListControlType
-    )
-    rospy.logdebug("Connected to 'panda_control_server/list_control_type' service!")
+    # # ######## - TEST LIST CONTROLLER TYPE SERVICE - #########
+    # # %% /panda_control_server/list_control_type test
+    # # Connect to /panda_control_server/list_control_type
+    # rospy.logdebug("Connecting to '/panda_control_server/list_control_type' service.")
+    # rospy.wait_for_service("/panda_control_server/list_control_type", timeout=10)
+    # list_control_type_srv = rospy.ServiceProxy(
+    #     "/panda_control_server/list_control_type", ListControlType
+    # )
+    # rospy.logdebug("Connected to 'panda_control_server/list_control_type' service!")
 
-    # Check control type
-    list_control_type_msg = ListControlTypeRequest()
-    resp = list_control_type_srv.call(list_control_type_msg)
-    print(resp.control_type)
+    # # Check control type
+    # list_control_type_msg = ListControlTypeRequest()
+    # resp = list_control_type_srv.call(list_control_type_msg)
+    # print(resp.control_type)
 
-    # ######## - TEST LIST CONTROLLER TYPE SERVICE - #########
-    # %% /panda_control_server/list_control_type test
-    # Connect to /panda_control_server/list_control_type
-    rospy.logdebug("Connecting to '/panda_control_server/switch_control_type' service.")
-    rospy.wait_for_service("/panda_control_server/switch_control_type", timeout=10)
-    switch_control_type_srv = rospy.ServiceProxy(
-        "/panda_control_server/switch_control_type", SwitchControlType
-    )
-    rospy.logdebug("Connected to 'panda_control_server/switch_control_type' service!")
+    # # ######## - TEST LIST CONTROLLER TYPE SERVICE - #########
+    # # %% /panda_control_server/list_control_type test
+    # # Connect to /panda_control_server/list_control_type
+    # rospy.logdebug("Connecting to '/panda_control_server/switch_control_type' service.")
+    # rospy.wait_for_service("/panda_control_server/switch_control_type", timeout=10)
+    # switch_control_type_srv = rospy.ServiceProxy(
+    #     "/panda_control_server/switch_control_type", SwitchControlType
+    # )
+    # rospy.logdebug("Connected to 'panda_control_server/switch_control_type' service!")
 
-    # Switch Control type
-    switch_control_type_msg = SwitchControlTypeRequest()
-    resp = switch_control_type_srv.call(switch_control_type_msg)
-    print(resp.success)
-    print("done")
+    # # Switch Control type
+    # switch_control_type_msg = SwitchControlTypeRequest()
+    # resp = switch_control_type_srv.call(switch_control_type_msg)
+    # print(resp.success)
+    # print("done")
 
-    # List control type
-    list_control_type_msg = ListControlTypeRequest()
-    resp = list_control_type_srv.call(list_control_type_msg)
-    print(resp.control_type)
+    # # List control type
+    # list_control_type_msg = ListControlTypeRequest()
+    # resp = list_control_type_srv.call(list_control_type_msg)
+    # print(resp.control_type)
 
     # ####### - TEST SET ARM JOINT EFFORTS - #########
     # %% /panda_control_server/panda_arm/set_joint_efforts test
@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     # Generate joint_efforts msg
     set_arm_joint_efforts_msg = SetJointEffortsRequest()
-    set_arm_joint_efforts_msg.joint_names = ["panda_joint1", "panda_joint2"]
+    set_arm_joint_efforts_msg.joint_names = ["panda_joint3555", "panda_joint2"]
     # set_arm_joint_efforts_msg.joint_efforts.data = [0, 0, 0, 0, 0, 0, 0]
     set_arm_joint_efforts_msg.joint_efforts.data = [0, 0]
     retval = set_arm_joint_effort_srv.call(set_arm_joint_efforts_msg)
@@ -97,8 +97,8 @@ if __name__ == "__main__":
 
     # Generate joint_efforts msg
     set_arm_joint_positions_msg = SetJointPositionsRequest()
-    # set_arm_joint_positions_msg.joint_names = ["panda_joint1", "panda_joint6"]
-    # set_arm_joint_positions_msg.joint_positions.data = [1.5, 2]
+    set_arm_joint_positions_msg.joint_names = ["panda_joint1333", "panda_joint6"]
+    set_arm_joint_positions_msg.joint_positions.data = [1.5, 2]
     # set_arm_joint_positions_msg.joint_positions.data = [
     # 0.0,
     # 0.0,
@@ -108,18 +108,19 @@ if __name__ == "__main__":
     # 0.0,
     # 0.0,
     # ]
-    set_arm_joint_positions_msg.joint_positions.data = [
-        1.5,
-        1.0,
-        1.0,
-        1.5,
-        1.5,
-        1.0,
-        1.0,
-    ]
+    # set_arm_joint_positions_msg.joint_positions.data = [
+    #     1.5,
+    #     1.0,
+    #     1.0,
+    #     1.5,
+    #     1.5,
+    #     1.0,
+    #     1.0,
+    # ]
     # set_arm_joint_positions_msg.joint_positions.data = [0.0, 1.5]
     set_arm_joint_positions_msg.wait.data = True
     retval = set_arm_joint_positions_srv.call(set_arm_joint_positions_msg)
+    print("done")
 
     # ######## - TEST SET HAND EFFORTS - #########
     # %% /panda_control_server/panda_hand/set_joint_positions test
@@ -140,7 +141,7 @@ if __name__ == "__main__":
     # Generate joint_efforts msg
     set_hand_joint_efforts_msg = SetJointEffortsRequest()
     set_hand_joint_efforts_msg.joint_names = [
-        "panda_finger_joint1",
+        "panda_finger_joint133",
         "panda_finger_joint2",
     ]
     set_hand_joint_efforts_msg.joint_efforts.data = [-0.08, -0.08]
@@ -168,7 +169,7 @@ if __name__ == "__main__":
     set_hand_joint_positions_msg = SetJointPositionsRequest()
     set_hand_joint_positions_msg.joint_names = [
         "panda_finger_joint1",
-        "panda_finger_joint2",
+        "panda_finger_joint2333",
     ]
     set_hand_joint_positions_msg.joint_positions.data = [0.04, 0.04]
     set_hand_joint_positions_msg.wait.data = True

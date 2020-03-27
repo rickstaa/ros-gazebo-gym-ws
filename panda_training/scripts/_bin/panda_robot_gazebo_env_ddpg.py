@@ -20,14 +20,14 @@ from theconstruct_msgs.msg import RLExperimentInfo
 # Panda Robot Gazebo Environment Class###########
 #################################################
 class RobotGazeboEnv(gym.Env):
-    def __init__(self, robot_name_space, controllers_list, reset_controls):
+    def __init__(self, robot_name_space, reset_control_list, reset_controls):
         """Initializes a new Panda Robot Gazebo Goal environment.
 
         Parameters
         ----------
         robot_name_space : str
             Namespace of the robot.
-        controllers_list : np.array
+        reset_control_list : np.array
             Names of the controllers of the robot.
         reset_controls : [type]
             Boolean specifying whether to reset the controllers when the simulation
@@ -40,7 +40,7 @@ class RobotGazeboEnv(gym.Env):
             start_init_physics_parameters=False, reset_world_or_sim="WORLD"
         )
         self.controllers_object = ControllersConnection(
-            namespace=robot_name_space, controllers_list=controllers_list
+            namespace=robot_name_space, reset_control_list=reset_control_list
         )
         self.reset_controls = reset_controls
         rospy.loginfo(self.reset_controls)

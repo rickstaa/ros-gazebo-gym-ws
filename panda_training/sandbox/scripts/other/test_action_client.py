@@ -12,7 +12,7 @@ def action_server_exists(topic_name):
 
     Parameters
     ----------
-    topic_name : string
+    topic_name : str
         Action server topic name.
     """
 
@@ -71,4 +71,3 @@ if __name__ == "__main__":
         )
         sys.exit(0)
     print("test")
-

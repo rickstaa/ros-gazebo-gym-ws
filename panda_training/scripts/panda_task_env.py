@@ -1,7 +1,5 @@
-#! /usr/bin/env python
-"""PandaReach task environment
-This Task Environment will be in charge of providing all the necessary
-functions and methods related to this specific training
+"""This Task Environment will be in charge of providing all the necessary
+functions and methods related to this specific training.
 
 NOTE
 ------
@@ -16,22 +14,10 @@ from gym.envs.robotics import rotations
 import numpy as np
 import sys
 import panda_robot_env
+from functions import flatten_list
 
 # ROS python imports
 import rospy
-
-# ROS msgs and srvs
-from sensor_msgs.msg import JointState
-from panda_training.srv import (
-    GetEePose,
-    GetEePoseRequest,
-    GetEeRpy,
-    GetEeRpyRequest,
-    SetEePose,
-    SetEePoseRequest,
-    SetJointPose,
-    SetJointPoseRequest,
-)
 
 # Register openai gym environment
 register(
@@ -45,6 +31,25 @@ register(
 # Panda Robot Environment Class #################
 #################################################
 class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
+    """Class that provides all the methods used for the algorithm training.
+
+    Attributes
+    ----------
+    action_space : gym.spaces.box.Box
+        Gym action space object.
+    observation_space : gym.spaces.dict.Dict
+        Gym observation space object.
+
+    Methods
+    ----------
+    get_params():
+        Get training and simulation parameters from the ROS parameter server.
+    goal_distance(goal_a, goal_b):
+        Calculates the perpendicular distance to the goal.
+    robot_get_obs(data):
+        Returns all joint positions and velocities associated with a robot.
+    """
+
     def __init__(
         self,
         robot_EE_link="panda_grip_site",
@@ -57,7 +62,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         Parameters
         ----------
         robot_EE_link : str, optional
-            Robot end effector link name, by default "panda_grip_site"
+            Robot end effector link name, by default "panda_grip_site".
         robot_arm_control_type : str, optional
             The type of control you want to use for the robot arm. Options are
             'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
@@ -69,6 +74,34 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
             'joint_group_position_control', 'joint_group_effort_control' or 'ee_control'
             , by default 'joint_position_control'.
         """
+
+        # Wait for the simulation to be started
+        wait_for_sim_timeout = 60
+        simulation_check_timeout_time = rospy.get_rostime() + rospy.Duration(
+            wait_for_sim_timeout
+        )
+        while (
+            not rospy.is_shutdown()
+            and rospy.get_rostime() < simulation_check_timeout_time
+        ):
+            if any(
+                [
+                    "/gazebo" in topic
+                    for topic in flatten_list(rospy.get_published_topics())
+                ]
+            ):
+                break
+            else:
+                rospy.logwarn_once(
+                    "Waiting for the Panda gazebo robot simulation to be " "started."
+                )
+        else:
+            rospy.logerr(
+                "Shutting down '%s' since the Panda gazebo simulation was not "
+                "started within the set timeout period of %s seconds."
+                % (rospy.get_name(), wait_for_sim_timeout)
+            )
+            sys.exit(0)
 
         # Retrieve parameters from parameter server
         rospy.loginfo("Initializing Panda task environment.")
@@ -119,7 +152,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
     # Panda Robot env main methods ##############
     #############################################
     def get_params(self):
-        """Get simulation parameters. These parameters have to be loaded on
+        """Get training and simulation parameters. These parameters have to be loaded on
         the parameter server using a yaml file.
         """
         # Check if parameters were loaded onto the parameter server
@@ -235,10 +268,9 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
 
         Parameters
         ----------
-        initial_qpos : np.array, optional
-            Array containing the initial joint positions, by default
-            :attr:`self.init_pose`.
-
+        initial_qpos : dict, optional
+            Dictionary containing the initial joint positions for the Panda joints,
+            by default :attr:`self.init_pose`. Example: {"panda_link0": 1.5}
         Returns
         -------
         Boolean
@@ -455,9 +487,9 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
 
         Parameters
         ----------
-        initial_qpos : np.array, optional
-            Array containing the initial joint positions, by default
-            :attr:`self.init_pose`.
+        initial_qpos : dict, optional
+            Dictionary containing the initial joint positions for the Panda joints,
+            by default :attr:`self.init_pose`. Example: {"panda_link0": 1.5}
         """
 
         # Check if initial_qpos was supplied
@@ -514,8 +546,8 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
             return rospy.get_param(param_name)
         except KeyError:
             rospy.logwarn(
-                "Parameter %s was not found on the ROS parameter server. "
-                "please make sure this parameter is present in the "
+                "Parameter '%s' was not found on the ROS parameter server. "
+                "Please make sure this parameter is present in the "
                 "<ALGO>config.yaml and that this yaml file is loaded." % param_name
             )
 

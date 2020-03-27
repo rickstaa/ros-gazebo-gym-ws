@@ -1,5 +1,4 @@
-"""A class that can be used to group a number of publishers together
-and publish to these publishers at the same time.
+"""Class used to group a number of publishers together.
 """
 
 # ROS python imports
@@ -10,12 +9,21 @@ import rospy
 # Group Publisher class #########################
 #################################################
 class GroupPublisher(list):
+    """Used for bundling ROS publishers together and publishing
+    to these publishers at the same time.
+
+    Methods
+    -------
+    publish(messages):
+        Publish messages to all publishers.
+    """
+
     def __init__(self, iterable=[]):
         """
         Parameters
         ----------
         iterable : iterable, optional
-            New list initialized from iterable items, by default []
+            New list initialized from iterable items, by default [].
 
         Raises
         ------

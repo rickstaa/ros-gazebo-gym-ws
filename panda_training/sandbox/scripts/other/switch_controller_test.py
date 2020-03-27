@@ -11,7 +11,7 @@ if __name__ == "__main__":
     switch_control_client = rospy.ServiceProxy(
         "/controller_manager/switch_controller", SwitchController
     )
-    rospy.logdebug("Connected to 'panda_moveit_planner_server/set_ee_pose' service!")
+    rospy.logdebug("Connected to '/controller_manager/switch_controller' service!")
 
     # Generate switch controller msg start_controllers
     switch_controller_msg = SwitchControllerRequest()
@@ -29,4 +29,3 @@ if __name__ == "__main__":
     # Send switch control comman
     retval = switch_control_client.call(switch_controller_msg)
     print(retval)
-

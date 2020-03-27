@@ -1,5 +1,4 @@
-﻿"""Custom dictionary for storing controller information. This class overloads the
-normal `dict` class in order to pre-initialize the dictionary with the needed keys.
+﻿"""Class used to store information about the gazebo controllers.
 """
 
 # Main python 2/3 compatibility imports
@@ -84,6 +83,10 @@ CONTROLLER_INFO_DICT = {
 # Controller Info Dictionary ####################
 #################################################
 class ControllerInfoDict(dict):
+    """Used for storing information about the gazebo robot controllers.
+    This class overloads the normal `dict` class in order to pre-initialize the
+    dictionary with the needed keys."""
+
     def __init__(self, *args, **kwargs):
         """Initiate the ControllerInfoDict"""
         super().__init__(*args, **kwargs)

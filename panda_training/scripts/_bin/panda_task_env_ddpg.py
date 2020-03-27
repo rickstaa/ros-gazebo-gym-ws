@@ -422,8 +422,8 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
             )
 
             # Shut down python script
-            rospy.loginfo(
-                "Shutting down simulation since parameter %s was missing on "
+            rospy.logerror(
+                "Shutting down simulation since parameter '%s' was missing on "
                 "the ROS parameter server." % param_name
             )
             sys.exit(0)

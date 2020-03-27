@@ -9,6 +9,8 @@ from rospy.exceptions import ROSException
 
 # ROS msgs and srvs
 from actionlib_msgs.msg import GoalStatusArray
+from control_msgs.msg import FollowJointTrajectoryGoal
+from trajectory_msgs.msg import JointTrajectoryPoint
 
 
 #################################################
@@ -20,7 +22,7 @@ def action_server_exists(topic_name):
 
     Parameters
     ----------
-    topic_name : string
+    topic_name : str
         Action server topic name.
 
     Returns
@@ -52,6 +54,32 @@ def action_server_exists(topic_name):
             else:
                 exists = False
     return exists
+
+
+def joint_positions_2_follow_joint_trajectory_goal(joint_positions, time_from_start=1):
+    """Converts a dictionary of joint_positions into a FollowJointTrajectoryGoal
+        msgs.
+
+        Parameters
+        ----------
+        joint_positions : dict
+            The joint positions of each of the robot joints.
+        time_from_start : dict, optional
+            The time from the start at which the joint position has to be achieved, by
+            default 1 sec.
+        """
+
+    # creates a goal to send to the action server
+    goal_msg = FollowJointTrajectoryGoal()
+    joint_states = JointTrajectoryPoint()
+    joint_states.time_from_start.secs = time_from_start
+    for joint_name, joint_position in joint_positions.items():
+        joint_states.positions.append(joint_position)
+        goal_msg.trajectory.joint_names.append(joint_name)
+    goal_msg.trajectory.points.append(joint_states)
+
+    # Return goal msgs
+    return goal_msg
 
 
 def controller_list_array_2_dict(controller_list_msgs):
@@ -87,6 +115,11 @@ def flatten_list(input_list):
     ----------
     input_list : list of lists
         A list containing strings or other lists.
+
+    Returns
+    -------
+    list
+        The flattened list.
     """
 
     # Convert list of list to flattened lists
@@ -109,8 +142,13 @@ def dict_clean(input_dict):
 
     Parameters
     ----------
-    input_dict : [type]
-        [description]
+    input_dict : dict
+        The input dictionary.
+
+    Returns
+    -------
+    dict
+        The cleaned dictionary
     """
 
     # Strip dictionary from empty keys
@@ -121,3 +159,34 @@ def dict_clean(input_dict):
         if v not in (u"", None, {}, []):
             stripped_dict[k] = v
     return stripped_dict
+
+
+def lower_first_char(string):
+    """De-capitalize the first letter of a string.
+
+    Parameters
+    ----------
+    string : str
+        The input string.
+
+    Returns
+    -------
+    string
+        The de-capitalized string.
+
+    .. note::
+        This function is not the exact oposite of the capitalize function of the
+        standard library. For example, capitalize('abC') returns Abc rather than AbC.
+    """
+
+    if not string:  # Added to handle case where s == None
+        return
+    else:
+        return string[0].lower() + string[1:]
+
+
+if __name__ == "__main__":
+
+    test_joint_dict = {"panda_joint2": 4, "panda_joint1": 5}
+    output = joint_positions_2_follow_joint_trajectory_goal(test_joint_dict)
+    print("jan")

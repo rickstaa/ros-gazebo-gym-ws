@@ -8,7 +8,6 @@ VIZUALIZE:
 # RL
 from stable_baselines import HER, DQN, SAC, DDPG, TD3
 from stable_baselines.her import GoalSelectionStrategy, HERGoalEnvWrapper
-from stable_baselines.common.bit_flipping_env import BitFlippingEnv
 import gym
 import rospy
 
@@ -49,7 +48,8 @@ if __name__ == "__main__":
     env = gym.make(
         "PandaReach-v1",
         robot_EE_link="panda_grip_site",
-        robot_arm_control_type="joint_effort_control",
+        robot_arm_control_type="joint_position_control",
+        robot_hand_control_type="joint_position_control",
     )
 
     # Wrap the model

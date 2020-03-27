@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """A simple server for sending control commands to the controllers
-of the panda robot."""
+of the Panda robot."""
 
 # Main python imports
 import sys
@@ -140,7 +140,7 @@ class PandaControlServer(object):
         rospy.loginfo("'%s' services created successfully." % rospy.get_name())
 
     ###############################################
-    # panda control member functions ##############
+    # Panda control member functions ##############
     ###############################################
     def wait_till_done(self, timeout=None):
         """Wait control is finished. Meaning the robot state is within range of the
@@ -149,7 +149,8 @@ class PandaControlServer(object):
         Parameters
         ----------
         connection_timeout : int, optional
-            The timeout when waiting for the control to be done.
+            The timeout when waiting for the control to be done, by default
+            self.wait_till_done_timeout
         """
 
         # Get set input arguments
@@ -213,7 +214,7 @@ class PandaControlServer(object):
         if joint_positions_req.wait.data:
             self.wait_till_done()
 
-        # Return succes message
+        # Return success message
         resp.success = True
         return resp.success
 

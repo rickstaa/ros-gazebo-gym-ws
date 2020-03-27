@@ -7,3 +7,4 @@ std_msgs/Float64MultiArray joint_positions
 std_msgs/Bool wait
 ---
 bool success
+string message

@@ -47,20 +47,20 @@ class FetchEnv(robot_gazebo_env_goal.RobotGazeboEnv):
         )
         self.joints = JointState()
 
-        self.ee_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/set_ee_pose", SetEePose)
-        self.joint_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/set_joint_pose", SetJointPose)
-        self.ee_pose_client = rospy.ServiceProxy("panda_moveit_planner_server/get_ee_pose", GetEePose)
-        self.ee_rpy_client = rospy.ServiceProxy("panda_moveit_planner_server/get_ee_rpy", GetEeRpy)
+        self.ee_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/panda_arm/set_ee_pos", SetEePose)
+        self.joint_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/panda_arm/set_joint_pose", SetJointPose)
+        self.ee_pose_client = rospy.ServiceProxy("panda_moveit_planner_server/panda_arm/get_ee_pose", GetEePose)
+        self.ee_rpy_client = rospy.ServiceProxy("panda_moveit_planner_server/panda_arm/get_ee_rpy", GetEeRpy)
 
         # Variables that we give through the constructor.
 
-        self.controllers_list = []
+        self.reset_control_list = []
 
         self.robot_name_space = ""
 
         # We launch the init function of the Parent Class robot_gazebo_env_goal.RobotGazeboEnv
         super(FetchEnv, self).__init__(
-            controllers_list=self.controllers_list,
+            reset_control_list=self.reset_control_list,
             robot_name_space=self.robot_name_space,
             reset_controls=False,
         )

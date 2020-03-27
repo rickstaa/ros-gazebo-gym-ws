@@ -1,12 +1,14 @@
-<!-- Launch file for starting the openai panda simulator -->
+<!-- Launch file for starting the openai Panda simulator -->
 <launch>
 
     <!--## ARGUMENTS ##-->
     <!-- Simulation arguments -->
     <arg name="paused" default="false" />
-    <arg name="moveit" default="true" />
     <arg name="world_name" default="assets/worlds/empty.world" />
     <arg name="rviz" default="false" />
+    <arg name="rviz_file" default="$(find panda_training)/launch/panda.rviz" />
+    <arg name="moveit" default="true" />
+    <!-- <arg name="moveit_rviz_file" default="$(find panda_training)/launch/panda_moveit.rviz" /> -->
     <arg name="moveit_rviz_file" default="$(find panda_training)/launch/panda.rviz" />
     <arg name="load_gripper" default="true" />
     <arg name="grip_site" default="true" />
@@ -28,7 +30,9 @@
     </include>
 
     <!--## LOAD MOVEIT CONTROL SERVICES ##-->
-    <node if="$(arg moveit)" pkg="panda_training" type="panda_moveit_server.py" name="panda_moveit_planner_server" required="true" />
+    <node if="$(arg moveit)" pkg="panda_training" type="panda_moveit_server.py" name="panda_moveit_planner_server" required="true">
+        <param name="services_load_type" value="crucial" />
+    </node>
     <node pkg="panda_training" type="panda_control_server.py" name="panda_control_server" required="true">
         <param name="use_group_controller" value="$(arg use_group_controller)" />
     </node>
@@ -42,7 +46,7 @@
         <arg name="world_name" value="$(arg world_name)" />
         <arg name="moveit_rviz_file" value="$(arg moveit_rviz_file)" />
         <arg name="load_gripper" value="$(arg load_gripper)" />
-        <arg name="load_robot_state_publisher" default="true" />
+        <arg name="load_robot_state_publisher" value="true" />
         <arg name="load_controllers" value="false" />
         <arg name="grip_site" value="$(arg grip_site)" />
         <arg name="grip_site_xyz" value="$(arg grip_site_xyz)" />
@@ -51,5 +55,7 @@
 
     <!-- ## LOAD RVIZ ##
          # NOTE: Only moveit was not used -->
-    <include if="$(eval not arg('moveit') and arg('rviz'))" file="$(find panda_training)/launch/panda_rviz.launch" />
+    <include if="$(eval not arg('moveit') and arg('rviz'))" file="$(find panda_training)/launch/panda_rviz.launch">
+        <arg name="rviz_file" value="$(arg rviz_file)" />
+    </include>
 </launch>

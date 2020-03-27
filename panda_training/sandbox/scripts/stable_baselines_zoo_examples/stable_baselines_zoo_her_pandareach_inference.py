@@ -1,5 +1,5 @@
 """This script shows how to use the her fetchreach model that is
-found in the stable_baselines_zoo to control a panda robot.
+found in the stable_baselines_zoo to control a Panda robot.
 NOTE: Does not work due to a different observation space size.
 """
 

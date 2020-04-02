@@ -11,16 +11,13 @@ import copy
 from collections import OrderedDict
 from functions import flatten_list, lower_first_char, get_duplicate_list
 from panda_exceptions import InputMessageInvalid
-from itertools import compress
 
 # ROS python imports
 import rospy
 import moveit_commander
 from moveit_commander.exception import MoveItCommanderException
-from rospy.exceptions import ROSException
 
 # ROS msgs and srvs
-from sensor_msgs.msg import JointState
 import moveit_msgs.msg
 import geometry_msgs.msg
 from panda_training.srv import (
@@ -87,9 +84,6 @@ class PandaMoveitPlannerServer(object):
             ones that are crucial for the panda_training package, by default False.
         """
 
-        # Create class attributes
-        self._joint_state_topic = "/joint_states"
-
         # Initialize Moveit/Robot/Scene and group commanders
         rospy.logdebug("Initialize Moveit Robot/Scene and group commanders.")
         try:
@@ -149,9 +143,6 @@ class PandaMoveitPlannerServer(object):
             moveit_msgs.msg.DisplayTrajectory,
             queue_size=10,
         )
-        #############################################
-        # Create PandaMoveitPlannerServer services ##
-        #############################################
 
         # Create main PandaMoveitPlannerServer services
         rospy.loginfo("Creating '%s' services." % rospy.get_name())
@@ -221,40 +212,6 @@ class PandaMoveitPlannerServer(object):
         # Initiate service msgs
         self.ee_pose_target = geometry_msgs.msg.Pose()
         self.joint_positions_target = {}
-
-        #############################################
-        # Retrieve controlled joints and joint     ##
-        # state masks.                             ##
-        #############################################
-
-        # Retrieve current robot joint state and effort information
-        self._joints = None
-        while self._joints is None and not rospy.is_shutdown():
-            try:
-                self._joints = rospy.wait_for_message(
-                    self._joint_state_topic, JointState, timeout=1.0
-                )
-            except ROSException:
-                rospy.logwarn(
-                    "Current /joint_states not ready yet, retrying for getting %s"
-                    % self._joint_state_topic
-                )
-
-        # Compute controlled joints
-        self._controlled_joints_dict = {
-            "arm": flatten_list(self.move_group_arm.get_active_joints()),
-            "hand": flatten_list(self.move_group_hand.get_active_joints()),
-        }
-
-        # Retrieve state mask
-        # NOTE: Used to determine which values in the /joint_states topic
-        # are related to the arm and which to the hand.
-        self._arm_states_mask = [
-            joint in self._controlled_joints_dict["arm"] for joint in self._joints.name
-        ]
-        self._hand_states_mask = [
-            joint in self._controlled_joints_dict["hand"] for joint in self._joints.name
-        ]
 
     ###############################################
     # Helper functions ############################
@@ -353,14 +310,14 @@ class PandaMoveitPlannerServer(object):
 
         # Get controlled joints
         if control_group.lower() == "arm":
-            controlled_joints = self._controlled_joints_dict["arm"]
+            controlled_joints = self.move_group_arm.get_active_joints()
         elif control_group.lower() == "hand":
-            controlled_joints = self._controlled_joints_dict["hand"]
+            controlled_joints = self.move_group_hand.get_active_joints()
         elif control_group.lower() == "both":
             controlled_joints = flatten_list(
                 [
-                    self._controlled_joints_dict["arm"],
-                    self._controlled_joints_dict["hand"],
+                    self.move_group_arm.get_active_joints(),
+                    self.move_group_hand.get_active_joints(),
                 ]
             )
         else:
@@ -417,16 +374,21 @@ class PandaMoveitPlannerServer(object):
                     },
                 )
             else:
+                # TODO: Add masking
 
                 # Generate moveit_commander_control command dictionary
                 if control_group.lower() == "arm":
                     control_commands = {"arm": joint_positions}
                 elif control_group.lower() == "hand":
                     control_commands = {"hand": joint_positions}
-                else:
+                elif control_group.lower() == "both":
                     control_commands = {
-                        "arm": list(compress(joint_positions, self._arm_states_mask)),
-                        "hand": list(compress(joint_positions, self._hand_states_mask)),
+                        "arm": joint_positions[
+                            : len(self.move_group_arm.get_active_joints())
+                        ],
+                        "hand": joint_positions[
+                            -len(self.move_group_hand.get_active_joints()) :
+                        ],
                     }
 
                 # Return control command dictionary
@@ -458,6 +420,7 @@ class PandaMoveitPlannerServer(object):
                         ),
                     )
                 )
+                # TEST
                 if verbose:
                     rospy.logwarn(logwarn_msg)
                 raise InputMessageInvalid(
@@ -505,6 +468,7 @@ class PandaMoveitPlannerServer(object):
                 )
             else:
 
+                # TODO: ADd masking
                 # Get the current state of the arm and hand
                 arm_state_dict = OrderedDict(
                     zip(
@@ -535,7 +499,7 @@ class PandaMoveitPlannerServer(object):
                     control_commands = {"arm": arm_output_command_dict.values()}
                 elif control_group.lower() == "hand":
                     control_commands = {"hand": hand_output_command_dict.values()}
-                else:
+                elif control_group.lower() == "both":
                     control_commands = {
                         "arm": arm_output_command_dict.values(),
                         "hand": hand_output_command_dict.values(),
@@ -988,6 +952,6 @@ if __name__ == "__main__":
 
     # Start moveit planner server
     moveit_planner_server = PandaMoveitPlannerServer(
-        arm_ee_link=arm_ee_link, create_all_services=True
+        arm_ee_link=arm_ee_link, create_all_services=create_all_services
     )
     rospy.spin()  # Maintain the service open.

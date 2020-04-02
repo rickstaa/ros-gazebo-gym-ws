@@ -1,6 +1,0 @@
-# Service that can be used to control the robot joint positions using moveit.
-
-trajectory_msgs/JointTrajectoryPoint point
----
-bool success
-string message

@@ -68,7 +68,6 @@ add_service_files(
   GetEeRpy.srv
   SetEePose.srv
   SetJointEfforts.srv
-  SetJointPose.srv
   SetJointPositions.srv
   ListControlType.srv
   SwitchControlType.srv

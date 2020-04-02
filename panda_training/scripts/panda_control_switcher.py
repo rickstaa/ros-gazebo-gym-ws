@@ -291,7 +291,6 @@ class PandaControlSwitcher(object):
             return [False]
 
     def switch(self, control_group, control_type, load_controllers=True):
-        # TODO: Add previous contorl type
         """Switch Panda robot control type. This function stops all currently running
         controllers and starts the required controllers for a given control type.
 

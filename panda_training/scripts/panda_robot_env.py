@@ -113,7 +113,7 @@ REQUIRED_SERVICES_DICT = {
 # TODO: Add panda_hand_control_type
 # TODO: Fix validation
 # TODO: Remove unused services
-
+# TODO: Add group option
 
 #################################################
 # Panda Robot Environment Class #################
@@ -615,6 +615,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 else self.robot_hand_control_type
                 for (key, val) in missing_services.items()
             ]
+            #TODO: SIMPLIFY
             logerror_msg_strings = [
                 (
                     "{} and {}".format(*missing_services.keys())

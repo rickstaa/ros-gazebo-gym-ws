@@ -185,8 +185,35 @@ def lower_first_char(string):
         return string[0].lower() + string[1:]
 
 
-if __name__ == "__main__":
+def get_unique_list(input_list):
+    """Removes non-unique items from a list
 
-    test_joint_dict = {"panda_joint2": 4, "panda_joint1": 5}
-    output = joint_positions_2_follow_joint_trajectory_goal(test_joint_dict)
-    print("jan")
+    Parameters
+    ----------
+    list : list
+        The input list.
+
+    Returns
+    -------
+    list
+        The new list containing only unique items.
+    """
+
+    return list({item for item in input_list})
+
+
+def get_duplicate_list(input_list):
+    """Returns the duplicates in a list.
+
+    Parameters
+    ----------
+    list : list
+        The input list.
+
+    Returns
+    -------
+    list
+        The new list containing only the itesm that had duplicates.
+    """
+
+    return list(set([x for x in input_list if input_list.count(x) > 1]))

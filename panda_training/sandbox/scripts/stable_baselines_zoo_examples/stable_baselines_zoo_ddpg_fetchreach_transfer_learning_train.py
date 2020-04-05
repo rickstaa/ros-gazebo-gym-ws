@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # NOTE: Here we load the her parameters and later change them.
     MODEL_PARAMS = os.path.join(
         os.path.abspath(os.path.join(os.path.splitext(MODEL_DIR)[0], os.pardir))
-        + "/PandaReach-v1/ddpg-config.yml"
+        + "/PandaReach-v0/ddpg-config.yml"
     )
     with open(MODEL_PARAMS, "r") as f:
         hyperparams = yaml.load(f, Loader=yaml.UnsafeLoader)

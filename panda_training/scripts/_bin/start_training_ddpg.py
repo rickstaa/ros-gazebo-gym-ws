@@ -32,7 +32,7 @@ TAU = 0.01  # soft replacement
 MEMORY_CAPACITY = 10000
 BATCH_SIZE = 32
 RENDER = False
-ENV_NAME = "PandaReach-v1"
+ENV_NAME = "PandaReach-v0"
 
 ###############################  DDPG  ####################################
 class DDPG(object):
@@ -171,4 +171,3 @@ if __name__ == "__main__":
                 break
 
     print("Running time: ", time.time() - t1)
-

@@ -1,0 +1,23 @@
+<!-- Launch file for training using the DDQG method -->
+<launch>
+
+    <!--## ARGUMENTS ##-->
+    <!-- Main args -->
+    <arg name="moveit" default="true" />
+    <arg name="rviz" default="false" />
+
+    <!-- Controller args -->
+    <arg name="use_group_controller" default="false" /> <!-- Wheter to use group controllers -->
+    <arg name="preload_controllers" default="false" /> <!-- Wheter to preload all non essential controllers -->
+
+    <!-- Load learning parameters -->
+    <rosparam file="$(find panda_training)/cfg/algorithms/ddpg_config.yaml" command="load" />
+
+    <!-- Launch Panda openai simulator -->
+    <include file="$(find panda_training)/launch/panda_openai_sim.launch">
+        <arg name="moveit" value="$(arg moveit)" />
+        <arg name="use_group_controller" value="$(arg use_group_controller)" />
+        <arg name="preload_controllers" value="$(arg preload_controllers)" />
+        <arg name="rviz" value="$(arg rviz)" />
+    </include>
+</launch>

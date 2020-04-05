@@ -1,5 +1,5 @@
 """This Robot Gazebo Goal environment class is responsible for creating the link
-between the gazebo simulator and the openAI package. It is different from the
+between the Gazebo simulator and the openAI package. It is different from the
 RobotGazebo env as here the gym.GoalEnv is used instead of the gym.Env. This is done
 since the goal of the robot task now is changing with each episode.
 """
@@ -7,6 +7,7 @@ since the goal of the robot task now is changing with each episode.
 # Main python imports
 import gym
 from gym.utils import seeding
+from functions import model_state_msg_2_link_state_dict
 
 # ROS python imports
 import rospy
@@ -14,26 +15,32 @@ from openai_ros.gazebo_connection import GazeboConnection
 from openai_ros.controllers_connection import ControllersConnection
 
 # ROS msgs and srvs
-# NOTE: Found at https://bitbucket.org/theconstructcore/theconstruct_msgs/src/master/
-# msg/RLExperimentInfo.msg
 from theconstruct_msgs.msg import RLExperimentInfo
+from gazebo_msgs.msg import ModelStates
+
+# IMPROVE: Change position to pos for consistency
+# CLEAN: Cleanup code
 
 
 #################################################
 # Panda Robot Gazebo Environment Class ##########
 #################################################
 class RobotGazeboGoalEnv(gym.GoalEnv):
-    """Class responsible for the communication between gazebo and the openai gym
+    """Class responsible for the communication between Gazebo and the openai gym
     environment.
 
     Attributes
     ----------
-    gazebo : openai_ros.gazebo_connection.GazeboConnection
-        The openai_ros gazebo connection object.
+    Gazebo : openai_ros.gazebo_connection.GazeboConnection
+        The openai_ros Gazebo connection object.
     controllers_object : openai_ros.controllers_connection.ControllersConnection
         The openai_ros controller manager object.
     episode_num : str
         The episode number.
+    link_states : dict
+        The current Gazebo link_states.
+    model_states : dict
+        The current Gazebo model_states.
 
     Methods
     ----------
@@ -77,6 +84,22 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         self.episode_num = 0
         self._reward_pub = rospy.Publisher(
             "/openai/reward", RLExperimentInfo, queue_size=10
+        )
+
+        # Create Gazebo link state subscriber
+        rospy.loginfo("Setting up Gazebo sensor data subscribers.")
+        rospy.logdebug("Setting up Gazebo link_states subscriber.")
+        joint_states_topic = "/gazebo/link_states"
+        self.link_states = ModelStates()
+        self._link_states_sub = rospy.Subscriber(
+            joint_states_topic, ModelStates, self._link_states_callback
+        )
+        # Create Gazebo link state subscriber
+        rospy.logdebug("Setting up Gazebo model_state subscriber.")
+        model_states_topic = "/gazebo/model_states"
+        self.model_states = ModelStates()
+        self._model_states_sub = rospy.Subscriber(
+            model_states_topic, ModelStates, self._model_states_callback
         )
 
         # Environment initiation complete message
@@ -201,7 +224,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         return True
 
     #############################################
-    # Panda GAzebo env helper methods ###########
+    # Panda Gazebo env helper methods ###########
     #############################################
     def _update_episode(self):
         """Increases the episode number by one.
@@ -224,6 +247,31 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         reward_msg.episode_number = episode_number
         reward_msg.episode_reward = reward
         self._reward_pub.publish(reward_msg)
+
+    #############################################
+    # Callback functions ########################
+    #############################################
+    def _link_states_callback(self, data):
+        """Callback function for retrieving the link_state
+        data from Gazebo.
+        """
+
+        # Convert Gazebo link_states msgs to a link_states dictionary
+        link_state_dict = model_state_msg_2_link_state_dict(data)
+
+        # Update link_states
+        self.link_states = link_state_dict
+
+    def _model_states_callback(self, data):
+        """Callback function for retrieving the model_state
+        data from Gazebo.
+        """
+
+        # Convert Gazebo model_states msgs to a model_states dictionary
+        model_state_dict = model_state_msg_2_link_state_dict(data)
+
+        # Update link_states
+        self.model_states = model_state_dict
 
     #############################################
     # Setup virtual methods #####################

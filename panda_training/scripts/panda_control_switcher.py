@@ -104,6 +104,9 @@ class PandaControlSwitcher(object):
             by default 3 sec.
         """
 
+        # Create class attributes
+        self._controller_switch_timeout = 3
+
         # Connect to controller_manager services
         try:
 
@@ -204,6 +207,7 @@ class PandaControlSwitcher(object):
         )
 
         # Check which Panda controllers are running
+        # IMPROVE: SIMPLIFY
         controllers_state = ControllerInfoDict()
         for controller in list_controllers_resp.controller:
             categorized = False
@@ -290,7 +294,7 @@ class PandaControlSwitcher(object):
             )
             return [False]
 
-    def switch(self, control_group, control_type, load_controllers=True):
+    def switch(self, control_group, control_type, load_controllers=True, timeout=None):
         """Switch Panda robot control type. This function stops all currently running
         controllers and starts the required controllers for a given control type.
 
@@ -307,12 +311,15 @@ class PandaControlSwitcher(object):
         load_controllers : bool
             Try to load the required controllers for a given control_type if they are
             not yet loaded.
+        timeout : int, optional
+            The timout for switching to a given controller, by default
+            self._controller_switch_timeout.
 
         Returns
         -------
         ControllerSwitcherResponse
             Contains information about whether the switch operation was successfull
-            'success' and the previously used controller 'prev_control_type.
+            'success' and the previously used controller 'prev_control_type'.
         """
 
         # Create response message
@@ -325,7 +332,7 @@ class PandaControlSwitcher(object):
             if len(control_group) > 1:
 
                 # Log result and return
-                rospy.loginfo(
+                rospy.logwarn(
                     "Please specify a single control group you want to switch the "
                     "control type for."
                 )
@@ -336,7 +343,7 @@ class PandaControlSwitcher(object):
         if control_group not in CONTROLLER_DICT.keys():
 
             # Log result and return
-            rospy.loginfo(
+            rospy.logwarn(
                 "The '%s' control group you specified is not valid. Valid control "
                 "groups for the Panda robot are %s"
                 % (control_group, CONTROLLER_DICT.keys())
@@ -346,12 +353,14 @@ class PandaControlSwitcher(object):
         if control_type not in CONTROL_TYPES:
 
             # Log result and return
-            rospy.loginfo(
+            rospy.logwarn(
                 "The '%s' control type you specified is not valid. Valid control types "
                 "for the Panda robot are %s" % (control_type, CONTROL_TYPES)
             )
             resp.success = False
             return resp
+        if not timeout:  # If None use default
+            timeout = self._controller_switch_timeout
 
         # Get active controllers
         controllers_state = self._list_controllers_state()
@@ -364,6 +373,8 @@ class PandaControlSwitcher(object):
         # Generate switch controller msg
         controller_already_running = False
         switch_controller_msg = SwitchControllerRequest()
+        switch_controller_msg.strictness = SwitchControllerRequest.STRICT
+        switch_controller_msg.timeout = timeout
         if (
             "running" in controllers_state[control_group].keys()
             and control_type in controllers_state[control_group]["running"].keys()
@@ -403,7 +414,7 @@ class PandaControlSwitcher(object):
 
                 # Log result and return
                 rospy.logwarn(
-                    "The Panda %s control type was not switch to '%s' because the %s "
+                    "The Panda %s control type was not switched to '%s' because the %s "
                     "controllers could not be loaded as 'load_controllers' was set to "
                     "argument was set to False."
                     % (
@@ -434,7 +445,7 @@ class PandaControlSwitcher(object):
 
                 # Log result and return
                 rospy.logwarn(
-                    "The Panda %s control type was not switch to '%s' as the %s "
+                    "The Panda %s control type was not switched to '%s' as the %s "
                     "controllers could not be loaded."
                     % (control_group, control_type, failed_controllers)
                 )
@@ -455,13 +466,9 @@ class PandaControlSwitcher(object):
                 controllers_state[control_group]["running"].values()
             )
 
-        # Fill the other fields of the switch_control message
-        switch_controller_msg.strictness = SwitchControllerRequest.STRICT
-        switch_controller_msg.timeout = 3
-
         # Send switch_controller msgs
         if not controller_already_running:
-            rospy.loginfo(
+            rospy.logdebug(
                 "Switching Panda %s control type to '%s'."
                 % (control_group, control_type)
             )
@@ -497,7 +504,7 @@ class PandaControlSwitcher(object):
                         )
 
                 # Log result and return
-                rospy.loginfo(
+                rospy.logdebug(
                     "Switching Panda %s control type to '%s' successfull."
                     % (control_group, control_type)
                 )
@@ -518,9 +525,9 @@ class PandaControlSwitcher(object):
         else:
 
             # Log result and return
-            rospy.loginfo(
-                "Panda %s control type not switch to '%s' as the Panda robot was "
-                "already using '%s'." % (control_group, control_type, control_type)
+            rospy.logdebug(
+                "Panda %s control type not switched to '%s' as the Panda robot was "
+                "already using '%s'." % (control_group, control_type, prev_control_type)
             )
             resp.success = True
             resp.prev_control_type = prev_control_type

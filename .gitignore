@@ -3,6 +3,8 @@
 .egg-info/
 logs/
 __pycache__/
+.VSCodeCounter/*
+models/
 
 # Files to ignore
 *.pyc

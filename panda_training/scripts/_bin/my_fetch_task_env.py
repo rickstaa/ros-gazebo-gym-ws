@@ -42,7 +42,7 @@ class FetchReachEnv(my_fetch_robot_env.FetchEnv, utils.EzPickle):
         utils.EzPickle.__init__(self)
 
         print("Call env setup")
-        self._env_setup(initial_qpos=self.init_pos)
+        self._env_setup(initial_qpos=self.init_qpose)
 
         print("Call get_obs")
         obs = self._get_obs()
@@ -79,7 +79,7 @@ class FetchReachEnv(my_fetch_robot_env.FetchEnv, utils.EzPickle):
         self.obj_range = rospy.get_param('/fetch/obj_range')
         self.target_range = rospy.get_param('/fetch/target_range')
         self.distance_threshold = rospy.get_param('/fetch/distance_threshold')
-        self.init_pos = rospy.get_param('/fetch/init_pos')
+        self.init_qpose = rospy.get_param('/fetch/init_qpose')
         self.reward_type = rospy.get_param('/fetch/reward_type')
 
 
@@ -95,7 +95,7 @@ class FetchReachEnv(my_fetch_robot_env.FetchEnv, utils.EzPickle):
         self.target_range = 0.15
         self.distance_threshold = 0.05
         self.reward_type = "sparse"
-        self.init_pos = {
+        self.init_qpose = {
             "joint0": 0.0,
             "joint1": 0.0,
             "joint2": 0.0,
@@ -165,7 +165,7 @@ class FetchReachEnv(my_fetch_robot_env.FetchEnv, utils.EzPickle):
         """Sets the Robot in its init pose
         """
         self.gazebo.unpauseSim()
-        self.set_trajectory_joints(self.init_pos)
+        self.set_trajectory_joints(self.init_qpose)
 
         return True
 
@@ -212,7 +212,6 @@ class FetchReachEnv(my_fetch_robot_env.FetchEnv, utils.EzPickle):
             achieved_goal = np.squeeze(object_pos.copy())
         """
         achieved_goal = self._sample_achieved_goal(grip_pos_array, object_pos)
-
         obs = np.concatenate(
             [
                 grip_pos_array,
@@ -225,7 +224,6 @@ class FetchReachEnv(my_fetch_robot_env.FetchEnv, utils.EzPickle):
                 gripper_vel,
             ]
         )
-
         return {
             "observation": obs.copy(),
             "achieved_goal": achieved_goal.copy(),

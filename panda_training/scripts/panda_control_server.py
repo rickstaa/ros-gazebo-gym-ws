@@ -69,6 +69,8 @@ HAND_EFFORT_CONTROLLERS = [
 ]
 HAND_EFFORT_GROUP_CONTROLLERS = ["panda_hand_joint_group_effort_controller"]
 
+# TODO: Add action server wrapper for sending a arm and hand joint at the same time.
+
 
 #################################################
 # Joint Group Position Controller class #########
@@ -447,8 +449,7 @@ class PandaControlServer(object):
         # Wait till robot positions/efforts are not changing anymore
         # NOTE: We have to use the std to determine whether the control was finished
         # as the velocity in the joint_states topic is wrong (see issue 14)
-        # FIXME: I'm here
-        # TODO: Can be changed to /joint_states.velocity if #14 is fixed.
+        # IMPROVE: Can be changed to /joint_states.velocity if #14 is fixed.
         timeout_time = rospy.get_rostime() + timeout
         positions_buffer = np.full((2, len(self.joints.position)), np.nan)
         positions_grad = np.full((2, len(self.joints.position)), np.nan)

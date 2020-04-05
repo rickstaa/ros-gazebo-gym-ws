@@ -5,15 +5,13 @@ for interaction with the robot (Control and Sensors).
 # Main python imports
 import sys
 import panda_robot_gazebo_goal_env
-from functions import action_server_exists
+from functions import action_server_exists, lower_first_char
 from panda_control_switcher import PandaControlSwitcher
 
 # ROS python imports
 import rospy
 import actionlib
 import tf2_ros
-
-# from tf.transformations import euler_from_quaternion
 from rospy.exceptions import ROSException, ROSInterruptException
 
 # ROS msgs and srvs
@@ -33,6 +31,7 @@ from panda_training.srv import (
     SetJointEfforts,
     SetEePoseRequest,
     SetJointPositions,
+    SetJointPositionsRequest,
 )
 
 # General script parameters
@@ -45,7 +44,7 @@ ROBOT_CONTROL_TYPES = [
     "joint_group_effort_control",
     "ee_control",
 ]
-MOVEIT_SET_EE_POSE_TOPIC = "panda_moveit_planner_server/panda_arm/set_ee_pos"
+MOVEIT_SET_EE_POSE_TOPIC = "panda_moveit_planner_server/panda_arm/set_ee_pose"
 MOVEIT_GET_EE_POSE_TOPIC = "panda_moveit_planner_server/panda_arm/get_ee_pose"
 MOVEIT_GET_EE_RPY_TOPIC = "panda_moveit_planner_server/panda_arm/get_ee_rpy"
 MOVEIT_SET_EE_TOPIC = "panda_moveit_planner_server/panda_arm/set_ee"
@@ -56,6 +55,7 @@ MOVEIT_ARM_SET_JOINT_POSITIONS_TOPIC = (
 MOVEIT_HAND_SET_JOINT_POSITIONS_TOPIC = (
     "panda_moveit_planner_server/panda_hand/set_joint_positions"
 )
+JOINT_POSITIONS_CONTROL_TOPIC = "panda_control_server/set_joint_positions"
 ARM_JOINT_TRAJECTORY_CONTROL_TOPIC = "panda_arm_controller/follow_joint_trajectory"
 ARM_JOINT_POSITIONS_CONTROL_TOPIC = "panda_control_server/panda_arm/set_joint_positions"
 ARM_JOINT_EFFORTS_CONTROL_TOPIC = "panda_control_server/panda_arm/set_joint_efforts"
@@ -79,7 +79,7 @@ REQUIRED_SERVICES_DICT = {
             "panda_control_server/panda_arm/set_joint_efforts"
         ],
         "ee_control": [
-            "panda_moveit_planner_server/panda_arm/set_ee_pos",
+            "panda_moveit_planner_server/panda_arm/set_ee_pose",
             "panda_moveit_planner_server/panda_arm/set_joint_pose",
             "panda_moveit_planner_server/panda_arm/get_ee_pose",
             "panda_moveit_planner_server/panda_arm/get_ee_rpy",
@@ -100,7 +100,7 @@ REQUIRED_SERVICES_DICT = {
             "panda_control_server/panda_hand/set_joint_efforts"
         ],
         "ee_control": [
-            "panda_moveit_planner_server/panda_arm/set_ee_pos",
+            "panda_moveit_planner_server/panda_arm/set_ee_pose",
             "panda_moveit_planner_server/panda_arm/set_joint_pose",
             "panda_moveit_planner_server/panda_arm/get_ee_pose",
             "panda_moveit_planner_server/panda_arm/get_ee_rpy",
@@ -114,6 +114,9 @@ REQUIRED_SERVICES_DICT = {
 # TODO: Fix validation
 # TODO: Remove unused services
 # TODO: Add group option
+# IMPROVE: Change position to pos for consistency
+# CLEAN: Cleanup code
+
 
 #################################################
 # Panda Robot Environment Class #################
@@ -220,9 +223,10 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         self.robot_EE_link = robot_EE_link
         self.robot_arm_control_type = robot_arm_control_type
         self.robot_hand_control_type = robot_hand_control_type
-        self._panda_moveit_planner_connection_timeout = 5
+        self._panda_moveit_server_connection_timeout = 5
+        self._panda_controller_server_connection_timeout = 5
+        self._traj_control_connection_timeout = rospy.Duration(secs=10)
         self._controller_switcher_connection_timeout = 5
-        self._control_connection_timeout = rospy.Duration(secs=10)
         self._joint_traj_action_server_step_size = 1  # Time from send [sec]
         self._services_connection_status = {}
 
@@ -243,9 +247,9 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         self._tfBuffer = tf2_ros.Buffer()
         self._tf_listener = tf2_ros.TransformListener(self._tfBuffer)
 
-        #############################################
-        # Connect to control services ###############
-        #############################################
+        #########################################
+        # Connect to control services ###########
+        #########################################
         # NOTE: Depending on the type of control we require the Panda moveit services,
         # the joint trajectory action service, the joint effort control service or the
         # joint position control service. All these services are initiated here if they
@@ -255,13 +259,13 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         #################################
         # Moveit Control services #######
         #################################
-
+        # # TODO: Check services
         # Connect to moveit set ee pose topic
         try:
             rospy.logdebug("Connecting to '%s' service." % MOVEIT_SET_EE_POSE_TOPIC)
             rospy.wait_for_service(
                 MOVEIT_SET_EE_POSE_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_moveit_server_connection_timeout,
             )
             self._moveit_set_ee_pose_client = rospy.ServiceProxy(
                 MOVEIT_SET_EE_POSE_TOPIC, SetEePose
@@ -279,7 +283,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             rospy.logdebug("Connecting to '%s' service." % MOVEIT_GET_EE_POSE_TOPIC)
             rospy.wait_for_service(
                 MOVEIT_GET_EE_POSE_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_moveit_server_connection_timeout,
             )
             self._moveit_get_ee_pose_client = rospy.ServiceProxy(
                 MOVEIT_GET_EE_POSE_TOPIC, GetEePose
@@ -297,7 +301,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             rospy.logdebug("Connecting to '%s' service." % MOVEIT_GET_EE_RPY_TOPIC)
             rospy.wait_for_service(
                 MOVEIT_GET_EE_RPY_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_moveit_server_connection_timeout,
             )
             self._moveit_get_ee_rpy_client = rospy.ServiceProxy(
                 MOVEIT_GET_EE_RPY_TOPIC, GetEeRpy
@@ -315,7 +319,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             rospy.logdebug("Connecting to '%s' service." % MOVEIT_SET_EE_TOPIC)
             rospy.wait_for_service(
                 MOVEIT_SET_EE_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_moveit_server_connection_timeout,
             )
             self._moveit_set_ee_client = rospy.ServiceProxy(MOVEIT_SET_EE_TOPIC, SetEe)
             rospy.logdebug("Connected to '%s' service!" % MOVEIT_SET_EE_TOPIC)
@@ -329,7 +333,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             rospy.logdebug("Connecting to '%s' service." % MOVEIT_GET_EE_TOPIC)
             rospy.wait_for_service(
                 MOVEIT_GET_EE_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_moveit_server_connection_timeout,
             )
             self._moveit_get_ee_client = rospy.ServiceProxy(MOVEIT_GET_EE_TOPIC, GetEe)
             rospy.logdebug("Connected to '%s' service!" % MOVEIT_GET_EE_TOPIC)
@@ -371,7 +375,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             )
             rospy.wait_for_service(
                 MOVEIT_ARM_SET_JOINT_POSITIONS_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_moveit_server_connection_timeout,
             )
             self._moveit_arm_set_joint_positions_client = rospy.ServiceProxy(
                 MOVEIT_ARM_SET_JOINT_POSITIONS_TOPIC, SetEe
@@ -398,7 +402,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             )
             rospy.wait_for_service(
                 MOVEIT_HAND_SET_JOINT_POSITIONS_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_moveit_server_connection_timeout,
             )
             self._moveit_hand_set_joint_positions_client = rospy.ServiceProxy(
                 MOVEIT_HAND_SET_JOINT_POSITIONS_TOPIC, SetEe
@@ -434,7 +438,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             )
             # Waits until the action server has started up
             retval = self._arm_joint_traj_control_client.wait_for_server(
-                timeout=self._control_connection_timeout
+                timeout=self._traj_control_connection_timeout
             )
             if not retval:
                 rospy.logwarn(
@@ -471,7 +475,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             )
             # Waits until the action server has started up
             retval = self._hand_joint_traj_control_client.wait_for_server(
-                timeout=self._control_connection_timeout
+                timeout=self._traj_control_connection_timeout
             )
             if not retval:
                 rospy.logwarn(
@@ -502,6 +506,28 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         # Panda control services ########
         #################################
 
+        # Connect to panda_control_server/set_joint_positions service
+        try:
+            rospy.logdebug(
+                "Connecting to '%s' service." % JOINT_POSITIONS_CONTROL_TOPIC
+            )
+            rospy.wait_for_service(
+                JOINT_POSITIONS_CONTROL_TOPIC,
+                timeout=self._panda_controller_server_connection_timeout,
+            )
+            self._set_joint_positions_client = rospy.ServiceProxy(
+                JOINT_POSITIONS_CONTROL_TOPIC, SetJointPositions
+            )
+            rospy.logdebug("Connected to '%s' service!" % JOINT_POSITIONS_CONTROL_TOPIC)
+            self._services_connection_status[JOINT_POSITIONS_CONTROL_TOPIC] = True
+        except (rospy.ServiceException, ROSException, ROSInterruptException):
+            rospy.logwarn(
+                "No connection could be established with the '%s' service. "
+                "The Panda Robot Environment therefore can not use this service "
+                "to control the Panda Robot." % ARM_JOINT_POSITIONS_CONTROL_TOPIC
+            )
+            self._services_connection_status[ARM_JOINT_POSITIONS_CONTROL_TOPIC] = False
+
         # Connect to panda_control_server/panda_arm/set_joint_positions service
         try:
             rospy.logdebug(
@@ -509,7 +535,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             )
             rospy.wait_for_service(
                 ARM_JOINT_POSITIONS_CONTROL_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_controller_server_connection_timeout,
             )
             self._arm_set_joint_positions_client = rospy.ServiceProxy(
                 ARM_JOINT_POSITIONS_CONTROL_TOPIC, SetJointPositions
@@ -533,7 +559,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             )
             rospy.wait_for_service(
                 ARM_JOINT_EFFORTS_CONTROL_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_controller_server_connection_timeout,
             )
             self._arm_set_joint_efforts_client = rospy.ServiceProxy(
                 ARM_JOINT_EFFORTS_CONTROL_TOPIC, SetJointEfforts
@@ -557,7 +583,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             )
             rospy.wait_for_service(
                 HAND_JOINT_POSITIONS_CONTROL_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_controller_server_connection_timeout,
             )
             self._hand_set_joint_positions_client = rospy.ServiceProxy(
                 HAND_JOINT_POSITIONS_CONTROL_TOPIC, SetJointPositions
@@ -581,7 +607,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             )
             rospy.wait_for_service(
                 HAND_JOINT_EFFORTS_CONTROL_TOPIC,
-                timeout=self._panda_moveit_planner_connection_timeout,
+                timeout=self._panda_controller_server_connection_timeout,
             )
             self._arm_set_joint_efforts_client = rospy.ServiceProxy(
                 HAND_JOINT_EFFORTS_CONTROL_TOPIC, SetJointEfforts
@@ -615,7 +641,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 else self.robot_hand_control_type
                 for (key, val) in missing_services.items()
             ]
-            #TODO: SIMPLIFY
+            # TODO: SIMPLIFY
             logerror_msg_strings = [
                 (
                     "{} and {}".format(*missing_services.keys())
@@ -730,8 +756,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             The current end effector pose.
         """
 
-        # TODO: FIX
-        # TODO: Use tf
+        # IMPROVE: Use tf if moveit not available
         # Retrieve end effector pose
         grip_site_trans = self._tfBuffer.lookup_transform(
             "world", "panda_grip_site", rospy.Time()
@@ -745,8 +770,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
 
         # Retrieve end effector pose 2
         gripper_pose_req = GetEePoseRequest()
-        gripper_pose = self.ee_pose_client(gripper_pose_req)
-
+        gripper_pose = self._moveit_get_ee_pose_client(gripper_pose_req)
         return gripper_pose
 
     def get_ee_rpy(self):
@@ -755,31 +779,105 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         Returns
         -------
         list
-            List containing the roll (z), yaw (y), pitch (x) euler angles.
+            List containing the roll (x), yaw (z), pitch (y) euler angles.
         """
-        # TODO: FIX
-        # TODO: use tf
+        # IMPROVE: Use tf if moveit not available
         gripper_rpy_req = GetEeRpyRequest()
-        gripper_rpy = self._moveit_get_ee_pose_client(gripper_rpy_req)
-
+        gripper_rpy = self._moveit_get_ee_rpy_client(gripper_rpy_req)
         return gripper_rpy
 
-    def set_ee_pose(self, action):
-        """Wraps an action vector of joint angles into a JointTrajectory message.
-        The velocities, accelerations, and effort do not control the arm motion
+    def set_ee_pose(self, ee_pose):
+        """Sets robot end effector pose using the panda_moveit_server/set_ee_pose
+        client.
+
+        Parameters
+        ----------
+        ee_pose :  np.array
+            A numpy array containing the end effector position and orientation
+            (quaternion). This array is declared to be (position.x, position.y,
+            position.z, orientation.x, orientation.y, orientation.z, orienation.w).
         """
-        # TODO: FIX
 
         # Set up a trajectory message to publish.
         ee_target = SetEePoseRequest()
-        ee_target.pose.orientation.w = 1.0
-        ee_target.pose.position.x = action[0]
-        ee_target.pose.position.y = action[1]
-        ee_target.pose.position.z = action[2]
-        self._moveit_set_ee_pose_client(ee_target)
-        return True
+        ee_target.pose.position.x = ee_pose[0]
+        ee_target.pose.position.y = ee_pose[1]
+        ee_target.pose.position.z = ee_pose[2]
+        ee_target.pose.orientation.x = ee_pose[3]
+        ee_target.pose.orientation.y = ee_pose[4]
+        ee_target.pose.orientation.z = ee_pose[5]
+        ee_target.pose.orientation.w = ee_pose[6]
 
-    def set_joint_positions(self, joint_positions):
+        # Switch to joint_trajectory controllers
+        # FIXME: ONLY CALL IF NEEDED
+        resp_arm = self._controller_switcher.switch(
+            control_group="arm", control_type="joint_trajectory_control"
+        )
+        resp_hand = self._controller_switcher.switch(
+            control_group="hand", control_type="joint_trajectory_control"
+        )
+
+        # Send control command if switch was successfull
+        if all([resp_arm.success, resp_hand.success]):
+
+            # Send control command
+            retval = self._moveit_set_ee_pose_client(ee_target)
+
+            # Switch controllers back
+            resp_arm = self._controller_switcher.switch(
+                control_group="arm", control_type=resp_arm.prev_control_type
+            )
+            resp_hand = self._controller_switcher.switch(
+                control_group="hand", control_type=resp_hand.prev_control_type
+            )
+
+            # Check if switching back was successfull
+            if not all([resp_arm.success, resp_hand.success]):
+                logerr_msg_strings = (
+                    "arm and hand control types"
+                    if all(
+                        [
+                            not bool_item
+                            for bool_item in [resp_arm.success, resp_hand.success]
+                        ]
+                    )
+                    else (
+                        "arm control type "
+                        if not resp_arm.success
+                        else "hand control type"
+                    ),
+                    "'%s' and '%s'"
+                    % (resp_arm.prev_control_type, resp_hand.prev_control_type)
+                    if all(
+                        [
+                            not bool_item
+                            for bool_item in [resp_arm.success, resp_hand.success]
+                        ]
+                    )
+                    else (
+                        resp_arm.prev_control_type
+                        if not resp_arm.success
+                        else resp_hand.prev_control_type
+                    ),
+                )
+                rospy.logerr(
+                    "Shutting down '%s' because the Panda %s could not be "
+                    "switched back to '%s'."
+                    % (rospy.get_name(), logerr_msg_strings[0], logerr_msg_strings[1])
+                )
+                sys.exit(0)
+
+        # Return success bool
+        if not retval.success:
+            logwarn_msg = "End effector pose not set as " + lower_first_char(
+                retval.message
+            )
+            rospy.logwarn(logwarn_msg)
+            return False
+        else:
+            return True
+
+    def set_joint_positions(self, joint_positions, wait=False):
         """Wraps an action vector of joint angles into a JointTrajectory message.
         The velocities, accelerations, and effort do not control the arm motion.
 
@@ -787,142 +885,253 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         ----------
         joint_positions : dict
             The joint positions of each of the robot joints.
+        wait : bool
+            Wait till the control has finished.
 
         Returns
         -------
         bool
             Boolean specifying if the joint_positions were set successfully.
         """
+        # NOTE: Setting the joint position is done by using the 'panda_control'
+        # joint_positions service, the 'joint_trajectory' action service or the
+        # 'panda_moveit_server' service.
 
-        # Set joint positions
-        # NOTE: This is done by using the 'panda_control' joint_positions service, the
-        # 'joint_trajectory' action service or the 'panda_moveit_server' service.
-        self._controller_switcher.switch(
-            control_group="arm", control_type="joint_position_control"
+        #########################################
+        # Use Panda control server ##############
+        #########################################
+        if self._services_connection_status[JOINT_POSITIONS_CONTROL_TOPIC]:
+
+            # Switch to the panda_control_server/set_joint_positions controller
+            # FIXME: ONLY CALL IF NEEDED
+            resp_arm = self._controller_switcher.switch(
+                control_group="arm", control_type="joint_position_control"
+            )
+            resp_hand = self._controller_switcher.switch(
+                control_group="hand", control_type="joint_position_control"
+            )
+
+            # Send control command if switch was successfull
+            if all([resp_arm.success, resp_hand.success]):
+
+                # Create control request command
+                req = SetJointPositionsRequest()
+                req.wait.data = wait
+                req.joint_names = joint_positions.keys()
+                req.joint_positions.data = joint_positions.values()
+
+                # Send control command
+                self._set_joint_positions_client.call(req)
+
+                # Switch controllers back
+                # FIXME: Strange control switch message
+                resp_arm = self._controller_switcher.switch(
+                    control_group="arm", control_type=resp_arm.prev_control_type
+                )
+                resp_hand = self._controller_switcher.switch(
+                    control_group="hand", control_type=resp_hand.prev_control_type
+                )
+
+                # Check if switching back was successfull
+                if not all([resp_arm.success, resp_hand.success]):
+                    logerr_msg_strings = (
+                        "arm and hand control types"
+                        if all(
+                            [
+                                not bool_item
+                                for bool_item in [resp_arm.success, resp_hand.success]
+                            ]
+                        )
+                        else (
+                            "arm control type "
+                            if not resp_arm.success
+                            else "hand control type"
+                        ),
+                        "'%s' and '%s'"
+                        % (resp_arm.prev_control_type, resp_hand.prev_control_type)
+                        if all(
+                            [
+                                not bool_item
+                                for bool_item in [resp_arm.success, resp_hand.success]
+                            ]
+                        )
+                        else (
+                            resp_arm.prev_control_type
+                            if not resp_arm.success
+                            else resp_hand.prev_control_type
+                        ),
+                    )
+                    rospy.logerr(
+                        "Shutting down '%s' because the Panda %s could not be "
+                        "switched back to '%s'."
+                        % (
+                            rospy.get_name(),
+                            logerr_msg_strings[0],
+                            logerr_msg_strings[1],
+                        )
+                    )
+                    sys.exit(0)
+                else:
+
+                    # Set success bool
+                    return True
+
+        # Display warning message and return success bool if failed
+        rospy.logwarn(
+            "Setting joints positions failed since the '%s' service is not"
+            "available." % JOINT_POSITIONS_CONTROL_TOPIC
         )
-        self._controller_switcher.switch(
-            control_group="hand", control_type="joint_position_control"
-        )
-        self._arm_set_joint_positions_client.call()
-        self._hand_set_joint_positions_client.call()
-        self._controller_switcher.switch(control_group="arm", control_type="ee_control")
-        self._controller_switcher.switch(
-            control_group="hand", control_type="ee_control"
-        )
+        return False
 
-        # # Add Joint_Trajectory control
-        # # TODO: Add gripper control
-        # if self.robot_arm_control_type == "ee_control":  # Use moveit service
-        #     joint_point = SetJointPoseRequest()
-        #     joint_point.point.positions = [None] * 7
-        #     joint_point.point.positions[0] = joint_positions["panda_joint1"]
-        #     joint_point.point.positions[1] = joint_positions["panda_joint2"]
-        #     joint_point.point.positions[2] = joint_positions["panda_joint3"]
-        #     joint_point.point.positions[3] = joint_positions["panda_joint4"]
-        #     joint_point.point.positions[4] = joint_positions["panda_joint5"]
-        #     joint_point.point.positions[5] = joint_positions["panda_joint6"]
-        #     joint_point.point.positions[6] = joint_positions["panda_joint7"]
-        #     self._set_joint_pose_client(joint_point)
-        #     return True
+        # #TODO: Add action and moveit services
+        # #########################################
+        # # Use traj action server ################
+        # #########################################
 
-        # if (
-        #     self.robot_arm_control_type == "joint_trajectory_control"
-        # ):  # Use joint traj action service
+        # # Switch to the panda_control_server/set_joint_positions controller
+        # resp_arm = self._controller_switcher.switch(
+        #     control_group="arm", control_type="joint_trajectory_control"
+        # )
+        # resp_hand = self._controller_switcher.switch(
+        #     control_group="hand", control_type="joint_trajectory_control"
+        # )
 
-        #     # Convert joint_positions to joint_traj_action goal message
-        #     joint_positions = dict.fromkeys(joint_positions, 0)
-        #     goal_msg = self._joint_positions_2_follow_joint_trajectory_goal(
-        #         joint_positions
+        # # Send control command if switch was successfull
+        # if all([resp_arm.success, resp_hand.success]):
+
+        #     # TODO: Switch in hand and arm parts
+
+        #     # Create control request command
+        #     req = joint_positions_2_follow_joint_trajectory_goal(
+        #         joint_positions,
+        #         time_from_start=self._joint_traj_action_server_step_size,
         #     )
 
-        #     # Send joint_traj action goal message
-        #     self._arm_joint_traj_control_client.send_goal(
-        #         goal_msg, feedback_cb=self._joint_traj_control_feedback_callback
+        #     # Send control command
+        #     self.self._arm_joint_traj_control_client.call(req)
+        #     self.self._hand_joint_traj_control_client.call(req)
+
+        #     # Switch controllers back
+        #     resp_arm = self._controller_switcher.switch(
+        #         control_group="arm", control_type=resp_arm.prev_control_type
         #     )
-        #     return True
-        # if (
-        #     self.robot_arm_control_type == "joint_position_control"
-        # ):  # Use joint traj action service
+        #     resp_hand = self._controller_switcher.switch(
+        #         control_group="hand", control_type=resp_hand.prev_control_type
+        #     )
 
-        #     # Send goal to the joint position service
-        #     req = SetJointPositionsRequest()
-        #     req.joint_positions.data = [
-        #         joint_positions["panda_joint1"],
-        #         joint_positions["panda_joint2"],
-        #         joint_positions["panda_joint3"],
-        #         joint_positions["panda_joint4"],
-        #         joint_positions["panda_joint5"],
-        #         joint_positions["panda_joint6"],
-        #         joint_positions["panda_joint7"],
-        #     ]
-        #     self._arm_set_joint_positions_client.call(req)
-        #     return True
-        # else:  # Joint_effort control
-        #     # NOTE: When joint_effort control is chosen we first try to control using
-        #     # the joint_traj action client, then the joint_positions service client and
-        #     # then the joint_pose moveit service client. In order to do this we first
-        #     # switch to the right controller then perform the command and then switch
-        #     # back to the joint_effort controller.
-
-        #     # TODO See if this can be done easier
-        #     # Check which control service is available
-        #     if self._services_connection_status["arm_joint_traj_control_client"]:
-
-        #         # Convert joint_positions to joint_traj_action goal message
-        #         goal_msg = self._joint_positions_2_follow_joint_trajectory_goal(
-        #             joint_positions
+        #     # Check if switching back was successfull
+        #     if not all([resp_arm.success, resp_hand.success]):
+        #         logerr_msg_strings = (
+        #             "arm and hand control types"
+        #             if all(
+        #                 [
+        #                     not bool_item
+        #                     for bool_item in [resp_arm.success, resp_hand.success]
+        #                 ]
+        #             )
+        #             else (
+        #                 "arm control type "
+        #                 if not resp_arm.success
+        #                 else "hand control type"
+        #             ),
+        #             "'%s' and '%s'"
+        #             % (resp_arm.prev_control_type, resp_hand.prev_control_type)
+        #             if all(
+        #                 [
+        #                     not bool_item
+        #                     for bool_item in [resp_arm.success, resp_hand.success]
+        #                 ]
+        #             )
+        #             else (
+        #                 resp_arm.prev_control_type
+        #                 if not resp_arm.success
+        #                 else resp_hand.prev_control_type
+        #             ),
         #         )
-
-        #         # Send joint_traj action goal message
-        #         self._controller_switcher.switch(
-        #             control_group="arm", controller="panda_arm_controller"
-        #         )  # Switch to joint_trajectory controller
-        #         self._arm_joint_traj_control_client.send_goal(
-        #             goal_msg, feedback_cb=self._joint_traj_control_feedback_callback
+        #         rospy.logerr(
+        #             "Shutting down '%s' because the Panda %s could not be "
+        #             "switched back to '%s'."
+        #             % (rospy.get_name(), logerr_msg_strings[0], logerr_msg_strings[1])
         #         )
-        #         self._arm_joint_traj_control_client.wait_for_result()
-        #         self._controller_switcher.switch(
-        #             control_group="arm",
-        #             controller="panda_arm_joint_group_effort_controller",
-        #         )  # Switch back to joint_effort controller
-        #         return True
-        #     elif self._services_connection_status["arm_set_joint_positions_client"]:
+        #         sys.exit(0)
+        #     else:
 
-        #         # Send goal to the joint position service
-        #         self._controller_switcher.switch(
-        #             control_group="arm",
-        #             controller="panda_arm_joint_group_positions_controller",
-        #         )  # Switch to joint_trajectory controller
-        #         req = SetJointPositionsRequest()
-        #         req.joint_positions = [
-        #             joint_positions["panda_joint1"],
-        #             joint_positions["panda_joint2"],
-        #             joint_positions["panda_joint3"],
-        #             joint_positions["panda_joint4"],
-        #             joint_positions["panda_joint5"],
-        #             joint_positions["panda_joint6"],
-        #             joint_positions["panda_joint7"],
-        #         ]
-        #         self._arm_set_joint_positions_client.call(req)
-        #         self._controller_switcher.switch(
-        #             control_group="arm",
-        #             controller="panda_arm_joint_group_effort_controller",
-        #         )  # Switch back to joint_effort controller
+        #         # Set success bool
         #         return True
-        #     elif self._services_connection_status["set_joint_pose_client"]:
-        #         # TEST
 
-        #         # Send joint positions goal to the moveit joint pose client
-        #         joint_point = SetJointPoseRequest()
-        #         joint_point.point.positions = [None] * 7
-        #         joint_point.point.positions[0] = joint_positions["panda_joint1"]
-        #         joint_point.point.positions[1] = joint_positions["panda_joint2"]
-        #         joint_point.point.positions[2] = joint_positions["panda_joint3"]
-        #         joint_point.point.positions[3] = joint_positions["panda_joint4"]
-        #         joint_point.point.positions[4] = joint_positions["panda_joint5"]
-        #         joint_point.point.positions[5] = joint_positions["panda_joint6"]
-        #         joint_point.point.positions[6] = joint_positions["panda_joint7"]
-        #         self._set_joint_pose_client(joint_point)
+        # #########################################
+        # # Use moveit server #####################
+        # #########################################
+
+        # # Switch to the panda_control_server/set_joint_positions controller
+        # resp_arm = self._controller_switcher.switch(
+        #     control_group="arm", control_type="joint_trajectory_control"
+        # )
+        # resp_hand = self._controller_switcher.switch(
+        #     control_group="hand", control_type="joint_trajectory_control"
+        # )
+
+        # # Send control command if switch was successfull
+        # if all([resp_arm.success, resp_hand.success]):
+
+        #     # TODO: Switch in hand and arm parts
+
+        #     # Create control request command
+        #     req = joint_positions_2_follow_joint_trajectory_goal(
+        #         joint_positions,
+        #         time_from_start=self._joint_traj_action_server_step_size,
+        #     )
+
+        #     # Send control command
+        #     self.self._arm_joint_traj_control_client.call(req)
+        #     self.self._hand_joint_traj_control_client.call(req)
+
+        #     # Switch controllers back
+        #     resp_arm = self._controller_switcher.switch(
+        #         control_group="arm", control_type=resp_arm.prev_control_type
+        #     )
+        #     resp_hand = self._controller_switcher.switch(
+        #         control_group="hand", control_type=resp_hand.prev_control_type
+        #     )
+
+        #     # Check if switching back was successfull
+        #     if not all([resp_arm.success, resp_hand.success]):
+        #         logerr_msg_strings = (
+        #             "arm and hand control types"
+        #             if all(
+        #                 [
+        #                     not bool_item
+        #                     for bool_item in [resp_arm.success, resp_hand.success]
+        #                 ]
+        #             )
+        #             else (
+        #                 "arm control type "
+        #                 if not resp_arm.success
+        #                 else "hand control type"
+        #             ),
+        #             "'%s' and '%s'"
+        #             % (resp_arm.prev_control_type, resp_hand.prev_control_type)
+        #             if all(
+        #                 [
+        #                     not bool_item
+        #                     for bool_item in [resp_arm.success, resp_hand.success]
+        #                 ]
+        #             )
+        #             else (
+        #                 resp_arm.prev_control_type
+        #                 if not resp_arm.success
+        #                 else resp_hand.prev_control_type
+        #             ),
+        #         )
+        #         rospy.logerr(
+        #             "Shutting down '%s' because the Panda %s could not be "
+        #             "switched back to '%s'."
+        #             % (rospy.get_name(), logerr_msg_strings[0], logerr_msg_strings[1])
+        #         )
+        #         sys.exit(0)
+        #     else:
+
+        #         # Set success bool
         #         return True
 
     #############################################
@@ -991,11 +1200,11 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 )
         return self.joints
 
-    ###############################################
-    # Callback functions ##########################
-    ###############################################
+    #############################################
+    # Callback functions ########################
+    #############################################
     def _joints_callback(self, data):
-        """Callback function for the joint data subscriber.
+        """Callback function for retrieving the joint_state data.
         """
         self.joints = data
 

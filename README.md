@@ -4,6 +4,7 @@ Grasp simulator for the Panda Emika Franka robot that can be used to test and tr
 
 ## Dependencies
 - [ROS Melodic - Desktop full](https://wiki.ros.org/melodic/Installation/Ubuntu)
+- [Franka_ros (Build from source)](https://frankaemika.github.io/docs/installation_linux.html)
 - Several system dependencies
 
 ### System dependencies
@@ -11,7 +12,7 @@ Grasp simulator for the Panda Emika Franka robot that can be used to test and tr
 The system dependencies can be installed using the following command:
 
 ```bash
-sudo apt-get install ros-melodic-moveit-ros-move-group ros-melodic-controller-manager* ros-melodic-moveit* ros-melodic-effort-controllers ros-melodic-joint-trajectory-controller ros-melodic-gazebo-ros* ros-melodic-rviz* libboost-filesystem-dev libjsoncpp-dev python3-pycryptodome python3-gnupg python3-tk
+sudo apt-get install ros-melodic-moveit-ros-move-group ros-melodic-controller-manager* ros-melodic-moveit* ros-melodic-effort-controllers ros-melodic-joint-trajectory-controller ros-melodic-gazebo-ros* ros-melodic-rviz* libboost-filesystem-dev libjsoncpp-dev python3-pycryptodome python3-gnupg python3-tk python-future python3-pyqt5 python3-sip python3-sip-dev python3-empy
 ```
 
 ## How to build
@@ -23,7 +24,16 @@ pip install virtualenv
 virtualenv ~/.catkin_ws_python3/openai_venv --python=python3 
 ```
 
-Then build the compile the [geometry2](https://github.com/ros/geometry2), [ros_comm](https://github.com/ros/ros_comm) and [geometry_msgs](https://github.com/ros/common_msgs) for python3:
+In this virtualenvironment you have to install the following python packages:
+
+```
+pip install tensorflow-gpu
+pip install gym
+pip install pyyaml
+pip install netifaces
+```
+
+After this is done you can then compile the [geometry2](https://github.com/ros/geometry2), [ros_comm](https://github.com/ros/ros_comm) and [geometry_msgs](https://github.com/ros/common_msgs) for python3:
 
 
 ```bash
@@ -47,7 +57,7 @@ mkdir ~/panda_training_ws
 cd ~/panda_training_ws
 git clone --recursive https://github.com/rickstaa/panda_openai_sim.git src
 rosdep install --from-paths src --ignore-src --rosdistro melodic -y --skip-keys libfranka
-catkin build -j4 -DCMAKE_BUILD_TYPE=Release -DFranka_DIR:PATH=/libfranka/build -Dfreenect2_DIR=/opt/freenect2/lib/cmake/freenect2"
+catkin build -j4 -DCMAKE_BUILD_TYPE=Release -DFranka_DIR:PATH=~/libfranka/build
 ```
 
 ## How to train

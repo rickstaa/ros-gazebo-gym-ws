@@ -16,7 +16,7 @@ if __name__ == "__main__":
     # Initialize rosnode
     rospy.init_node("reach_training_ddpg", anonymous=True, log_level=rospy.WARN)
 
-    env = gym.make("PandaReach-v1")
+    env = gym.make("PandaReach-v0")
 
     # the noise objects for DDPG
     n_actions = env.action_space.shape[-1]

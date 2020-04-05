@@ -22,7 +22,7 @@ import panda_robot_env
 
 # Register openai gym environment
 register(
-    id="PandaReach-v1",
+    id="PandaReach-v0",
     entry_point="panda_task_env:PandaReachTaskEnv",
     max_episode_steps=1000,
 )
@@ -46,7 +46,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
 
         # Setup task environment
         rospy.loginfo("Call env setup")
-        self._env_setup(initial_qpos=self.init_pos)
+        self._env_setup(initial_qpose=self.init_qpose)
 
         # Get observations
         rospy.loginfo("Call get_obs")
@@ -98,7 +98,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         self.target_range = rospy.get_param("/reach_sim/target_range")
         self.distance_threshold = rospy.get_param("/reach_sim/distance_threshold")
         self.reward_type = rospy.get_param("/reach_sim/reward_type")
-        self.init_pos = rospy.get_param("/reach_sim/init_pos")
+        self.init_qpose = rospy.get_param("/reach_sim/init_qpose")
 
     def goal_distance(self, goal_a, goal_b):
         """Calculates the perpendicular distance to the goal.
@@ -131,7 +131,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
 
             # Set random goal pose
             # Note: Takes into account gripper and target offset
-            goal = self.initial_gripper_xpos[:3] + self.np_random.uniform(
+            goal = self.initial_gripper_xpose[:3] + self.np_random.uniform(
                 -self.target_range, self.target_range, size=3
             )
             goal += self.target_offset
@@ -139,14 +139,14 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
             if self.target_in_the_air and self.np_random.uniform() < 0.5:
                 goal[2] += self.np_random.uniform(0, 0.45)
         else:
-            goal = self.initial_gripper_xpos[:3] + self.np_random.uniform(
+            goal = self.initial_gripper_xpose[:3] + self.np_random.uniform(
                 -0.15, 0.15, size=3
             )
 
         # return goal.copy()
         return goal
 
-    def _sample_achieved_goal(self, grip_pos_array, object_pos):
+    def _sample_achieved_goal(self, grip_pos_array, object_pose):
         """Retrieve current position. If gripper has object
         return object position.
 
@@ -160,7 +160,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         if not self.has_object:  # Environment has no object
             achieved_goal = grip_pos_array.copy()
         else:  # Has object
-            achieved_goal = np.squeeze(object_pos.copy())
+            achieved_goal = np.squeeze(object_pose.copy())
 
         # return achieved_goal.copy()
         return achieved_goal
@@ -201,7 +201,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
             Boolean specifying whether reset was successful.
         """
         self.gazebo.unpauseSim()
-        self.set_arm_joints_positions(self.init_pos)
+        self.set_arm_joints_positions(self.init_qpose)
         return True
 
     def _get_obs(self):
@@ -237,43 +237,43 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         dt = self.sim.nsubsteps * self.sim.model.opt.timestep
 
         # Retrieve robot pose and orientation
-        grip_pos = self.get_ee_pose()
+        grip_pose = self.get_ee_pose()
         grip_pos_array = np.array(
             [
-                grip_pos.pose.position.x,
-                grip_pos.pose.position.y,
-                grip_pos.pose.position.z,
+                grip_pose.pose.position.x,
+                grip_pose.pose.position.y,
+                grip_pose.pose.position.z,
             ]
         )
         grip_rpy = self.get_ee_rpy()
 
         # print grip_rpy
         grip_velp = np.array([grip_rpy[2], grip_rpy[2]])
-        robot_qpos, robot_qvel = self.robot_get_obs(self.joints)
+        robot_qpose, robot_qvel = self.robot_get_obs(self.joints)
         if self.has_object:
-            object_pos = self.sim.data.get_site_xpos("object0")
+            object_pose = self.sim.data.get_site_xpos("object0")
             # rotations
             object_rot = rotations.mat2euler(self.sim.data.get_site_xmat("object0"))
             # velocities
             object_velp = self.sim.data.get_site_xvelp("object0") * dt
             object_velr = self.sim.data.get_site_xvelr("object0") * dt
             # gripper state
-            object_rel_pos = object_pos - grip_pos
+            object_rel_pose = object_pose - grip_pose
             object_velp -= grip_velp
         else:
-            object_pos = (
+            object_pose = (
                 object_rot
-            ) = object_velp = object_velr = object_rel_pos = np.zeros(0)
+            ) = object_velp = object_velr = object_rel_pose = np.zeros(0)
 
-        gripper_state = robot_qpos[-2:]
+        gripper_state = robot_qpose[-2:]
         gripper_vel = robot_qvel[-2:]
-        achieved_goal = self._sample_achieved_goal(grip_pos_array, object_pos)
+        achieved_goal = self._sample_achieved_goal(grip_pos_array, object_pose)
 
         obs = np.concatenate(
             [
                 grip_pos_array,
-                object_pos.ravel(),
-                object_rel_pos.ravel(),
+                object_pose.ravel(),
+                object_rel_pose.ravel(),
                 gripper_state,
                 object_rot.ravel(),
                 object_velp.ravel(),
@@ -289,7 +289,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         }
 
         # # DDPG
-        # robot_qpos, robot_qvel = self.robot_get_obs(self.joints)
+        # robot_qpose, robot_qvel = self.robot_get_obs(self.joints)
 
     def _init_env_variables(self):
         """Inits variables needed to be initialized each time we reset at the start
@@ -306,9 +306,9 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         action = (
             action.copy()
         )  # ensure that we don't change the action outside of this scope
-        pos_ctrl, gripper_ctrl = action[:3], action[3]
+        pose_ctrl, gripper_ctrl = action[:3], action[3]
 
-        # pos_ctrl *= 0.05  # limit maximum change in position
+        # pose_ctrl *= 0.05  # limit maximum change in position
         rot_ctrl = [
             1.0,
             0.0,
@@ -319,7 +319,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         assert gripper_ctrl.shape == (2,)
         if self.block_gripper:
             gripper_ctrl = np.zeros_like(gripper_ctrl)
-        action = np.concatenate([pos_ctrl, rot_ctrl, gripper_ctrl])
+        action = np.concatenate([pose_ctrl, rot_ctrl, gripper_ctrl])
 
         # Apply action to simulation.
         # self.set_ee_pose(action)
@@ -356,22 +356,22 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         else:
             return -d
 
-    def _env_setup(self, initial_qpos):
+    def _env_setup(self, initial_qpose):
         """Sets up initial configuration of the environment.
         Can be used to configure initial state and extract information
         from the simulation.
 
         Parameters
         ----------
-        initial_qpos : np.array
+        initial_qpose : np.array
             Array containing the initial joint positions.
         """
 
         # Set initial joint positions
         rospy.loginfo("Init Pos:")
-        rospy.loginfo(initial_qpos)
+        rospy.loginfo(initial_qpose)
         self.gazebo.unpauseSim()
-        self.set_arm_joints_positions(initial_qpos)
+        self.set_arm_joints_positions(initial_qpose)
 
         # Move end effector into initial position.
         # gripper_target = np.array([0.498, 0.005, 0.431 + self.gripper_extra_height])
@@ -380,15 +380,15 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         # self.set_ee_pose(action)
 
         # Extract information for sampling goals
-        gripper_pos = self.get_ee_pose()
+        gripper_pose = self.get_ee_pose()
         gripper_pose_array = np.array(
             [
-                gripper_pos.pose.position.x,
-                gripper_pos.pose.position.y,
-                gripper_pos.pose.position.z,
+                gripper_pose.pose.position.x,
+                gripper_pose.pose.position.y,
+                gripper_pose.pose.position.z,
             ]
         )
-        self.initial_gripper_xpos = gripper_pose_array.copy()
+        self.initial_gripper_xpose = gripper_pose_array.copy()
         if self.has_object:  # Calculate gripper offset if object is present
             self.height_offset = self.sim.data.get_site_xpos("object0")[
                 2

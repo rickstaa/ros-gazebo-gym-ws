@@ -4,7 +4,7 @@
     <!--## ARGUMENTS ##-->
     <!-- Simulation arguments -->
     <arg name="paused" default="false" />
-    <arg name="world_name" default="assets/worlds/empty.world" />
+    <arg name="world_name" default="/$(find panda_training)/assets/worlds/grasp_training.world" />
     <arg name="rviz" default="false" />
     <arg name="rviz_file" default="$(find panda_training)/launch/panda.rviz" />
     <arg name="moveit" default="true" />

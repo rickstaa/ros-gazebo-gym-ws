@@ -6,6 +6,7 @@ import copy
 # Import ROS python packages
 import rospy
 from rospy.exceptions import ROSException
+from tf.transformations import euler_from_quaternion
 
 # ROS msgs and srvs
 from actionlib_msgs.msg import GoalStatusArray
@@ -80,6 +81,35 @@ def joint_positions_2_follow_joint_trajectory_goal(joint_positions, time_from_st
 
     # Return goal msgs
     return goal_msg
+
+
+def model_state_msg_2_link_state_dict(link_state_msgs):
+    """Converts the a gazebo_msgs/ModelState message into a panda_state dictionary.
+    Contrary to the original ModelState message, in the model_state dictionary the
+    poses and twists are grouped per link/model.
+
+    Parameters
+    ----------
+    link_state_msgs : gazebo_msgs.msg.ModelState
+        A ModelState message.
+
+    Returns
+    -------
+    dict
+        A panda_training model_state dictionary.
+    """
+
+    # Create controller_list dictionary
+    model_state_dict = {}
+    for (joint_name, position, twist) in zip(
+        link_state_msgs.name, link_state_msgs.pose, link_state_msgs.twist
+    ):
+        model_state_dict[joint_name] = {}
+        model_state_dict[joint_name]["pose"] = copy.deepcopy(position)
+        model_state_dict[joint_name]["twist"] = copy.deepcopy(twist)
+
+    # Return dictionary
+    return model_state_dict
 
 
 def controller_list_array_2_dict(controller_list_msgs):
@@ -175,7 +205,7 @@ def lower_first_char(string):
         The de-capitalized string.
 
     .. note::
-        This function is not the exact oposite of the capitalize function of the
+        This function is not the exact opposite of the capitalize function of the
         standard library. For example, capitalize('abC') returns Abc rather than AbC.
     """
 
@@ -217,3 +247,32 @@ def get_duplicate_list(input_list):
     """
 
     return list(set([x for x in input_list if input_list.count(x) > 1]))
+
+
+def get_orientation_euler(quaternion):
+    """Converts quaternion to euler angles.
+
+    Parameters
+    ----------
+    quaternion : [type]
+        Input quaternion
+
+    Returns
+    -------
+    int
+        Roll (x)
+    int
+        Pitch (y)
+    int
+        Roll (z)
+    """
+
+    # Convert quaternion to euler
+    orientation_list = [
+        quaternion.orientation.x,
+        quaternion.orientation.y,
+        quaternion.orientation.z,
+        quaternion.orientation.w,
+    ]
+    euler = euler_from_quaternion(orientation_list)
+    return euler[0], euler[1], euler[2]

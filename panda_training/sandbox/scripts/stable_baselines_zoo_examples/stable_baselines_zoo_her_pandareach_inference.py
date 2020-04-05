@@ -31,7 +31,7 @@ if __name__ == "__main__":
     rospy.loginfo("RL model loaded from: %s", os.path.abspath(MODEL_DIR))
 
     # Make environment
-    env = gym.make("PandaReach-v1")
+    env = gym.make("PandaReach-v0")
 
     # Initialize model
     model = HER.load(MODEL_DIR, env=env)

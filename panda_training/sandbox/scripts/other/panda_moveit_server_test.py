@@ -77,7 +77,7 @@ if __name__ == "__main__":
     # req.pose.position.y = 0.5
     # req.pose.position.z = 0.5
     # set_ee_pose_srv = rospy.ServiceProxy(
-    #     "panda_moveit_planner_server/panda_arm/set_ee_pos", SetEePose
+    #     "panda_moveit_planner_server/panda_arm/set_ee_pose", SetEePose
     # )
     # resp = set_ee_pose_srv.call(req)
     # print(resp)

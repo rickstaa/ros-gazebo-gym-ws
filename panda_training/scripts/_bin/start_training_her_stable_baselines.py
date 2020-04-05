@@ -15,7 +15,7 @@ if __name__ == "__main__":
     # Initialize rosnode
     rospy.init_node("reach_training_her", anonymous=True, log_level=rospy.WARN)
 
-    env = gym.make("PandaReach-v1")
+    env = gym.make("PandaReach-v0")
 
     # Wrap the model
     model = HER(

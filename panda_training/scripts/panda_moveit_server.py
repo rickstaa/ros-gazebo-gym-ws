@@ -155,9 +155,11 @@ class PandaMoveitPlannerServer(object):
 
         # Create main PandaMoveitPlannerServer services
         rospy.loginfo("Creating '%s' services." % rospy.get_name())
-        rospy.logdebug("Creating '%s/panda_arm/set_ee_pos' service." % rospy.get_name())
+        rospy.logdebug(
+            "Creating '%s/panda_arm/set_ee_pose' service." % rospy.get_name()
+        )
         self._arm_set_ee_pose_srv = rospy.Service(
-            "%s/panda_arm/set_ee_pos" % rospy.get_name()[1:],
+            "%s/panda_arm/set_ee_pose" % rospy.get_name()[1:],
             SetEePose,
             self._arm_set_ee_pose_callback,
         )
@@ -900,7 +902,7 @@ class PandaMoveitPlannerServer(object):
         Returns
         -------
         panda_train.srv.GetEeResponse
-            Response message containing containing the roll (z), yaw (y), pitch (x)
+            Response message containing containing the roll (x), yaw (z), pitch (y)
             euler angles.
         """
 

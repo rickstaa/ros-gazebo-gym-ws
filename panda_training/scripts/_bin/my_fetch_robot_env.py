@@ -47,7 +47,7 @@ class FetchEnv(robot_gazebo_env_goal.RobotGazeboEnv):
         )
         self.joints = JointState()
 
-        self.ee_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/panda_arm/set_ee_pos", SetEePose)
+        self.ee_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/panda_arm/set_ee_pose", SetEePose)
         self.joint_traj_client = rospy.ServiceProxy("panda_moveit_planner_server/panda_arm/set_joint_pose", SetJointPose)
         self.ee_pose_client = rospy.ServiceProxy("panda_moveit_planner_server/panda_arm/get_ee_pose", GetEePose)
         self.ee_rpy_client = rospy.ServiceProxy("panda_moveit_planner_server/panda_arm/get_ee_rpy", GetEeRpy)

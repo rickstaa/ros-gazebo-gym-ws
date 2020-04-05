@@ -1,9 +1,10 @@
-﻿"""Class used to store information about the gazebo controllers.
+﻿"""Class used to store information about the Gazebo controllers.
 """
 
 # Main python 2/3 compatibility imports
 from __future__ import print_function
 from builtins import super
+import copy
 
 # Script parameters
 CONTROLLER_INFO_DICT = {
@@ -83,11 +84,11 @@ CONTROLLER_INFO_DICT = {
 # Controller Info Dictionary ####################
 #################################################
 class ControllerInfoDict(dict):
-    """Used for storing information about the gazebo robot controllers.
+    """Used for storing information about the Gazebo robot controllers.
     This class overloads the normal `dict` class in order to pre-initialize the
     dictionary with the needed keys."""
 
     def __init__(self, *args, **kwargs):
         """Initiate the ControllerInfoDict"""
         super().__init__(*args, **kwargs)
-        super().update(CONTROLLER_INFO_DICT)
+        super().update(copy.deepcopy(CONTROLLER_INFO_DICT))

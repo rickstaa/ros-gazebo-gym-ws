@@ -2,7 +2,6 @@
 """
 
 # Main python 2/3 compatibility imports
-from __future__ import print_function
 from builtins import super
 import copy
 

@@ -1,21 +1,21 @@
-[submodule "openai_ros"]
-	path = openai_ros
-	url = git@bitbucket.org:rickstaa/openai_ros.git
-[submodule "franka_ros"]
-	path = franka_ros
-	url = git@github.com:rickstaa/franka_ros.git
+[submodule "theconstruct_msgs"]
+	path = theconstruct_msgs
+	url = git@bitbucket.org:rickstaa/theconstruct_msgs.git
+[submodule "stable-baselines"]
+	path = stable-baselines
+	url = https://github.com/hill-a/stable-baselines.git
+[submodule "rl-baselines-zoo"]
+	path = rl-baselines-zoo
+	url = https://github.com/araffin/rl-baselines-zoo.git
 [submodule "panda_moveit_config"]
 	path = panda_moveit_config
 	url = git@github.com:rickstaa/panda_moveit_config.git
 [submodule "panda_simulation"]
 	path = panda_simulation
 	url = git@github.com:rickstaa/panda_simulation.git
-[submodule "rl-baselines-zoo"]
-	path = rl-baselines-zoo
-	url = https://github.com/araffin/rl-baselines-zoo
-[submodule "stable-baselines"]
-	path = stable-baselines
-	url = git@github.com:hill-a/stable-baselines.git
-[submodule "theconstruct_msgs"]
-	path = theconstruct_msgs
-	url = https://bitbucket.org/theconstructcore/theconstruct_msgs.git
+[submodule "franka_ros"]
+	path = franka_ros
+	url = git@github.com:rickstaa/franka_ros.git
+[submodule "openai_ros"]
+	path = openai_ros
+	url = git@bitbucket.org:rickstaa/openai_ros.git

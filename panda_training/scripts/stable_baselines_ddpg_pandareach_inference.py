@@ -49,7 +49,7 @@ if __name__ == "__main__":
     print("")
 
     # Sleep to make sure thinker window is destroyed
-    time.sleep(2)  # CLEANUP: CAn be removed if script doesn't crash didn't test yet
+    time.sleep(2)
 
     # Initialize ros node
     rospy.init_node("panda_inference_ddpg", log_level=rospy.DEBUG)

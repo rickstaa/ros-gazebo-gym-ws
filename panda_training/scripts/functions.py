@@ -2,11 +2,13 @@
 
 # Main python imports
 import copy
+from collections import OrderedDict
 
 # Import ROS python packages
 import rospy
 from rospy.exceptions import ROSException
 from tf.transformations import euler_from_quaternion
+from euler_angles import EulerAngles
 
 # ROS msgs and srvs
 from actionlib_msgs.msg import GoalStatusArray
@@ -250,21 +252,17 @@ def get_duplicate_list(input_list):
 
 
 def get_orientation_euler(quaternion):
-    """Converts quaternion to euler angles.
+    """Converts pose (position, orientation) to euler angles.
 
     Parameters
     ----------
-    quaternion : [type]
+    quaternion : geometry_msgs.Pose
         Input quaternion
 
     Returns
     -------
-    int
-        Roll (x)
-    int
-        Pitch (y)
-    int
-        Roll (z)
+    panda_training.EulerAngles
+        Object containing the yaw (z), pitch (y) and roll (z) euler angles.
     """
 
     # Convert quaternion to euler
@@ -274,5 +272,31 @@ def get_orientation_euler(quaternion):
         quaternion.orientation.z,
         quaternion.orientation.w,
     ]
-    euler = euler_from_quaternion(orientation_list)
-    return euler[0], euler[1], euler[2]
+    euler_resp = euler_from_quaternion(orientation_list, "rzyx")
+
+    # Convert list to euler object
+    euler = EulerAngles()
+    euler.y = euler_resp[0]
+    euler.p = euler_resp[1]
+    euler.r = euler_resp[2]
+    return euler
+
+
+def action_list_2_action_dict(actions, joints):
+    """Covert a list of joint actions to a action dictionary {joint: action}.
+
+    Parameters
+    ----------
+    actions : list
+        List containing a control action for each of the panda joints.
+    joints : list
+        List containing the robot joints.
+
+    Returns
+    -------
+    dict
+        Dictionary containing a control action for each of the panda joints.
+    """
+
+    action_dict = OrderedDict(zip(joints, actions))
+    return action_dict

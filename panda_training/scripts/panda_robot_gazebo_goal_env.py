@@ -18,7 +18,6 @@ from openai_ros.controllers_connection import ControllersConnection
 from theconstruct_msgs.msg import RLExperimentInfo
 from gazebo_msgs.msg import ModelStates
 
-# IMPROVE: Change position to pos for consistency
 # CLEAN: Cleanup code
 
 

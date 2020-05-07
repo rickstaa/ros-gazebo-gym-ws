@@ -5,7 +5,9 @@ for interaction with the robot (Control and Sensors).
 # Main python imports
 import sys
 import panda_robot_gazebo_goal_env
-from functions import action_server_exists, lower_first_char
+from panda_exceptions import EePoseLookupError, EeRpyLookupError
+from functions import action_server_exists, lower_first_char, get_orientation_euler
+from euler_angles import EulerAngles
 from panda_control_switcher import PandaControlSwitcher
 
 # ROS python imports
@@ -25,6 +27,7 @@ from panda_training.srv import (
     GetEePoseRequest,
     GetEeRpy,
     GetEeRpyRequest,
+    GetEeRpyResponse,
     SetEe,
     SetEeRequest,
     SetEePose,
@@ -114,7 +117,6 @@ REQUIRED_SERVICES_DICT = {
 # TODO: Fix validation
 # TODO: Remove unused services
 # TODO: Add group option
-# IMPROVE: Change position to pos for consistency
 # CLEAN: Cleanup code
 
 
@@ -233,7 +235,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         # Create Needed subscribers
         rospy.loginfo("Setting up sensor data subscribers.")
         joint_states_topic = "joint_states"
-        self.joints = JointState()
+        self.joint_states = JointState()
         self._joint_states_sub = rospy.Subscriber(
             joint_states_topic, JointState, self._joints_callback
         )
@@ -260,6 +262,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         # Moveit Control services #######
         #################################
         # # TODO: Check services
+        # TODO: Check EE joint is valid
         # Connect to moveit set ee pose topic
         try:
             rospy.logdebug("Connecting to '%s' service." % MOVEIT_SET_EE_POSE_TOPIC)
@@ -745,7 +748,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         np.array
             List containing the robot joint names.
         """
-        return self.joints
+        return self.joint_states
 
     def get_ee_pose(self):
         """Returns the end effector EE pose.
@@ -756,21 +759,40 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             The current end effector pose.
         """
 
-        # IMPROVE: Use tf if moveit not available
         # Retrieve end effector pose
-        grip_site_trans = self._tfBuffer.lookup_transform(
-            "world", "panda_grip_site", rospy.Time()
-        )
+        try:
 
-        # Transform trans to pose
-        pose = PoseStamped()
-        pose.header = grip_site_trans.header
-        pose.pose.orientation = grip_site_trans.transform.rotation
-        pose.pose.position = grip_site_trans.transform.translation
+            # Retrieve EE pose using tf2
+            grip_site_trans = self._tfBuffer.lookup_transform(
+                "world", self.robot_EE_link, rospy.Time()
+            )
 
-        # Retrieve end effector pose 2
-        gripper_pose_req = GetEePoseRequest()
-        gripper_pose = self._moveit_get_ee_pose_client(gripper_pose_req)
+            # Transform trans to pose
+            gripper_pose = PoseStamped()
+            gripper_pose.header = grip_site_trans.header
+            gripper_pose.pose.orientation = grip_site_trans.transform.rotation
+            gripper_pose.pose.position = grip_site_trans.transform.translation
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ) as e:
+
+            # Retrieve end effector pose using moveit
+            if self._services_connection_status[MOVEIT_GET_EE_POSE_TOPIC]:
+                gripper_pose_req = GetEePoseRequest()
+                gripper_pose = self._moveit_get_ee_pose_client(gripper_pose_req)
+            else:
+                logwarn_msg = (
+                    "End effector pose could not be retrieved as "
+                    + lower_first_char(e.args[0])
+                )
+                raise EePoseLookupError(
+                    message="End effector pose could not be retrieved.",
+                    log_message=logwarn_msg,
+                )
+
+        # return EE pose
         return gripper_pose
 
     def get_ee_rpy(self):
@@ -778,12 +800,56 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
 
         Returns
         -------
-        list
-            List containing the roll (x), yaw (z), pitch (y) euler angles.
+        panda_training.srv.GetEeRpyResponse
+            Object containing the roll (x), yaw (z), pitch (y) euler angles.
         """
-        # IMPROVE: Use tf if moveit not available
-        gripper_rpy_req = GetEeRpyRequest()
-        gripper_rpy = self._moveit_get_ee_rpy_client(gripper_rpy_req)
+
+        # Retrieve end effector pose
+        try:
+
+            # Retrieve EE pose using tf2
+            grip_site_trans = self._tfBuffer.lookup_transform(
+                "world", self.robot_EE_link, rospy.Time()
+            )
+
+            # Transform trans to pose
+            gripper_pose = PoseStamped()
+            gripper_pose.header = grip_site_trans.header
+            gripper_pose.pose.orientation = grip_site_trans.transform.rotation
+            gripper_pose.pose.position = grip_site_trans.transform.translation
+
+            # Convert EE pose to rpy
+            gripper_rpy = get_orientation_euler(gripper_pose.pose)  # Yaw, Pitch Roll
+
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ) as e:
+
+            # Retrieve end effector pose using moveit
+            if self._services_connection_status[MOVEIT_GET_EE_POSE_TOPIC]:
+                gripper_rpy_req = GetEeRpyRequest()
+                gripper_rpy_resp = self._moveit_get_ee_rpy_client(
+                    gripper_rpy_req
+                )  # Roll Pitch yaw
+
+                # Convert to Yaw (z), Pitch (y) and Roll (x) representation
+                gripper_rpy = EulerAngles()
+                gripper_rpy.y = gripper_rpy_resp.p
+                gripper_rpy.p = gripper_rpy_resp.y
+                gripper_rpy.r = gripper_rpy_resp.r
+            else:
+                logwarn_msg = (
+                    "End effector orientation (rpy) could not be retrieved as "
+                    + lower_first_char(e.args[0])
+                )
+                raise EeRpyLookupError(
+                    message="End effector orientation (rpy) could not be retrieved.",
+                    log_message=logwarn_msg,
+                )
+
+        # Return EE orientation (RPY)
         return gripper_rpy
 
     def set_ee_pose(self, ee_pose):
@@ -809,7 +875,6 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         ee_target.pose.orientation.w = ee_pose[6]
 
         # Switch to joint_trajectory controllers
-        # FIXME: ONLY CALL IF NEEDED
         resp_arm = self._controller_switcher.switch(
             control_group="arm", control_type="joint_trajectory_control"
         )
@@ -903,7 +968,6 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
         if self._services_connection_status[JOINT_POSITIONS_CONTROL_TOPIC]:
 
             # Switch to the panda_control_server/set_joint_positions controller
-            # FIXME: ONLY CALL IF NEEDED
             resp_arm = self._controller_switcher.switch(
                 control_group="arm", control_type="joint_position_control"
             )
@@ -924,7 +988,6 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                 self._set_joint_positions_client.call(req)
 
                 # Switch controllers back
-                # FIXME: Strange control switch message
                 resp_arm = self._controller_switcher.switch(
                     control_group="arm", control_type=resp_arm.prev_control_type
                 )
@@ -1185,20 +1248,20 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
             Array containing the joint states.
         """
 
-        self.joints = None
-        while self.joints is None and not rospy.is_shutdown():
+        self.joint_states = None
+        while self.joint_states is None and not rospy.is_shutdown():
             try:
-                self.joints = rospy.wait_for_message(
+                self.joint_states = rospy.wait_for_message(
                     "/joint_states", JointState, timeout=1.0
                 )
-                rospy.logdebug("Current /joint_states READY=>" + str(self.joints))
+                rospy.logdebug("Current /joint_states READY=>" + str(self.joint_states))
 
             except ROSException:
                 rospy.logwarn(
                     "Current /joint_states not ready yet, retrying for getting "
                     "joint_states"
                 )
-        return self.joints
+        return self.joint_states
 
     #############################################
     # Callback functions ########################
@@ -1206,7 +1269,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
     def _joints_callback(self, data):
         """Callback function for retrieving the joint_state data.
         """
-        self.joints = data
+        self.joint_states = data
 
     def _joint_traj_control_feedback_callback(self, feedback):
         """Callback function for the joint traj action client.

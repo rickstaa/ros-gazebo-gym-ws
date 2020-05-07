@@ -4,7 +4,7 @@
     You can train this RL by using LOAD = False, after training, this model will be
     store in the a local folder. Using LOAD = True to reload the trained model for
     playing. You can customize this script in a way you want.
-    View more on [莫烦Python] : https://morvanzhou.github.io/tutorials/
+    View more on https://morvanzhou.github.io/tutorials/
     Requirement:
     pyglet >= 1.2.4
     numpy >= 1.12.1
@@ -360,8 +360,6 @@ if __name__ == "__main__":
     # Initialize ros node
     rospy.init_node("panda_training_her", log_level=rospy.DEBUG)
 
-    # Print
-    print("test")
     # Create environment
     env = gym.make(
         "PandaReach-v0",

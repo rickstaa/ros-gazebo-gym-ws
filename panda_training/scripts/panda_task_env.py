@@ -13,15 +13,17 @@ from gym.envs.registration import register
 import numpy as np
 import sys
 import panda_robot_env
-from functions import flatten_list, get_orientation_euler
+from panda_exceptions import EePoseLookupError
+from functions import flatten_list, get_orientation_euler, action_list_2_action_dict
 
 # ROS python imports
 import rospy
+from goal_marker import GoalMarker
 
 # ROS msgs and srvs
-from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import Pose
 
 # Register Openai gym environment
 register(
@@ -30,7 +32,6 @@ register(
     max_episode_steps=1000,
 )
 
-# IMPROVE: Change position to pos for consistency
 # CLEAN: Cleanup code
 # TODO: Create robot arm and hand control
 # TODO: Add visual goal position and in inference
@@ -222,6 +223,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         self.distance_threshold = rospy.get_param("panda_training/distance_threshold")
         self.reward_type = rospy.get_param("panda_training/reward_type")
         self.init_qpose = rospy.get_param("panda_training/init_qpose")
+        # self.
 
     def goal_distance(self, goal_a, goal_b):
         """Calculates the perpendicular distance to the goal.
@@ -273,30 +275,11 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
             goal = self.clip_goal_position(goal)
 
         # Generate Rviz marker
-        # IMPROVE: Create panda_training marker class
-        header = Header()
-        header.stamp = rospy.Time.now()
-        header.frame_id = "world"
-        goal_marker = Marker()
-        goal_marker.id = 0
-        goal_marker.type = Marker.SPHERE
-        goal_marker.action = Marker.ADD
-        goal_marker.color.a = 1.0
-        goal_marker.color.r = 1.0
-        goal_marker.color.g = 0.0
-        goal_marker.color.b = 0.0
-        goal_marker.pose.position.x = goal[0]
-        goal_marker.pose.position.y = goal[1]
-        goal_marker.pose.position.z = goal[2]
-        goal_marker.pose.orientation.x = 0
-        goal_marker.pose.orientation.x = 0
-        goal_marker.pose.orientation.x = 0
-        goal_marker.pose.orientation.w = 1
-        goal_marker.scale.x = 0.025
-        goal_marker.scale.y = 0.025
-        goal_marker.scale.z = 0.025
-        goal_marker.lifetime = rospy.Duration(-1)
-        goal_marker.header = header
+        goal_maker_pose = Pose()
+        goal_maker_pose.position.x = goal[0]
+        goal_maker_pose.position.y = goal[1]
+        goal_maker_pose.position.z = goal[2]
+        goal_marker = GoalMarker(pose=goal_maker_pose)
 
         # Publish goal marker
         self._goal_pose_pub.publish(goal_marker)
@@ -404,14 +387,14 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
                 - Object pitch (y)
                 - Object yaw (z)
                 - Object roll (x)
-                - Object x vel
-                - Object y vel
-                - Object z vel
-                - Object x angular vel
-                - Object y angular vel
-                - Object z angular vel
-                - Gripper finger 1 x vel
-                - Gripper finger 2 x vel
+                - Object x velocity
+                - Object y velocity
+                - Object z velocity
+                - Object x angular velocity
+                - Object y angular velocity
+                - Object z angular velocity
+                - Gripper finger 1 x velocity
+                - Gripper finger 2 x velocity
         """
 
         # Retrieve robot end effector pose and orientation
@@ -433,7 +416,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         grip_velp = (
             grip_pos - self._prev_grip_pos
         ) / dt  # Velocity(position) = Distance/Time
-        robot_qpos, robot_qvel = self.robot_get_obs(self.joints)
+        robot_qpos, robot_qvel = self.robot_get_obs(self.joint_states)
 
         # Get gripper pose and (angular)velocity
         # TODO: Fix to gripper_grasp_site
@@ -452,7 +435,8 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
 
             # Get object orientation
             object_quat = [self.model_states["object0"]["pose"].orientation]
-            object_rot = get_orientation_euler(object_quat)
+            object_rot_resp = get_orientation_euler(object_quat)
+            object_rot = [object_rot_resp.y, object_rot_resp.p, object_rot_resp.r]
 
             # Get object velocity
             object_velp = (
@@ -535,11 +519,10 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
                 gripper_ctrl = np.zeros_like(gripper_ctrl)
             action = np.concatenate([pos_ctrl, rot_ctrl, gripper_ctrl])
 
-            # DEBUG:
+            # Print Debug info
             rospy.logdebug("=Action set info=")
             rospy.logdebug("Action that is set:")
             rospy.logdebug(action)
-            # DEBUG:
 
             # Take action
             self.set_ee_pose(action)
@@ -552,39 +535,29 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
                 action.copy()
             )  # ensure that we don't change the action outside of this scope
 
-            # DEBUG:
+            # Print Debug info
             rospy.logdebug("=Action set info=")
             rospy.logdebug("Action that is set:")
             rospy.logdebug(action)
-            # DEBUG:
 
             # Convert action to joint_position set dict
-            # CLEANUP: Use one format or use function to do this
-            action_dict = {
-                "panda_joint1": action[0],
-                "panda_joint2": action[1],
-                "panda_joint3": action[2],
-                "panda_joint4": action[3],
-                "panda_joint5": action[4],
-                "panda_joint6": action[5],
-                "panda_joint7": action[6],
-            }
+            action_dict = action_list_2_action_dict(action)
             self.set_joint_positions(action_dict)
 
     def _is_done(self, observations):
-        # QUESTION: NOT USED IN HER MAYBE NEEDED IN DDPG
         """Check if task is done."""
 
         # Check if gripper is within range of the goal
         d = self.goal_distance(observations["achieved_goal"], self.goal)
 
-        # DEBUG:
+        # Print Debug info
         rospy.logdebug("=Task is done info=")
         if (d < self.distance_threshold).astype(np.float32):
             rospy.logdebug("Taks is done.")
         else:
             rospy.logdebug("Task is not done.")
-        # DEBUG:
+
+        # Return result
         return (d < self.distance_threshold).astype(np.float32)
 
     def _compute_reward(self, observations, done):
@@ -607,7 +580,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         d = self.goal_distance(observations["achieved_goal"], self.goal)
         if self.reward_type == "sparse":
 
-            # DEBUG
+            # Print Debug info
             rospy.logdebug("=Reward info=")
             rospy.logdebug("Reward type: Non sparse")
             rospy.logdebug("Goal: %s", self.goal)
@@ -617,12 +590,12 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
             rospy.logdebug(
                 "Received reward: %s", -(d > self.distance_threshold).astype(np.float32)
             )
-            # DEBUG
 
+            # Return result
             return -(d > self.distance_threshold).astype(np.float32)
         else:
 
-            # DEBUG
+            # Print Debug info
             rospy.logdebug("=Reward info=")
             rospy.logdebug("Reward type: Sparse")
             rospy.logdebug("Goal: %s", self.goal)
@@ -630,8 +603,8 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
             rospy.logdebug("Perpendicular distance: %s", d)
             rospy.logdebug("Threshold: %s", self.distance_threshold)
             rospy.logdebug("Received reward: %s", -d)
-            # DEBUG
 
+            # Return result
             return -d
 
     def _env_setup(self, init_qpose=None):
@@ -675,8 +648,17 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
         action = np.concatenate([gripper_target, gripper_rotation])
         self.set_ee_pose(action)
 
-        # Extract information for sampling goals
-        gripper_pose = self.get_ee_pose()
+        # Retrieve EE pose for sampling goals
+        try:
+            gripper_pose = self.get_ee_pose()
+        except EePoseLookupError:
+            rospy.logerr(
+                "Shutting down '%s' since EE pose which is needed for sampling the "
+                "goals could not be retrieved." % (rospy.get_name())
+            )
+            sys.exit(0)
+
+        # Extract gripper position from pose
         gripper_pos = np.array(
             [
                 gripper_pose.pose.position.x,
@@ -716,9 +698,9 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
             )
 
             # Shut down python script
-            rospy.loginfo(
-                "Shutting down simulation since parameter %s was missing on "
-                "the ROS parameter server." % param_name
+            rospy.logerr(
+                "Shutting down '%s' since parameter '%s' was missing on "
+                "the ROS parameter server." % (rospy.get_name(), param_name)
             )
             sys.exit(0)
 
@@ -732,7 +714,7 @@ class PandaReachTaskEnv(panda_robot_env.PandaRobotEnv, utils.EzPickle):
 
     def clip_goal_position(self, goal_pose):
         # TODO: IMPROVE DOCSTRING
-        """Function used to limit the possible goal positions to a certian regio.
+        """Function used to limit the possible goal positions to a certian region.
         """
 
         # Clip goal

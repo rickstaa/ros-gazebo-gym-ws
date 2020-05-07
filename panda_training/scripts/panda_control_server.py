@@ -344,16 +344,16 @@ class PandaControlServer(object):
         #############################################
 
         # Retrieve current robot joint state and effort information
-        self.joints = None
-        while self.joints is None and not rospy.is_shutdown():
+        self.joint_states = None
+        while self.joint_states is None and not rospy.is_shutdown():
             try:
-                self.joints = rospy.wait_for_message(
+                self.joint_states = rospy.wait_for_message(
                     self._joint_state_topic, JointState, timeout=1.0
                 )
 
                 # Set joint setpoint to current position
-                self.joint_positions_setpoint = self.joints.position
-                self.joint_efforts_setpoint = self.joints.effort
+                self.joint_positions_setpoint = self.joint_states.position
+                self.joint_efforts_setpoint = self.joint_states.effort
             except ROSException:
                 rospy.logwarn(
                     "Current /joint_states not ready yet, retrying for getting %s"
@@ -416,18 +416,18 @@ class PandaControlServer(object):
         # state masks
         if controlled_joints:
             arm_states_mask = [
-                joint in controlled_joints["arm"] for joint in self.joints.name
+                joint in controlled_joints["arm"] for joint in self.joint_states.name
             ]
             hand_states_mask = [
-                joint in controlled_joints["hand"] for joint in self.joints.name
+                joint in controlled_joints["hand"] for joint in self.joint_states.name
             ]
         else:  # Try to determine the controlled joints and state mask
             controlled_joints = self._get_controlled_joints(control_type=control_type)
             arm_states_mask = [
-                joint in controlled_joints["arm"] for joint in self.joints.name
+                joint in controlled_joints["arm"] for joint in self.joint_states.name
             ]
             hand_states_mask = [
-                joint in controlled_joints["hand"] for joint in self.joints.name
+                joint in controlled_joints["hand"] for joint in self.joint_states.name
             ]
 
         # Get set input arguments
@@ -449,12 +449,11 @@ class PandaControlServer(object):
         # Wait till robot positions/efforts are not changing anymore
         # NOTE: We have to use the std to determine whether the control was finished
         # as the velocity in the joint_states topic is wrong (see issue 14)
-        # IMPROVE: Can be changed to /joint_states.velocity if #14 is fixed.
         timeout_time = rospy.get_rostime() + timeout
-        positions_buffer = np.full((2, len(self.joints.position)), np.nan)
-        positions_grad = np.full((2, len(self.joints.position)), np.nan)
-        efforts_buffer = np.full((2, len(self.joints.effort)), np.nan)
-        efforts_grad = np.full((2, len(self.joints.effort)), np.nan)
+        positions_buffer = np.full((2, len(self.joint_states.position)), np.nan)
+        positions_grad = np.full((2, len(self.joint_states.position)), np.nan)
+        efforts_buffer = np.full((2, len(self.joint_states.effort)), np.nan)
+        efforts_grad = np.full((2, len(self.joint_states.effort)), np.nan)
         while not rospy.is_shutdown() and rospy.get_rostime() < timeout_time:
 
             # Wait till joint positions are within range or arm not changing anymore
@@ -475,7 +474,7 @@ class PandaControlServer(object):
 
                 # Add state to position to buffer
                 positions_buffer = np.append(
-                    positions_buffer, [self.joints.position], axis=0
+                    positions_buffer, [self.joint_states.position], axis=0
                 )
                 positions_buffer = np.delete(
                     positions_buffer, 0, axis=0
@@ -485,7 +484,9 @@ class PandaControlServer(object):
                 # Check if joint states are within setpoints
                 if (
                     np.linalg.norm(
-                        np.array(list(compress(self.joints.position, states_mask)))
+                        np.array(
+                            list(compress(self.joint_states.position, states_mask))
+                        )
                         - np.array(
                             list(compress(joint_positions_setpoint, states_mask))
                         )
@@ -519,14 +520,16 @@ class PandaControlServer(object):
                 )
 
                 # Add state to effort to buffer
-                efforts_buffer = np.append(efforts_buffer, [self.joints.effort], axis=0)
+                efforts_buffer = np.append(
+                    efforts_buffer, [self.joint_states.effort], axis=0
+                )
                 efforts_buffer = np.delete(
                     efforts_buffer, 0, axis=0
                 )  # Delete oldest entry
                 efforts_grad = np.gradient(efforts_buffer, axis=0)
                 if (
                     np.linalg.norm(
-                        np.array(list(compress(self.joints.effort, states_mask)))
+                        np.array(list(compress(self.joint_states.effort, states_mask)))
                         - np.array(list(compress(joint_efforts_setpoint, states_mask)))
                     )
                     <= self.joint_efforts_threshold
@@ -637,20 +640,69 @@ class PandaControlServer(object):
         elif control_group == "hand":
             controlled_joints = controlled_joints_dict["hand"]
         else:
-            controlled_joints = flatten_list(
-                [controlled_joints_dict["arm"], controlled_joints_dict["hand"]]
-            )
+            controlled_joints = controlled_joints_dict["both"]
         controlled_joints_size = len(controlled_joints)
 
         # Retrieve state mask
         # NOTE: Used to determine which values in the /joint_states topic
         # are related to the arm and which to the hand.
         arm_states_mask = [
-            joint in controlled_joints_dict["arm"] for joint in self.joints.name
+            joint in controlled_joints_dict["arm"] for joint in self.joint_states.name
         ]
         hand_states_mask = [
-            joint in controlled_joints_dict["hand"] for joint in self.joints.name
+            joint in controlled_joints_dict["hand"] for joint in self.joint_states.name
         ]
+
+        # Retrieve the current robot state
+        state_list = list(
+            self.joint_states.position
+            if control_type == "position_control"
+            else self.joint_states.effort
+        )
+        arm_state_dict = OrderedDict(
+            zip(
+                list(
+                    compress(
+                        self.joint_states.name,
+                        [
+                            item in flatten_list(controlled_joints_dict["arm"])
+                            for item in self.joint_states.name
+                        ],
+                    )
+                ),
+                list(
+                    compress(
+                        state_list,
+                        [
+                            item in flatten_list(controlled_joints_dict["arm"])
+                            for item in self.joint_states.name
+                        ],
+                    )
+                ),
+            )
+        )
+        hand_state_dict = OrderedDict(
+            zip(
+                list(
+                    compress(
+                        self.joint_states.name,
+                        [
+                            item in flatten_list(controlled_joints_dict["hand"])
+                            for item in self.joint_states.name
+                        ],
+                    )
+                ),
+                list(
+                    compress(
+                        state_list,
+                        [
+                            item in flatten_list(controlled_joints_dict["hand"])
+                            for item in self.joint_states.name
+                        ],
+                    )
+                ),
+            )
+        )
 
         # Get control publisher message type
         if control_type == "position_control":
@@ -660,20 +712,13 @@ class PandaControlServer(object):
             arm_msg_type = self._arm_effort_controller_msg_type
             hand_msg_type = self._hand_effort_controller_msg_type
 
-        # Retrieve the current robot state
-        state_list = list(
-            self.joints.position
-            if control_type == "position_control"
-            else self.joints.effort
-        )
-
         # Check service request input
         if len(joint_names) == 0:
 
-            # Check if enough joint position commands were given
+            # Check if enough joint position commands were given otherwise give warning
             if len(control_input) != controlled_joints_size:
 
-                # Create log message
+                # Create log message strings
                 if control_type == "position_control":
                     logwarn_msg_strings = [
                         "joint position"
@@ -687,91 +732,87 @@ class PandaControlServer(object):
                         "joint" if controlled_joints_size == 1 else "joints",
                     ]
 
-                # Log message and return result
-                logwarn_message = "You specified %s while the Panda %s %s." % (
-                    "%s %s" % (len(control_input), logwarn_msg_strings[0]),
-                    control_group + " control group has"
-                    if control_group in ["arm", "hand"]
-                    else "arm and hand control groups have",
-                    "%s %s" % (controlled_joints_size, logwarn_msg_strings[1]),
-                )
-                if verbose:
+                # Check if control input is bigger than controllable joints
+                if len(control_input) > controlled_joints_size:
+
+                    # Log message and raise exception
+                    logwarn_message = "You specified %s while the Panda %s %s." % (
+                        "%s %s" % (len(control_input), logwarn_msg_strings[0]),
+                        control_group + " control group has"
+                        if control_group in ["arm", "hand"]
+                        else "arm and hand control groups have",
+                        "%s %s" % (controlled_joints_size, logwarn_msg_strings[1]),
+                    )
+                    if verbose:
+                        rospy.logwarn(logwarn_message)
+                    raise InputMessageInvalid(
+                        message="Invalid number of joint position commands.",
+                        log_message=logwarn_message,
+                        details={
+                            "joint_positions_command_length": len(control_input),
+                            "controlled_joints": controlled_joints_size,
+                        },
+                    )
+                elif len(control_input) < controlled_joints_size:
+
+                    # Display warning message
+                    logwarn_message = "You specified %s while the Panda %s %s." % (
+                        "%s %s" % (len(control_input), logwarn_msg_strings[0]),
+                        control_group + " control group has"
+                        if control_group in ["arm", "hand"]
+                        else "arm and hand control groups have",
+                        "%s %s" % (controlled_joints_size, logwarn_msg_strings[1]),
+                    ) + " As a result only joints %s will be controlled." % (
+                        controlled_joints[0 : len(control_input)]
+                    )
                     rospy.logwarn(logwarn_message)
-                raise InputMessageInvalid(
-                    message="Invalid number of joint position commands.",
-                    log_message=logwarn_message,
-                    details={
-                        "joint_positions_command_length": len(control_input),
-                        "controlled_joints": controlled_joints_size,
-                    },
-                )
+
+            # Update current state dictionary with given joint_position commands
+            if control_group == "arm":
+                arm_output_command = copy.deepcopy(arm_state_dict.values())
+                arm_output_command[0 : len(control_input)] = control_input
+                hand_output_command = hand_state_dict.values()
+            elif control_group == "hand":
+                hand_output_command = copy.deepcopy(hand_state_dict)
+                arm_output_command = arm_state_dict.values()
             else:
-
-                # Generate moveit_commander_control command dictionary
-                if control_group == "arm":
-                    if not self.use_group_controller:  # Non group controller
-                        control_commands = {
-                            "arm": [arm_msg_type(item) for item in control_input],
-                            "hand": [
-                                hand_msg_type(item)
-                                for item in list(compress(state_list, hand_states_mask))
-                            ],
-                        }
+                arm_output_command = copy.deepcopy(arm_state_dict.values())
+                hand_output_command = copy.deepcopy(hand_state_dict.values())
+                if self.joint_states.name[0] in controlled_joints_dict["arm"]:
+                    if len(control_input) <= len(arm_output_command):
+                        arm_output_command[0 : len(control_input)] = control_input
                     else:
-                        control_commands = {
-                            "arm": arm_msg_type(data=control_input),
-                            "hand": hand_msg_type(
-                                data=list(compress(state_list, hand_states_mask))
-                            ),
-                        }
-
-                elif control_group == "hand":
-                    if not self.use_group_controller:  # Non group controller
-                        control_commands = {
-                            "hand": [hand_msg_type(item) for item in control_input],
-                            "arm": [
-                                arm_msg_type(item)
-                                for item in list(compress(state_list, arm_states_mask))
-                            ],
-                        }
-                    else:
-                        control_commands = {
-                            "hand": hand_msg_type(data=control_input),
-                            "arm": arm_msg_type(
-                                data=list(compress(state_list, arm_states_mask))
-                            ),
-                        }
+                        arm_output_command[:] = control_input[
+                            0 : len(arm_output_command)
+                        ]
+                        hand_output_command[
+                            : len(control_input) - len(arm_output_command)
+                        ] = control_input[len(arm_output_command) :]
                 else:
-
-                    # Create control commands dictionary
-                    if not self.use_group_controller:  # Non group controller
-                        control_commands = {
-                            "arm": [
-                                arm_msg_type(item)
-                                for item in list(
-                                    compress(control_input, arm_states_mask)
-                                )
-                            ],
-                            "hand": [
-                                hand_msg_type(item)
-                                for item in list(
-                                    compress(control_input, hand_states_mask)
-                                )
-                            ],
-                        }
+                    if len(control_input) <= len(hand_output_command):
+                        hand_output_command[0 : len(control_input)] = control_input
                     else:
-                        control_commands = {
-                            "arm": arm_msg_type(
-                                data=list(compress(control_input, arm_states_mask))
-                            ),
-                            "hand": hand_msg_type(
-                                data=list(compress(control_input, hand_states_mask))
-                            ),
-                        }
+                        hand_output_command[:] = control_input[
+                            0 : len(hand_output_command)
+                        ]
+                        arm_output_command[
+                            : len(control_input) - len(hand_output_command)
+                        ] = control_input[len(hand_output_command) :]
 
-                # Set control_commands equal to the control input as no joint_names
-                # were given.
-                return control_commands, controlled_joints_dict
+            # Create publishers command dictionary
+            if not self.use_group_controller:  # Non group controller
+                control_commands = {
+                    "arm": [arm_msg_type(item) for item in arm_output_command],
+                    "hand": [hand_msg_type(item) for item in hand_output_command],
+                }
+            else:
+                control_commands = {
+                    "arm": arm_msg_type(data=arm_output_command),
+                    "hand": hand_msg_type(data=hand_output_command),
+                }
+
+            # Return control commands
+            return control_commands, controlled_joints_dict
         else:
 
             # Check if enough control values were given
@@ -872,112 +913,6 @@ class PandaControlServer(object):
                     )
                 else:
 
-                    # Get the current state of the arm and hand as a joint/states
-                    # dictionary
-                    if control_group == "arm":
-                        arm_state_dict = OrderedDict(
-                            zip(
-                                list(
-                                    compress(
-                                        self.joints.name,
-                                        [
-                                            item in controlled_joints
-                                            for item in self.joints.name
-                                        ],
-                                    )
-                                ),
-                                list(
-                                    compress(
-                                        state_list,
-                                        [
-                                            item in controlled_joints
-                                            for item in self.joints.name
-                                        ],
-                                    )
-                                ),
-                            )
-                        )
-                    elif control_group == "hand":
-                        hand_state_dict = OrderedDict(
-                            zip(
-                                list(
-                                    compress(
-                                        self.joints.name,
-                                        [
-                                            item in controlled_joints
-                                            for item in self.joints.name
-                                        ],
-                                    )
-                                ),
-                                list(
-                                    compress(
-                                        state_list,
-                                        [
-                                            item in controlled_joints
-                                            for item in self.joints.name
-                                        ],
-                                    )
-                                ),
-                            )
-                        )
-                    else:
-                        arm_state_dict = OrderedDict(
-                            zip(
-                                list(
-                                    compress(
-                                        self.joints.name,
-                                        [
-                                            item
-                                            in flatten_list(
-                                                controlled_joints_dict["arm"]
-                                            )
-                                            for item in self.joints.name
-                                        ],
-                                    )
-                                ),
-                                list(
-                                    compress(
-                                        state_list,
-                                        [
-                                            item
-                                            in flatten_list(
-                                                controlled_joints_dict["arm"]
-                                            )
-                                            for item in self.joints.name
-                                        ],
-                                    )
-                                ),
-                            )
-                        )
-                        hand_state_dict = OrderedDict(
-                            zip(
-                                list(
-                                    compress(
-                                        self.joints.name,
-                                        [
-                                            item
-                                            in flatten_list(
-                                                controlled_joints_dict["hand"]
-                                            )
-                                            for item in self.joints.name
-                                        ],
-                                    )
-                                ),
-                                list(
-                                    compress(
-                                        state_list,
-                                        [
-                                            item
-                                            in flatten_list(
-                                                controlled_joints_dict["hand"]
-                                            )
-                                            for item in self.joints.name
-                                        ],
-                                    )
-                                ),
-                            )
-                        )
-
                     # Create input command dictionary
                     input_command_dict = OrderedDict(zip(joint_names, control_input))
 
@@ -990,6 +925,8 @@ class PandaControlServer(object):
                         ) in input_command_dict.items():  # Update arm
                             if joint in arm_state_dict:
                                 arm_output_command_dict[joint] = position
+                        arm_output_command = arm_output_command_dict.values()
+                        hand_output_command = hand_state_dict.values()
                     elif control_group == "hand":
                         hand_output_command_dict = copy.deepcopy(hand_state_dict)
                         for (
@@ -998,6 +935,8 @@ class PandaControlServer(object):
                         ) in input_command_dict.items():  # Update hand
                             if joint in hand_state_dict:
                                 hand_output_command_dict[joint] = position
+                        arm_output_command = arm_state_dict.values()
+                        hand_output_command = hand_output_command_dict.values()
                     else:
                         arm_output_command_dict = copy.deepcopy(arm_state_dict)
                         for (
@@ -1013,75 +952,22 @@ class PandaControlServer(object):
                         ) in input_command_dict.items():  # Update hand
                             if joint in hand_state_dict:
                                 hand_output_command_dict[joint] = position
+                        arm_output_command = arm_output_command_dict.values()
+                        hand_output_command = hand_output_command_dict.values()
 
                     # Create publishers command dictionary
-                    if control_group == "arm":
-                        if not self.use_group_controller:  # Non group controller
-                            control_commands = {
-                                "arm": [
-                                    arm_msg_type(item)
-                                    for item in arm_output_command_dict.values()
-                                ],
-                                "hand": [
-                                    hand_msg_type(item)
-                                    for item in list(
-                                        compress(state_list, hand_states_mask)
-                                    )
-                                ],
-                            }
-                        else:
-                            control_commands = {
-                                "arm": arm_msg_type(
-                                    data=arm_output_command_dict.values()
-                                ),
-                                "hand": hand_msg_type(
-                                    data=list(compress(state_list, hand_states_mask))
-                                ),
-                            }
-                    elif control_group == "hand":
-                        if not self.use_group_controller:  # Non group controller
-                            control_commands = {
-                                "hand": [
-                                    hand_msg_type(item)
-                                    for item in hand_output_command_dict.values()
-                                ],
-                                "arm": [
-                                    arm_msg_type(item)
-                                    for item in list(
-                                        compress(state_list, arm_states_mask)
-                                    )
-                                ],
-                            }
-                        else:
-                            control_commands = {
-                                "hand": hand_msg_type(
-                                    data=hand_output_command_dict.values()
-                                ),
-                                "arm": arm_msg_type(
-                                    data=list(compress(state_list, arm_states_mask))
-                                ),
-                            }
+                    if not self.use_group_controller:  # Non group controller
+                        control_commands = {
+                            "arm": [arm_msg_type(item) for item in arm_output_command],
+                            "hand": [
+                                hand_msg_type(item) for item in hand_output_command
+                            ],
+                        }
                     else:
-                        if not self.use_group_controller:  # Non group controller
-                            control_commands = {
-                                "arm": [
-                                    arm_msg_type(item)
-                                    for item in arm_output_command_dict.values()
-                                ],
-                                "hand": [
-                                    hand_msg_type(item)
-                                    for item in hand_output_command_dict.values()
-                                ],
-                            }
-                        else:
-                            control_commands = {
-                                "arm": arm_msg_type(
-                                    data=arm_output_command_dict.values()
-                                ),
-                                "hand": hand_msg_type(
-                                    data=hand_output_command_dict.values()
-                                ),
-                            }
+                        control_commands = {
+                            "arm": arm_msg_type(data=arm_output_command),
+                            "hand": hand_msg_type(data=hand_output_command),
+                        }
 
                     # Return control publishers commands dictionary
                     return control_commands, controlled_joints_dict
@@ -1115,7 +1001,9 @@ class PandaControlServer(object):
         if control_type == "position_control":
 
             # Get contolled joints information
-            controlled_joints_dict = {"arm": [], "hand": []}
+            controlled_joints_dict = OrderedDict(
+                zip(["arm", "hand", "both"], [[], [], []])
+            )
             try:
                 for position_controller in self._position_controllers:
                     for claimed_resources in self._controllers[
@@ -1145,7 +1033,9 @@ class PandaControlServer(object):
         elif control_type == "effort_control":
 
             # Get controlled joints information
-            controlled_joints_dict = {"arm": [], "hand": []}
+            controlled_joints_dict = OrderedDict(
+                zip(["arm", "hand", "both"], [[], [], []])
+            )
             try:
                 for effort_controller in self._effort_controllers:
                     for claimed_resources in self._controllers[
@@ -1186,9 +1076,20 @@ class PandaControlServer(object):
                 log_message=logwarn_message,
             )
 
-        # Return controlled joints dict
+        # Fill controlled joints dict
         controlled_joints_dict["arm"] = flatten_list(controlled_joints_dict["arm"])
         controlled_joints_dict["hand"] = flatten_list(controlled_joints_dict["hand"])
+        controlled_joints_dict["both"] = (
+            flatten_list(
+                [controlled_joints_dict["hand"], controlled_joints_dict["arm"]]
+            )
+            if self.joint_states.name[0] in controlled_joints_dict["hand"]
+            else flatten_list(
+                [controlled_joints_dict["arm"], controlled_joints_dict["hand"]]
+            )
+        )
+
+        # Return controlled joints dict
         return controlled_joints_dict
 
     def _get_joint_controllers(self):
@@ -1228,7 +1129,7 @@ class PandaControlServer(object):
             Service response.
         """
 
-        # Check if set_joint_efforts_req.joint_names contains duplicates\
+        # Check if set_joint_efforts_req.joint_names contains duplicates
         duplicate_list = get_duplicate_list(set_joint_positions_req.joint_names)
         if duplicate_list:
 
@@ -1404,7 +1305,7 @@ class PandaControlServer(object):
             Service response.
         """
 
-        # Check if set_joint_efforts_req.joint_names contains duplicates\
+        # Check if set_joint_efforts_req.joint_names contains duplicates
         duplicate_list = get_duplicate_list(set_joint_efforts_req.joint_names)
         if duplicate_list:
 
@@ -1580,7 +1481,7 @@ class PandaControlServer(object):
             Service response.
         """
 
-        # Check if set_joint_efforts_req.joint_names contains duplicates\
+        # Check if set_joint_efforts_req.joint_names contains duplicates
         duplicate_list = get_duplicate_list(set_joint_positions_req.joint_names)
         if duplicate_list:
 
@@ -1882,7 +1783,7 @@ class PandaControlServer(object):
             Service response.
         """
 
-        # Check if set_joint_efforts_req.joint_names contains duplicates\
+        # Check if set_joint_efforts_req.joint_names contains duplicates
         duplicate_list = get_duplicate_list(set_joint_positions_req.joint_names)
         if duplicate_list:
 
@@ -2033,7 +1934,7 @@ class PandaControlServer(object):
             Service response.
         """
 
-        # Check if set_joint_efforts_req.joint_names contains duplicates\
+        # Check if set_joint_efforts_req.joint_names contains duplicates
         duplicate_list = get_duplicate_list(set_joint_efforts_req.joint_names)
         if duplicate_list:
 
@@ -2265,7 +2166,7 @@ class PandaControlServer(object):
         """
 
         # Update joint_states
-        self.joints = data
+        self.joint_states = data
 
 
 #################################################

@@ -6,6 +6,7 @@ __pycache__/
 .VSCodeCounter/*
 models/
 videos/
+build/
 
 # Files to ignore
 *.pyc

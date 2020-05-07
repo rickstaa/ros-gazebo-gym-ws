@@ -94,7 +94,7 @@ class PandaControlSwitcher(object):
         Switch Panda robot control type.
     """
 
-    def __init__(self, connection_timeout=10):
+    def __init__(self, connection_timeout=10, verbose=True):
         """Initializes the PandaControlSwitcher object.
 
         Parameters
@@ -102,10 +102,13 @@ class PandaControlSwitcher(object):
         connection_timeout : str, optional
             The timeout for connecting to the controller_manager services,
             by default 3 sec.
+        verbose : bool, optional
+            Whether to display debug log messages, defaults to True.
         """
 
         # Create class attributes
         self._controller_switch_timeout = 3
+        self.verbose = verbose
 
         # Connect to controller_manager services
         try:
@@ -207,14 +210,13 @@ class PandaControlSwitcher(object):
         )
 
         # Check which Panda controllers are running
-        # IMPROVE: SIMPLIFY
         controllers_state = ControllerInfoDict()
         for controller in list_controllers_resp.controller:
             categorized = False
 
             # Add Panda controllers to controllers_state
-            for control_group, control_group_vals in CONTROLLER_DICT.items():
-                for control_type, controller_names in control_group_vals.items():
+            for control_group, control_group_items in CONTROLLER_DICT.items():
+                for control_type, controller_names in control_group_items.items():
                     if controller.name in controller_names:
                         categorized = True
                         if controller.state == "running":
@@ -294,7 +296,14 @@ class PandaControlSwitcher(object):
             )
             return [False]
 
-    def switch(self, control_group, control_type, load_controllers=True, timeout=None):
+    def switch(
+        self,
+        control_group,
+        control_type,
+        load_controllers=True,
+        timeout=None,
+        verbose=None,
+    ):
         """Switch Panda robot control type. This function stops all currently running
         controllers and starts the required controllers for a given control type.
 
@@ -314,6 +323,9 @@ class PandaControlSwitcher(object):
         timeout : int, optional
             The timout for switching to a given controller, by default
             self._controller_switch_timeout.
+        verbose : bool, optional
+            Whether to display debug log messages, defaults to verbose value set during
+            the class initiation.
 
         Returns
         -------
@@ -321,6 +333,10 @@ class PandaControlSwitcher(object):
             Contains information about whether the switch operation was successfull
             'success' and the previously used controller 'prev_control_type'.
         """
+
+        # Check verbosity
+        if not verbose:
+            verbose = self.verbose
 
         # Create response message
         resp = ControllerSwitcherResponse()
@@ -525,10 +541,12 @@ class PandaControlSwitcher(object):
         else:
 
             # Log result and return
-            rospy.logdebug(
-                "Panda %s control type not switched to '%s' as the Panda robot was "
-                "already using '%s'." % (control_group, control_type, prev_control_type)
-            )
+            if verbose:
+                rospy.logdebug(
+                    "Panda %s control type not switched to '%s' as the Panda robot was "
+                    "already using '%s'."
+                    % (control_group, control_type, prev_control_type)
+                )
             resp.success = True
             resp.prev_control_type = prev_control_type
             return resp

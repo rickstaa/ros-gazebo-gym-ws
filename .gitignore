@@ -4,8 +4,9 @@
 logs/
 __pycache__/
 .VSCodeCounter/*
-models/
-videos/
+logs/*
+models/*
+videos/*
 build/
 
 # Files to ignore

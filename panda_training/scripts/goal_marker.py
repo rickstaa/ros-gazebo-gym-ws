@@ -16,7 +16,6 @@ from rospy.exceptions import ROSInitException
 # ROS msgs and srvs
 from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Pose
 
 
 #################################################

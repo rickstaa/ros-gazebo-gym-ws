@@ -5,23 +5,22 @@ project(panda_training)
 # add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
+## NOTE: Finds dependencies for this package. Needed for building
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  openai_ros
   rospy
   message_generation
   std_msgs
   geometry_msgs
   trajectory_msgs
-  nav_msgs
-  sensor_msgs
-  dynamic_reconfigure
+  actionlib_msgs
+  control_msgs
+  openai_ros
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -74,11 +73,10 @@ add_service_files(
 )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+  DIRECTORY action
+  FILES FollowJointTrajectory.action
+)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
@@ -86,6 +84,8 @@ generate_messages(
   std_msgs  # Or other packages containing msgs
   geometry_msgs
   trajectory_msgs
+  actionlib_msgs
+  control_msgs
 )
 
 ################################################
@@ -103,13 +103,15 @@ generate_messages(
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-generate_dynamic_reconfigure_options(
-  cfg/EffortTest.cfg
-)
+# generate_dynamic_reconfigure_options(
+  # cfg/EffortTest.cfg
+# )
 
 ###################################
 ## catkin specific configuration ##
 ###################################
+## NOTE: Declares dependencies for packages that depend on this package.
+##
 ## The catkin_package macro generates cmake config files for your package
 ## Declare things to be passed to dependent projects
 ## INCLUDE_DIRS: uncomment this if your package contains header files
@@ -119,7 +121,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES panda_training
-#  CATKIN_DEPENDS geometry_msgs message_generation openai_ros rospy std_msgs
+  CATKIN_DEPENDS rospy message_runtime actionlib actionlib_msgs std_msgs geometry_msgs trajectory_msgs sensor_msgs control_msgs openai_ros
 #  DEPENDS system_lib
 )
 
@@ -130,7 +132,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  # include
   ${catkin_INCLUDE_DIRS}
 )
 

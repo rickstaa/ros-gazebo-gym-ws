@@ -1,5 +1,5 @@
-﻿"""Class for storing euler angles. It uses the ypr (x-y-z) euler angle convention."""
-
+﻿"""Class for storing euler angles. It uses the ypr (x-y-z) euler angle convention.
+"""
 
 #################################################
 # EulerAngles ###################################

@@ -149,6 +149,7 @@ class PandaMoveitPlannerServer(object):
             moveit_msgs.msg.DisplayTrajectory,
             queue_size=10,
         )
+
         #############################################
         # Create PandaMoveitPlannerServer services ##
         #############################################
@@ -351,7 +352,7 @@ class PandaMoveitPlannerServer(object):
 
         # Retrieve control information out of input message
         joint_names = input_msg.joint_names
-        joint_positions = list(input_msg.joint_positions.data)
+        joint_positions = list(input_msg.joint_positions)
 
         # Get controlled joints
         if control_group.lower() == "arm":
@@ -952,7 +953,7 @@ class PandaMoveitPlannerServer(object):
         # Set end effector and return response
         rospy.logdebug("Setting ee to '%s'." % set_ee_req.ee_name)
         resp = SetEeResponse()
-        if self._link_exists(set_ee_req.ee_name):  # Check if vallid
+        if self._link_exists(set_ee_req.ee_name):  # Check if valid
             try:
                 self.move_group_arm.set_end_effector_link(set_ee_req.ee_name)
             except MoveItCommanderException as e:

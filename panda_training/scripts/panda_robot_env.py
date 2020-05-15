@@ -67,7 +67,6 @@ HAND_JOINT_POSITIONS_CONTROL_TOPIC = (
     "panda_control_server/panda_hand/set_joint_positions"
 )
 HAND_JOINT_EFFORTS_CONTROL_TOPIC = "panda_control_server/panda_hand/set_joint_efforts"
-
 REQUIRED_SERVICES_DICT = {
     "arm": {
         "joint_trajectory_control": ["panda_arm_controller/follow_joint_trajectory"],
@@ -362,7 +361,7 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
                         "Shutting down '%s' because '%s' could not be set as "
                         "the Moveit move_group end effector (EE). Please "
                         "check that the EE you initiate the panda_robot_env "
-                        "class with is vallid." % (rospy.get_name(), self.robot_EE_link)
+                        "class with is valid." % (rospy.get_name(), self.robot_EE_link)
                     )
                     sys.exit(0)
             else:
@@ -980,9 +979,9 @@ class PandaRobotEnv(panda_robot_gazebo_goal_env.RobotGazeboGoalEnv):
 
                 # Create control request command
                 req = SetJointPositionsRequest()
-                req.wait.data = wait
+                req.wait = wait
                 req.joint_names = joint_positions.keys()
-                req.joint_positions.data = joint_positions.values()
+                req.joint_positions = joint_positions.values()
 
                 # Send control command
                 self._set_joint_positions_client.call(req)

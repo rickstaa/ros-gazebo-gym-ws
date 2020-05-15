@@ -34,9 +34,6 @@
     <rosparam file="$(arg panda_hand_joint_effort_controller_file)" command="load" />
     <rosparam file="$(arg panda_hand_joint_group_effort_controller_file)" command="load" />
 
-    <!-- Set controller run status for each controller -->
-    <!-- <arg if="" name="trajectory_running" value="" /> -->
-
     <!-- load the controllers -->
     <!-- NOTE: The joint trajectory controller is named `panda_arm_controller` instead of `panda_arm_joint_trajectory_controller' to
         keep this package compatible with the melodic branch of the panda_moveit_config pacakge -->

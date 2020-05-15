@@ -32,12 +32,12 @@
     </include>
 
     <!--## LOAD MOVEIT CONTROL SERVICES ##-->
-    <!-- <node if="$(arg moveit)" pkg="panda_training" type="panda_moveit_server.py" name="panda_moveit_planner_server" required="true"> -->
-    <!-- <param name="create_all_services" value="false" /> -->
-    <!-- </node> -->
-    <!-- <node pkg="panda_training" type="panda_control_server.py" name="panda_control_server" required="true"> -->
-    <!-- <param name="use_group_controller" value="$(arg use_group_controller)" /> -->
-    <!-- </node> -->
+    <node if="$(arg moveit)" pkg="panda_training" type="panda_moveit_server.py" name="panda_moveit_planner_server" required="true">
+        <param name="create_all_services" value="false" />
+    </node>
+    <node pkg="panda_training" type="panda_control_server.py" name="panda_control_server" required="true">
+        <param name="use_group_controller" value="$(arg use_group_controller)" />
+    </node>
 
     <!--## SIMULATION ##-->
     <!-- Launch simulation -->

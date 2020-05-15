@@ -1,7 +1,8 @@
 #! /usr/bin/env python
-"""A simple server that created a number of services that can be used to send control
-commands to the Panda Robot arm and hand. It currently contains joint position, joint
-effort services and a joint trajectory action server."""
+"""This server is responsible for controlling the Panda arm/hand. It created a number of
+(action) services that can be used to send control commands to the Panda Robot arm and
+hand. It currently contains joint position, joint effort services and a joint trajectory
+action server."""
 
 # Main python imports
 import sys
@@ -32,6 +33,7 @@ import actionlib
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64, Float64MultiArray, Header
 from controller_manager_msgs.srv import ListControllers, ListControllersRequest
+import control_msgs.msg as control_msgs
 from panda_training.msg import (
     FollowJointTrajectoryAction,
     FollowJointTrajectoryResult,
@@ -251,7 +253,7 @@ class PandaControlServer(object):
         for position_controller in ARM_POSITION_GROUP_CONTROLLERS:
             self._arm_joint_positions_group_pub.append(
                 rospy.Publisher(
-                    "%s/%s/command" % (rospy.get_name()[1:], position_controller),
+                    "%s/command" % (position_controller),
                     Float64MultiArray,
                     queue_size=10,
                 )
@@ -262,9 +264,7 @@ class PandaControlServer(object):
         for position_controller in ARM_POSITION_CONTROLLERS:
             self._arm_joint_position_pub.append(
                 rospy.Publisher(
-                    "%s/%s/command" % (rospy.get_name()[1:], position_controller),
-                    Float64,
-                    queue_size=10,
+                    "%s/command" % (position_controller), Float64, queue_size=10,
                 )
             )
 
@@ -273,7 +273,7 @@ class PandaControlServer(object):
         for effort_controller in ARM_EFFORT_GROUP_CONTROLLERS:
             self._arm_joint_efforts_group_pub.append(
                 rospy.Publisher(
-                    "%s/%s/command" % (rospy.get_name()[1:], effort_controller),
+                    "%s/command" % (effort_controller),
                     Float64MultiArray,
                     queue_size=10,
                 )
@@ -284,9 +284,7 @@ class PandaControlServer(object):
         for effort_controller in ARM_EFFORT_CONTROLLERS:
             self._arm_joint_effort_pub.append(
                 rospy.Publisher(
-                    "%s/%s/command" % (rospy.get_name()[1:], effort_controller),
-                    Float64,
-                    queue_size=10,
+                    "%s/command" % (effort_controller), Float64, queue_size=10,
                 )
             )
 
@@ -295,7 +293,7 @@ class PandaControlServer(object):
         for position_controller in HAND_POSITION_GROUP_CONTROLLERS:
             self._hand_joint_positions_group_pub.append(
                 rospy.Publisher(
-                    "%s/%s/command" % (rospy.get_name()[1:], position_controller),
+                    "%s/command" % (position_controller),
                     Float64MultiArray,
                     queue_size=10,
                 )
@@ -306,9 +304,7 @@ class PandaControlServer(object):
         for position_controller in HAND_POSITION_CONTROLLERS:
             self._hand_joint_position_pub.append(
                 rospy.Publisher(
-                    "%s/%s/command" % (rospy.get_name()[1:], position_controller),
-                    Float64,
-                    queue_size=10,
+                    "%s/command" % (position_controller), Float64, queue_size=10,
                 )
             )
 
@@ -317,7 +313,7 @@ class PandaControlServer(object):
         for effort_controller in HAND_EFFORT_GROUP_CONTROLLERS:
             self._hand_joint_efforts_group_pub.append(
                 rospy.Publisher(
-                    "%s/%s/command" % (rospy.get_name()[1:], effort_controller),
+                    "%s/command" % (effort_controller),
                     Float64MultiArray,
                     queue_size=10,
                 )
@@ -328,9 +324,7 @@ class PandaControlServer(object):
         for effort_controller in HAND_EFFORT_CONTROLLERS:
             self._hand_joint_effort_pub.append(
                 rospy.Publisher(
-                    "%s/%s/command" % (rospy.get_name()[1:], effort_controller),
-                    Float64,
-                    queue_size=10,
+                    "%s/command" % (effort_controller), Float64, queue_size=10,
                 )
             )
 
@@ -339,16 +333,16 @@ class PandaControlServer(object):
 
             # Connect to list service
             rospy.logdebug(
-                "Connecting to '/controller_manager/list_controllers' service."
+                "Connecting to 'controller_manager/list_controllers' service."
             )
             rospy.wait_for_service(
-                "/controller_manager/list_controllers", timeout=connection_timeout
+                "controller_manager/list_controllers", timeout=connection_timeout
             )
             self.list_controllers_client = rospy.ServiceProxy(
-                "/controller_manager/list_controllers", ListControllers
+                "controller_manager/list_controllers", ListControllers
             )
             rospy.logdebug(
-                "Connected to '/controller_manager/list_controllers' service!"
+                "Connected to 'controller_manager/list_controllers' service!"
             )
         except (rospy.ServiceException, ROSException, ROSInterruptException) as e:
             rospy.logerr(
@@ -459,8 +453,8 @@ class PandaControlServer(object):
         #   - The ability to send partial joint messages.
         #   - The ability to send joint trajectory messages that do not specify joints.
         #   - The ability to send both arm and hand traj commands at the same time.
-        #   - The ability to automatic generate a time axes when the time_from_start
-        #     field is set to -1.
+        #   - The ability to automatic generate a time axes when the create_time_axis
+        #     field is set to True.
 
         # Connect to original 'panda_arm_controller/follow_joint_trajectory' action
         # server
@@ -471,7 +465,7 @@ class PandaControlServer(object):
 
             # Connect to robot control action server
             self._arm_joint_traj_client = actionlib.SimpleActionClient(
-                ARM_TRAJ_ACTION_SERVER_TOPIC, FollowJointTrajectoryAction
+                ARM_TRAJ_ACTION_SERVER_TOPIC, control_msgs.FollowJointTrajectoryAction
             )
 
             # Waits until the action server has started up
@@ -505,7 +499,7 @@ class PandaControlServer(object):
 
             # Connect to robot control action server
             self._hand_joint_traj_client = actionlib.SimpleActionClient(
-                HAND_TRAJ_ACTION_SERVER_TOPIC, FollowJointTrajectoryAction
+                HAND_TRAJ_ACTION_SERVER_TOPIC, control_msgs.FollowJointTrajectoryAction
             )
 
             # Waits until the action server has started up
@@ -588,6 +582,31 @@ class PandaControlServer(object):
     ###############################################
     # Panda control member functions ##############
     ###############################################
+    def _panda_action_msg_2_control_msgs_action_msg(self, panda_action_msg):
+        """Converts a panda_training FollowJointTrajectoryActionGoal action message
+        into a control_msgs FollowJointTrajectoryGoal action message.
+
+        Parameters
+        ----------
+        panda_action_msg : panda_training.msg.FollowJointTrajectoryGoal
+            Panda_training follow joint trajectory goal message.
+
+        Returns
+        -------
+        control_msgs.msg.FollowJointTrajectoryGoal
+            Control_msgs follow joint trajectory goal message
+        """
+
+        # Fill new control_msgs.msg.FollowJointTrajectoryGoal message
+        control_msgs_action_msg = control_msgs.FollowJointTrajectoryGoal()
+        control_msgs_action_msg.trajectory = panda_action_msg.trajectory
+        control_msgs_action_msg.goal_time_tolerance = (
+            panda_action_msg.goal_time_tolerance
+        )
+        control_msgs_action_msg.goal_tolerance = panda_action_msg.goal_tolerance
+        control_msgs_action_msg.path_tolerance = panda_action_msg.path_tolerance
+        return control_msgs_action_msg
+
     def _init_action_servers_fb_msgs(self):
         """Initiate the 'panda_control_server/panda_arm/follow_joint_trajectory' and
         'panda_control_server/panda_hand/follow_joint_trajectory' feedback messages with
@@ -1036,7 +1055,6 @@ class PandaControlServer(object):
                     for joint in self.joint_states.name
                 ]
             except InputMessageInvalid as e:
-                # TEST:
                 rospy.loginfo(
                     "Not waiting for control to be completed as no information could "
                     "be retrieved about which joints are controlled when using '%s' "
@@ -1198,7 +1216,6 @@ class PandaControlServer(object):
             Raised when the input_msg could not be converted into panda_arm_controller
             control messages.
         """
-        # TODO: Add time axes
 
         # Validate control_group argument
         if control_group.lower() not in ["arm", "hand", "both"]:
@@ -1319,6 +1336,15 @@ class PandaControlServer(object):
         effort_waypoints_length = [
             len(waypoint.effort) for waypoint in input_msg.trajectory.points
         ]
+
+        # Validate time axis step size and throw warning if invalid
+        if input_msg.time_axis_step <= 0.0:
+            rospy.logwarn(
+                "A time axis step size of %s is not supported. Please supply a time"
+                "axis step greater than 0.0 if you want to automatically create the"
+                "trajectory time axis." % input_msg.time_axis_step
+            )
+            input_msg.create_time_axis = False  # Disable time axis generation
 
         # Check action server goal request message
         if len(joint_names) == 0:  # If not joint_names were given
@@ -1447,7 +1473,18 @@ class PandaControlServer(object):
             # autofill_traj_positions ROS parameter to True. In this case the position
             # field will always be filled with the current joint states.
             for idx, waypoint in enumerate(input_msg.trajectory.points):
+
+                # Add position/velocity/acceleration and effort control commmands
                 if control_group == "arm":
+
+                    # Add time_from_start variable if create_time_axis == TRUE
+                    if input_msg.create_time_axis:
+                        time_axis_tmp = rospy.Duration.from_sec(
+                            (idx * input_msg.time_axis_step) + input_msg.time_axis_step
+                        )
+                        arm_control_msg.trajectory.points[
+                            idx
+                        ].time_from_start = time_axis_tmp
 
                     # Add joint position commands
                     if len(waypoint.positions) != 0:
@@ -1488,6 +1525,15 @@ class PandaControlServer(object):
 
                 elif control_group == "hand":
 
+                    # Add time_from_start variable if create_time_axis == TRUE
+                    if input_msg.create_time_axis:
+                        time_axis_tmp = rospy.Duration.from_sec(
+                            (idx * input_msg.time_axis_step) + input_msg.time_axis_step
+                        )
+                        hand_control_msg.trajectory.points[
+                            idx
+                        ].time_from_start = time_axis_tmp
+
                     # Add joint position commands
                     if len(waypoint.positions) != 0:
                         hand_control_msg.trajectory.points[idx].positions[
@@ -1525,6 +1571,24 @@ class PandaControlServer(object):
                         # Make sure empty effort field stays empty
                         hand_control_msg.trajectory.points[idx].effort = []
                 else:
+
+                    # Add time_from_start variable if create_time_axis == TRUE
+                    if input_msg.create_time_axis:
+                        time_axis_tmp = rospy.Duration.from_sec(
+                            (idx * input_msg.time_axis_step) + input_msg.time_axis_step
+                        )
+                        arm_control_msg.trajectory.points[
+                            idx
+                        ].time_from_start = time_axis_tmp
+
+                    # Add time_from_start variable if create_time_axis == TRUE
+                    if input_msg.create_time_axis:
+                        time_axis_tmp = rospy.Duration.from_sec(
+                            (idx * input_msg.time_axis_step) + input_msg.time_axis_step
+                        )
+                        hand_control_msg.trajectory.points[
+                            idx
+                        ].time_from_start = time_axis_tmp
 
                     # Check joint state order (hand,arm) or (arm, hand) and add control
                     # commands accordingly
@@ -1750,7 +1814,14 @@ class PandaControlServer(object):
                             hand_control_msg.trajectory.points[idx].effort = []
 
             # Return new action server messages
-            return {"arm": arm_control_msg, "hand": hand_control_msg}
+            return {
+                "arm": self._panda_action_msg_2_control_msgs_action_msg(
+                    arm_control_msg
+                ),
+                "hand": self._panda_action_msg_2_control_msgs_action_msg(
+                    hand_control_msg
+                ),
+            }
 
         else:  # If joints were specified
 
@@ -1875,6 +1946,16 @@ class PandaControlServer(object):
                         # command arrays
                         if control_group == "arm":
 
+                            # Add time_from_start variable if create_time_axis == TRUE
+                            if input_msg.create_time_axis:
+                                time_axis_tmp = rospy.Duration.from_sec(
+                                    (idx * input_msg.time_axis_step)
+                                    + input_msg.time_axis_step
+                                )
+                                arm_control_msg.trajectory.points[
+                                    idx
+                                ].time_from_start = time_axis_tmp
+
                             # Create position command array
                             if len(waypoint.positions) != 0:
                                 arm_position_commands_dict = copy.deepcopy(
@@ -1966,6 +2047,16 @@ class PandaControlServer(object):
 
                         elif control_group == "hand":
 
+                            # Add time_from_start variable if create_time_axis == TRUE
+                            if input_msg.create_time_axis:
+                                time_axis_tmp = rospy.Duration.from_sec(
+                                    (idx * input_msg.time_axis_step)
+                                    + input_msg.time_axis_step
+                                )
+                                hand_control_msg.trajectory.points[
+                                    idx
+                                ].time_from_start = time_axis_tmp
+
                             # Create position command array
                             if len(waypoint.positions) != 0:
                                 hand_position_commands_dict = copy.deepcopy(
@@ -2055,6 +2146,26 @@ class PandaControlServer(object):
                                 arm_effort_commands = []
                                 hand_effort_commands = []
                         else:
+
+                            # Add time_from_start variable if create_time_axis == TRUE
+                            if input_msg.create_time_axis:
+                                time_axis_tmp = rospy.Duration.from_sec(
+                                    (idx * input_msg.time_axis_step)
+                                    + input_msg.time_axis_step
+                                )
+                                arm_control_msg.trajectory.points[
+                                    idx
+                                ].time_from_start = time_axis_tmp
+
+                            # Add time_from_start variable if create_time_axis == TRUE
+                            if input_msg.create_time_axis:
+                                time_axis_tmp = rospy.Duration.from_sec(
+                                    (idx * input_msg.time_axis_step)
+                                    + input_msg.time_axis_step
+                                )
+                                hand_control_msg.trajectory.points[
+                                    idx
+                                ].time_from_start = time_axis_tmp
 
                             # Create arm position control message
                             if len(waypoint.positions) != 0:
@@ -2233,7 +2344,14 @@ class PandaControlServer(object):
                         ].effort = hand_effort_commands
 
                     # Return new action server messages
-                    return {"arm": arm_control_msg, "hand": hand_control_msg}
+                    return {
+                        "arm": self._panda_action_msg_2_control_msgs_action_msg(
+                            arm_control_msg
+                        ),
+                        "hand": self._panda_action_msg_2_control_msgs_action_msg(
+                            hand_control_msg
+                        ),
+                    }
 
     def _create_control_publisher_msg(
         self, input_msg, control_type, control_group, verbose=False
@@ -2351,14 +2469,16 @@ class PandaControlServer(object):
 
         # Retrieve the current robot states
         state_dict = self._retrieve_state_dict(controlled_joints_dict)
-        arm_state_dict = state_dict["arm"]
-        hand_state_dict = state_dict["hand"]
 
-        # Get control publisher message type
+        # Get control publisher message type and current joint states
         if control_type == "position_control":
+            arm_state_dict = state_dict["arm"]["positions"]
+            hand_state_dict = state_dict["hand"]["positions"]
             arm_msg_type = self._arm_position_controller_msg_type
             hand_msg_type = self._hand_position_controller_msg_type
         elif control_type == "effort_control":
+            arm_state_dict = state_dict["arm"]["effort"]
+            hand_state_dict = state_dict["hand"]["effort"]
             arm_msg_type = self._arm_effort_controller_msg_type
             hand_msg_type = self._hand_effort_controller_msg_type
 
@@ -2419,21 +2539,15 @@ class PandaControlServer(object):
 
             # Update current state dictionary with given joint_position commands
             if control_group == "arm":
-                arm_position_commands = copy.deepcopy(
-                    arm_state_dict["positions"].values()
-                )
+                arm_position_commands = copy.deepcopy(arm_state_dict.values())
                 arm_position_commands[: len(control_input)] = control_input
-                hand_position_commands = hand_state_dict["positions"].values()
+                hand_position_commands = hand_state_dict.values()
             elif control_group == "hand":
-                hand_position_commands = copy.deepcopy(hand_state_dict["positions"])
-                arm_position_commands = arm_state_dict["positions"].values()
+                hand_position_commands = copy.deepcopy(hand_state_dict)
+                arm_position_commands = arm_state_dict.values()
             else:
-                arm_position_commands = copy.deepcopy(
-                    arm_state_dict["positions"].values()
-                )
-                hand_position_commands = copy.deepcopy(
-                    hand_state_dict["positions"].values()
-                )
+                arm_position_commands = copy.deepcopy(arm_state_dict.values())
+                hand_position_commands = copy.deepcopy(hand_state_dict.values())
                 if self.joint_states.name[0] in controlled_joints_dict["arm"]:
                     if len(control_input) <= len(arm_position_commands):
                         arm_position_commands[: len(control_input)] = control_input
@@ -2575,27 +2689,27 @@ class PandaControlServer(object):
                     # Update current state dictionary with given joint_position commands
                     if control_group == "arm":
                         arm_position_commands_dict = copy.deepcopy(
-                            arm_state_dict["positions"]
+                            arm_state_dict
                         )  # Start from the current state
                         for (
                             joint,
                             position,
                         ) in input_command_dict.items():  # Add control commands
-                            if joint in arm_state_dict["positions"]:
+                            if joint in arm_state_dict:
                                 arm_position_commands_dict[joint] = position
                         arm_position_commands = arm_position_commands_dict.values()
-                        hand_position_commands = hand_state_dict["positions"].values()
+                        hand_position_commands = hand_state_dict.values()
                     elif control_group == "hand":
                         hand_position_commands_dict = copy.deepcopy(
-                            hand_state_dict["positions"]
+                            hand_state_dict
                         )  # Start from the current state
                         for (
                             joint,
                             position,
                         ) in input_command_dict.items():  # Add control commands
-                            if joint in hand_state_dict["positions"]:
+                            if joint in hand_state_dict:
                                 hand_position_commands_dict[joint] = position
-                        arm_position_commands = arm_state_dict["positions"].values()
+                        arm_position_commands = arm_state_dict.values()
                         hand_position_commands = hand_position_commands_dict.values()
                     else:
 
@@ -2982,10 +3096,16 @@ class PandaControlServer(object):
                 )
 
         # Save position control setpoint
-        joint_positions_setpoint_dict = {
-            group: [command for command in control_list]
-            for (group, control_list) in control_pub_msgs.items()
-        }
+        if self.use_group_controller:
+            joint_positions_setpoint_dict = {
+                group: [command for command in control_list.data]
+                for (group, control_list) in control_pub_msgs.items()
+            }
+        else:
+            joint_positions_setpoint_dict = {
+                group: [command.data for command in control_list]
+                for (group, control_list) in control_pub_msgs.items()
+            }
         self.joint_positions_setpoint = joint_positions_setpoint_dict
 
         # Publish request
@@ -3159,10 +3279,16 @@ class PandaControlServer(object):
                 )
 
         # Save effort control setpoint
-        joint_efforts_setpoint_dict = {
-            group: [command for command in control_list]
-            for (group, control_list) in control_pub_msgs.items()
-        }
+        if self.use_group_controller:
+            joint_efforts_setpoint_dict = {
+                group: [command for command in control_list.data]
+                for (group, control_list) in control_pub_msgs.items()
+            }
+        else:
+            joint_efforts_setpoint_dict = {
+                group: [command.data for command in control_list]
+                for (group, control_list) in control_pub_msgs.items()
+            }
         self.joint_efforts_setpoint = joint_efforts_setpoint_dict
 
         # Publish request
@@ -3314,12 +3440,17 @@ class PandaControlServer(object):
                         else "joint position controllers are",
                     )
                 )
-
         # Save position control setpoint
-        joint_positions_setpoint_dict = {
-            group: [command for command in control_list]
-            for (group, control_list) in control_pub_msgs.items()
-        }
+        if self.use_group_controller:
+            joint_positions_setpoint_dict = {
+                group: [command for command in control_list.data]
+                for (group, control_list) in control_pub_msgs.items()
+            }
+        else:
+            joint_positions_setpoint_dict = {
+                group: [command.data for command in control_list]
+                for (group, control_list) in control_pub_msgs.items()
+            }
         self.joint_positions_setpoint = joint_positions_setpoint_dict
 
         # Publish request
@@ -3467,10 +3598,16 @@ class PandaControlServer(object):
                 )
 
         # Save effort control setpoint
-        joint_efforts_setpoint_dict = {
-            group: [command for command in control_list]
-            for (group, control_list) in control_pub_msgs.items()
-        }
+        if self.use_group_controller:
+            joint_efforts_setpoint_dict = {
+                group: [command for command in control_list.data]
+                for (group, control_list) in control_pub_msgs.items()
+            }
+        else:
+            joint_efforts_setpoint_dict = {
+                group: [command.data for command in control_list]
+                for (group, control_list) in control_pub_msgs.items()
+            }
         self.joint_efforts_setpoint = joint_efforts_setpoint_dict
 
         # Publish request
@@ -3616,12 +3753,17 @@ class PandaControlServer(object):
                         else "joint position controllers are",
                     )
                 )
-
         # Save position control setpoint
-        joint_positions_setpoint_dict = {
-            group: [command for command in control_list]
-            for (group, control_list) in control_pub_msgs.items()
-        }
+        if self.use_group_controller:
+            joint_positions_setpoint_dict = {
+                group: [command for command in control_list.data]
+                for (group, control_list) in control_pub_msgs.items()
+            }
+        else:
+            joint_positions_setpoint_dict = {
+                group: [command.data for command in control_list]
+                for (group, control_list) in control_pub_msgs.items()
+            }
         self.joint_positions_setpoint = joint_positions_setpoint_dict
 
         # Publish request
@@ -3769,10 +3911,16 @@ class PandaControlServer(object):
                 )
 
         # Save effort control setpoint
-        joint_efforts_setpoint_dict = {
-            group: [command for command in control_list]
-            for (group, control_list) in control_pub_msgs.items()
-        }
+        if self.use_group_controller:
+            joint_efforts_setpoint_dict = {
+                group: [command for command in control_list.data]
+                for (group, control_list) in control_pub_msgs.items()
+            }
+        else:
+            joint_efforts_setpoint_dict = {
+                group: [command.data for command in control_list]
+                for (group, control_list) in control_pub_msgs.items()
+            }
         self.joint_efforts_setpoint = joint_efforts_setpoint_dict
 
         # Publish request
@@ -3837,6 +3985,14 @@ class PandaControlServer(object):
             self._arm_effort_controller_msg_type = Float64MultiArray
             self._hand_position_controller_msg_type = Float64MultiArray
             self._hand_effort_controller_msg_type = Float64MultiArray
+
+        # Update combined position/effort controllers lists
+        self._position_controllers = flatten_list(
+            [self.arm_position_controllers, self.hand_position_controllers]
+        )
+        self._effort_controllers = flatten_list(
+            [self.arm_effort_controllers, self.hand_effort_controllers]
+        )
 
         # Return success bool
         resp = SwitchControlTypeResponse()

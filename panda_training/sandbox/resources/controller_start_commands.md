@@ -18,7 +18,7 @@ timeout: 0.0"
 ### Start panda_arm_controller and stop Panda arm position controllers
 
 ```bash
-rosservice call /controller_manager/switch_controller "start_controllers: ['panda_arm_controller'] 
+rosservice call /controller_manager/switch_controller "start_controllers: ['panda_arm_controller']
 stop_controllers: ['panda_arm_joint1_position_controller', 'panda_arm_joint2_position_controller', 'panda_arm_joint3_position_controller', 'panda_arm_joint4_position_controller',
 'panda_arm_joint5_position_controller', 'panda_arm_joint6_position_controller', 'panda_arm_joint7_position_controller']
 strictness: 0

@@ -1,4 +1,5 @@
-"""Some additional helpfull helper functions for the panda_training package."""
+"""Some additional helpfull helper functions for the panda_training package.
+"""
 
 # Main python imports
 import copy
@@ -300,3 +301,68 @@ def action_list_2_action_dict(actions, joints):
 
     action_dict = OrderedDict(zip(joints, actions))
     return action_dict
+
+
+def translate_actionclient_result_error_code(actionclient_retval):
+    """Translates the error code returned by the SimpleActionClient.get_result()
+    function into a human readable error message.
+
+    Parameters
+    ----------
+    actionclient_retval : control_msgs.msg.FollowJointTrajectoryResult
+        The result that is returned by the
+        actionlib.simple_action_client.SimpleActionClient.get_result() function.
+
+    Returns
+    -------
+    str
+        Error string that corresponds to the error code.
+    """
+
+    # Create error dictionary
+    error_dict = {
+        value: attr
+        for attr, value in actionclient_retval.__class__.__dict__.items()
+        if attr[0] != "_" and all(map(str.isupper, attr.replace("_", "")))
+    }
+
+    # Create error code message
+    return (
+        error_dict[actionclient_retval.error_code]
+        .lower()
+        .capitalize()
+        .replace("_", " ")
+        + "."
+        if error_dict[actionclient_retval.error_code] != "SUCCESSFUL"
+        else ""
+    )
+
+
+def list_2_human_text(input_list):
+    """Function converts a list of values into human readable sentence.
+
+    Example:
+        Using this function a list of 4 items '[item1, item2, item3, item4]' becomes
+        'item2, item3 and item4'.
+
+    Parameters
+    ----------
+    input_list : list
+        A input list.
+
+    Returns
+    -------
+    str
+        A human readable string that can be printed.
+    """
+
+    # Create human readable comma deliminated text
+    if isinstance(input_list, list):
+        if len(input_list) > 1:
+            return ", ".join(input_list[:-1]) + " & " + input_list[-1]
+        if len(input_list) == 0:
+            return ""
+        else:
+            return str(input_list[0])
+    else:
+        return input_list

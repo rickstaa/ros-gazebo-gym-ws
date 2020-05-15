@@ -4,10 +4,9 @@
   <version>0.0.0</version>
   <description>The panda_training package</description>
 
+
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
-  <!-- Example:  -->
-  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="ricks@todo.todo">ricks</maintainer>
+  <maintainer email="rick.staa@outlook.com">Rick Staa</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -18,14 +17,12 @@
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
-  <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/panda_training</url> -->
+  <url type="repository">https://github.com/rickstaa/panda_openai_sim</url>
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
   <!-- Authors do not have to be maintainers, but could be -->
-  <!-- Example: -->
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
+  <author email="rick.staa@outlook.com">Rick Staa</author>
 
 
   <!-- The *depend tags are used to specify dependencies -->
@@ -48,31 +45,44 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
+
+  <!-- Build tools that are needed -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>openai_ros</build_depend>
+
+  <!-- Packages that are needed both during building and running -->
+  <depend>moveit</depend>
+
+  <!-- Packages that are required during building (find_packages()-ed in CMake).-->
   <build_depend>rospy</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>trajectory_msgs</build_depend>
-  <build_depend>dynamic_reconfigure</build_depend>
-  <build_export_depend>openai_ros</build_export_depend>
-  <build_export_depend>rospy</build_export_depend>
+  <build_depend>actionlib</build_depend>
+  <build_depend>actionlib_msgs</build_depend>
+  <build_depend>control_msgs</build_depend>
+  <build_depend>openai_ros</build_depend>
 
-  <exec_depend>openai_ros</exec_depend>
+  <!-- Packages that are needed when building against this package (Included headers) -->
+  <!-- <build_export_depend>message_generation</build_export_depend> -->
+
+  <!-- Packages needed for running the code in this package ((CATKIN_)DEPENDS in
+    catkin_package()-ed in CMake)
+  -->
   <exec_depend>rospy</exec_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>trajectory_msgs</exec_depend>
-  <exec_depend>dynamic_reconfigure</exec_depend>
-  <exec_depend>nav_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>actionlib</exec_depend>
+  <exec_depend>actionlib_msgs</exec_depend>
+  <exec_depend>control_msgs</exec_depend>
+  <exec_depend>openai_ros</exec_depend>
 
-  <!-- CUSTOM -->
-  <depend>moveit</depend>
 
-  <!-- The export tag contains other, unspecified, tags -->
+  <!-- The export tag contains other, unspecified, tags (Used for metapackages and
+  Plugins -->
   <export>
     <!-- Other tools can request additional information be placed here -->
   </export>

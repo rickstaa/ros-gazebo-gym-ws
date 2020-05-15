@@ -35,7 +35,7 @@ register(
 # CLEAN: Cleanup code
 # TODO: Create robot arm and hand control
 # TODO: Add visual goal position and in inference
-# FIXME: Add a way for the robot to stop (if goal not vallid --> Choose new goal).
+# FIXME: Add a way for the robot to stop (if goal not valid --> Choose new goal).
 
 # Script parameters
 # TODO: ADD goal chose region to ROS PARAMETER FILE.

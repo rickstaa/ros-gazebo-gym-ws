@@ -1,4 +1,6 @@
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
+from trajectory_msgs.msg import JointTrajectoryPoint
+from std_msgs.msg import Header
 import actionlib
 from actionlib_msgs.msg import GoalStatusArray
 import rospy
@@ -44,6 +46,7 @@ def action_server_exists(topic_name):
 if __name__ == "__main__":
 
     rospy.init_node("test")
+    
     # Validate if action client exists
     # retval = action_server_exists("/panda_arm_controller/follow_joint_trajectory/")
 
@@ -51,11 +54,12 @@ if __name__ == "__main__":
     robot_name_space = ""
     _arm_control_action_server_timeout = rospy.Duration(secs=6)
     ARM_CONTROL_ACTION_SERVER_NAME = (
-        robot_name_space + "/panda_arm_controller/follow_joint_trajectorysd"
+        robot_name_space + "/panda_arm_controller/follow_joint_trajectory"
     )
     arm_control_action_client = actionlib.SimpleActionClient(
         ARM_CONTROL_ACTION_SERVER_NAME, FollowJointTrajectoryAction
     )
+
     # Waits until the action server has started up
     retval = arm_control_action_client.wait_for_server(timeout=rospy.Duration(5))
     if not retval:
@@ -70,4 +74,37 @@ if __name__ == "__main__":
             )
         )
         sys.exit(0)
-    print("test")
+
+    # Create action client goal
+    header = Header()
+    header.stamp = rospy.get_rostime()
+    goal = FollowJointTrajectoryGoal()
+    goal.trajectory.joint_names = [
+        "panda_joint1",
+        "panda_joint2",
+        "panda_joint3",
+        "panda_joint4",
+        "panda_joint5",
+        "panda_joint6",
+        "panda_joint7",
+    ]
+    point = JointTrajectoryPoint()
+    point.positions = [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.5,
+    ]
+    point.time_from_start.secs = 1.0
+    goal.trajectory.points.append(point)
+    # goal.trajectory.header = header
+
+    # Send goal
+    arm_control_action_client.send_goal(goal)
+    arm_control_action_client.wait_for_result()
+    result = arm_control_action_client.get_result()
+    result2 = arm_control_action_client.get_state()
+    print("kjan")

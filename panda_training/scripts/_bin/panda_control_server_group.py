@@ -182,21 +182,21 @@ class PandaControlServer(object):
         """
 
         # Save control setpoint
-        self.joint_positions_setpoint = joint_positions_req.joint_positions.data
+        self.joint_positions_setpoint = joint_positions_req.joint_positions
 
         # create service response message
         resp = SetJointPositionsResponse()
 
         # Check input size
         if (
-            len(joint_positions_req.joint_positions.data)
+            len(joint_positions_req.joint_positions)
             != self._arm_joint_group_position_input_size
         ):
             rospy.logwarn(
                 "You specified %s joint positions while the panda_arm joint "
                 "only takes %s joint positions."
                 % (
-                    len(joint_positions_req.joint_positions.data),
+                    len(joint_positions_req.joint_positions),
                     self._arm_joint_group_position_input_size,
                 )
             )
@@ -205,13 +205,13 @@ class PandaControlServer(object):
 
         # Fill joint position_callback message
         req = Float64MultiArray()
-        req.data = list(joint_positions_req.joint_positions.data)
+        req.data = list(joint_positions_req.joint_positions)
 
         # Publish request
         self._arm_joint_positions_publisher.publish(req)
 
         # Wait till control is finished
-        if joint_positions_req.wait.data:
+        if joint_positions_req.wait:
             self.wait_till_done()
 
         # Return success message
@@ -239,21 +239,18 @@ class PandaControlServer(object):
         resp = SetJointEffortsResponse()
 
         # Check input size
-        if len(joint_efforts.joint_efforts.data) != self._arm_joint_effort_input_size:
+        if len(joint_efforts.joint_efforts) != self._arm_joint_effort_input_size:
             rospy.logwarn(
                 "You specified %s joint positions while the panda_arm joint "
                 "only takes %s joint positions."
-                % (
-                    len(joint_efforts.joint_efforts.data),
-                    self._arm_joint_effort_input_size,
-                )
+                % (len(joint_efforts.joint_efforts), self._arm_joint_effort_input_size,)
             )
             resp.success = False
             return resp
 
         # Fill joint position_callback message
         req = Float64MultiArray()
-        req.data = joint_efforts.joint_efforts.data
+        req.data = joint_efforts.joint_efforts
 
         # Publish request
         self._arm_joint_efforts_publisher.publish(req)

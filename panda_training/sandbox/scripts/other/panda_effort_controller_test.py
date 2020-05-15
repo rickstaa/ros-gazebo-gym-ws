@@ -47,7 +47,7 @@ class JointEffortTester(object):
 
         # Call set_joint_efforts service
         set_joint_efforts_msg = SetJointEffortsRequest()
-        set_joint_efforts_msg.joint_efforts.data = self.joint_efforts_setpoint
+        set_joint_efforts_msg.joint_efforts = self.joint_efforts_setpoint
         self.set_joint_efforts_client.call(set_joint_efforts_msg)
 
         # # Create service caller
@@ -87,7 +87,7 @@ class JointEffortTester(object):
 
         # Call set_joint_efforts service
         set_joint_efforts_msg = SetJointEffortsRequest()
-        set_joint_efforts_msg.joint_efforts.data = self.joint_efforts_setpoint
+        set_joint_efforts_msg.joint_efforts = self.joint_efforts_setpoint
         self.set_joint_efforts_client.call(set_joint_efforts_msg)
 
         # Return config
@@ -105,7 +105,7 @@ class JointEffortTester(object):
 
         # Call set_joint_efforts service
         set_joint_efforts_msg = SetJointEffortsRequest()
-        set_joint_efforts_msg.joint_efforts.data = self.joint_efforts_setpoint
+        set_joint_efforts_msg.joint_efforts = self.joint_efforts_setpoint
         self.set_joint_efforts_client.call(set_joint_efforts_msg)
 
 

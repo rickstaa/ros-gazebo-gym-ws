@@ -22,15 +22,15 @@ MODEL_CLASS = DDPG  # works also with SAC, DDPG and TD
 NAME = "{}-fetch_reach-transferred-{}".format(
     MODEL_CLASS.__module__.split(".")[-1], int(time.time())
 )
-TB_LOGDIR = "./logs/{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
 
 # Transferlearning pretrained model
 # NOTE: Her is not working since policy was trained with sac
 # We therfore first use transfer learning on the HER model
 # to change SAC to DDPG and then use this new model as a
 # Pretrained model in this new transfer learning
-MODEL_DIR = "./models/her-ddpg-fetch_reach-transferred-1583237666.pkl"
-TRANSFER_MODEL_DIR = "./models/{}".format(NAME)
+MODEL_DIR = "./panda_training/models/her-ddpg-fetch_reach-transferred-1583237666.pkl"
+TRANSFER_MODEL_DIR = "./panda_training/models/{}".format(NAME)
 
 N_STEPS = 5e4
 

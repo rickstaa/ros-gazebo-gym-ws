@@ -18,11 +18,13 @@ import rospy
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
 sys.path.insert(0, scriptsdir)
-import panda_task_env
+import panda_training.envs.task_envs import PandaReachTaskEnv
 
 # Get current folder
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
-MODEL_FOLDER_PATH = os.path.abspath(os.path.join(FILE_PATH, "../../models"))
+MODEL_FOLDER_PATH = os.path.abspath(
+    os.path.join(FILE_PATH, "../../panda_training/models")
+)
 
 
 #################################################

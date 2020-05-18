@@ -245,8 +245,9 @@ setup(
         "Natural Language :: English",
         "Topic :: Scientific/Engineering",
     ],
-    # package_dir={"": "src"},
-    # packages=find_packages(where="src"),
+    # scripts="scripts",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     install_requires=requirements,
     extras_require={
         "docs": [

@@ -21,18 +21,18 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
 sys.path.insert(0, scriptsdir)
-import panda_task_env
+from panda_training.envs.task_envs import PandaReachTaskEnv
 
 # Model parameters
 MODEL_POLICY = "MlpPolicy"
 MODEL_CLASS = DDPG  # works also with SAC, DDPG and TD3
 GOAL_SELECTION_STRATEGY = (
-    "future"
-)  # Available strategies (cf paper): future, final, episode, random
+    "future"  # Available strategies (cf paper): future, final, episode, random
+)
 NAME = "her_fetch_reach-{}".format(int(time.time()))
-TB_LOGDIR = "./logs/{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
 VIDEO_DIR = "./videos/"
-MODEL_DIR = "./models/{}".format(NAME)
+MODEL_DIR = "./panda_training/models/{}".format(NAME)
 N_STEPS = 3
 
 # Main

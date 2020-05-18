@@ -1,13 +1,13 @@
 # Folders to ignore
 .vscode/
 .egg-info/
-logs/
-__pycache__/
 .VSCodeCounter/*
-logs/*
-models/*
-videos/*
+/CMakeLists.txt
 build/
+__pycache__/
+./panda_training/models/*
+./panda_training/logs/*
+./panda_training/videos/*
 
 # Files to ignore
 *.pyc

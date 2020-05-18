@@ -19,14 +19,14 @@ import os
 MODEL_POLICY = "MlpPolicy"
 MODEL_CLASS = DDPG  # works also with SAC, DDPG and TD3
 GOAL_SELECTION_STRATEGY = (
-    "future"
-)  # Available strategies (cf paper): future, final, episode, random
+    "future"  # Available strategies (cf paper): future, final, episode, random
+)
 NAME = "her-{}-fetch_reach-transferred-{}".format(
     MODEL_CLASS.__module__.split(".")[-1], int(time.time())
 )
-TB_LOGDIR = "./logs/{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
 VIDEO_DIR = "./videos/"
-MODEL_DIR = "./models/{}".format(NAME)
+MODEL_DIR = "./panda_training/models/{}".format(NAME)
 N_STEPS = 9e4
 
 # Main

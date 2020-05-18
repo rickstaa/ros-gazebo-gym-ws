@@ -6,7 +6,7 @@ from stable_baselines import HER, DQN, SAC, DDPG, TD3
 import os
 
 # Model parameters
-MODEL_DIR = "./models/her_fetch_reach-1583151668.zip"
+MODEL_DIR = "./panda_training/models/her_fetch_reach-1583151668.zip"
 
 # Main
 if __name__ == "__main__":

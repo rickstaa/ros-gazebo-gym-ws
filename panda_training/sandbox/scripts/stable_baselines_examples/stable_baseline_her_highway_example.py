@@ -27,12 +27,12 @@ import time
 MODEL_POLICY = "MlpPolicy"
 MODEL_CLASS = DDPG  # works also with SAC, DDPG and TD3
 GOAL_SELECTION_STRATEGY = (
-    "future"
-)  # Available strategies (cf paper): future, final, episode, random
+    "future"  # Available strategies (cf paper): future, final, episode, random
+)
 NAME = "her_highway_park-{}".format(int(time.time()))
-TB_LOGDIR = "./logs/{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
 VIDEO_DIR = "./videos/"
-MODEL_DIR = "./models/{}.zip".format(NAME)
+MODEL_DIR = "./panda_training/models/{}.zip".format(NAME)
 
 
 # Helper functions

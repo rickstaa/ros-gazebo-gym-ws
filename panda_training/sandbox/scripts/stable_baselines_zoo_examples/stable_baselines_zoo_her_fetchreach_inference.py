@@ -1,7 +1,6 @@
 """This script shows how to use the her fetchreach model that is
 found in the stable_baselines_zoo to control a fetch robot."""
 
-
 import gym
 import time
 from stable_baselines import HER, DQN, SAC, DDPG, TD3

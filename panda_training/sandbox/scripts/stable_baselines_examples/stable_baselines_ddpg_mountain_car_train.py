@@ -25,9 +25,9 @@ from stable_baselines import DDPG
 # Model parameters
 MODEL_POLICY = MlpPolicy
 NAME = "ddpg_mountain_car-{}".format(int(time.time()))
-TB_LOGDIR = "./logs/{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
 VIDEO_DIR = "./videos/"
-MODEL_DIR = "./models/{}".format(NAME)
+MODEL_DIR = "./panda_training/models/{}".format(NAME)
 
 # Main
 if __name__ == "__main__":

@@ -50,7 +50,9 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <!-- Packages that are needed both during building and running -->
+  <!-- Python packages -->
   <depend>moveit</depend>
+  <depend>gym-pip</depend>
 
   <!-- Packages that are required during building (find_packages()-ed in CMake).-->
   <build_depend>rospy</build_depend>

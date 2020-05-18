@@ -16,7 +16,7 @@ import rospy
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
 sys.path.insert(0, scriptsdir)
-import panda_task_env
+import panda_training.envs.task_envs import PandaReachTaskEnv
 
 # Model parameters
 MODEL_DIR = "rl-baselines-zoo/trained_agents/her/FetchReach-v1.pkl"

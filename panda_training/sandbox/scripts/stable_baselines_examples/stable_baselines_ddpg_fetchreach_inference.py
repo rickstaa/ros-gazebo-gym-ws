@@ -5,7 +5,7 @@ import time
 import os
 
 # Parameters
-MODEL_DIR = "./models/ddpg_fetchtrain-1583160184.zip"
+MODEL_DIR = "./panda_training/models/ddpg_fetchtrain-1583160184.zip"
 
 # Main
 if __name__ == "__main__":

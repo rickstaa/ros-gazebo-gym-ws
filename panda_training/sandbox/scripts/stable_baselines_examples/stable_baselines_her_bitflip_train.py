@@ -15,12 +15,12 @@ import os
 MODEL_POLICY = "MlpPolicy"
 MODEL_CLASS = DDPG  # works also with SAC, DDPG and TD3
 GOAL_SELECTION_STRATEGY = (
-    "future"
-)  # Available strategies (cf paper): future, final, episode, random
+    "future"  # Available strategies (cf paper): future, final, episode, random
+)
 NAME = "her_bit_flip-{}".format(int(time.time()))
-TB_LOGDIR = "./logs/{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
 VIDEO_DIR = "./videos/"
-MODEL_DIR = "./models/{}".format(NAME)
+MODEL_DIR = "./panda_training/models/{}".format(NAME)
 N_BITS = 1
 
 if __name__ == "__main__":

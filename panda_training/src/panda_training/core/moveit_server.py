@@ -5,7 +5,6 @@ to control the Panda robot or retrieve sensor data for the robot.
 
 # Main python imports
 import sys
-import os
 import re
 import copy
 from collections import OrderedDict
@@ -93,14 +92,7 @@ class PandaMoveitPlannerServer(object):
         # Initialize Moveit/Robot/Scene and group commanders
         rospy.logdebug("Initialize Moveit Robot/Scene and group commanders.")
         try:
-
-            # NOTE: Fix arguments to solve `C++ converter` error when debugging in ptvsd
-            cleaned_args = [
-                a
-                for a in sys.argv
-                if not os.path.basename(__file__) in os.path.basename(__file__)
-            ]
-            moveit_commander.roscpp_initialize(cleaned_args)
+            moveit_commander.roscpp_initialize(sys.argv)
             self.robot = moveit_commander.RobotCommander()
             self.scene = moveit_commander.PlanningSceneInterface()
             self.move_group_arm = moveit_commander.MoveGroupCommander(arm_move_group)
@@ -632,7 +624,7 @@ class PandaMoveitPlannerServer(object):
         except InputMessageInvalid as e:
 
             # Print warning message and return result
-            logwarn_msg = "Panda robot joint Positions not set as " + lower_first_char(
+            logwarn_msg = "Panda robot joint positions not set as " + lower_first_char(
                 e.log_message
             )
             rospy.logwarn(logwarn_msg)
@@ -964,7 +956,7 @@ class PandaMoveitPlannerServer(object):
             resp.message = "Everything went OK"
         else:
             rospy.logwarn(
-                "Ee could not be as '%s' is not a valid ee link." % set_ee_req.ee_name
+                "EE could not be as '%s' is not a valid ee link." % set_ee_req.ee_name
             )
             resp.success = False
             resp.message = "'%s' is not a valid ee link." % set_ee_req.ee_name

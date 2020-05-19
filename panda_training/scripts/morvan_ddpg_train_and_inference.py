@@ -1,4 +1,4 @@
-﻿"""Train the Panda Robot using the DDPG classes of Morvanzhou.
+"""Train the Panda Robot using the DDPG classes of Morvanzhou.
 
 .. note:
     You can train this RL by using LOAD = False, after training, this model will be
@@ -16,8 +16,6 @@ import tensorflow as tf
 import numpy as np
 import os
 import shutil
-import inspect
-import sys
 import gym
 import time
 from tensorflow.keras.callbacks import TensorBoard
@@ -26,10 +24,7 @@ from tensorflow.keras.callbacks import TensorBoard
 import rospy
 
 # Import panda gym environment
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
-sys.path.insert(0, scriptsdir)
-import panda_training.envs.task_envs import PandaReachTaskEnv
+from panda_training.envs.task_envs import PandaReachTaskEnv
 
 # Create random seed
 np.random.seed(1)
@@ -354,18 +349,18 @@ def eval():
 
 #################################################
 # Main script ###################################
-################################################
+#################################################
 if __name__ == "__main__":
 
     # Initialize ros node
     rospy.init_node("panda_training_her", log_level=rospy.DEBUG)
 
-    # Create environment
+    # Create environment6
     env = gym.make(
         "PandaReach-v0",
         robot_EE_link="panda_grip_site",
         robot_arm_control_type="joint_position_control",
-        robot_hand_control_type="joint_position_control",
+        robot_hand_control_type="joint_effort_control",
     )
 
     # NOTE: Simply wrap the goal-based environment using FlattenDictWrapper

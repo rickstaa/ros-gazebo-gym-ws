@@ -7,7 +7,7 @@ the Panda Emika Franka robot.
 import rospy
 
 # Panda_autograsp modules, msgs and srvs
-from panda_training.core import PandaMoveitPlannerServer
+from panda_training.core.moveit_server import PandaMoveitPlannerServer
 
 
 #################################################

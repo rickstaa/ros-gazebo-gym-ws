@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "python.pythonPath": "/home/ricks/.catkin_ws_python3/openai_venv/bin/python",
+    "python.autoComplete.extraPaths": [
+      "/home/ricks/Development/panda_openai_sim_ws/devel/lib/python2.7/dist-packages",
+      "/opt/ros/melodic/lib/python2.7/dist-packages"
+    ]
+  }
+}

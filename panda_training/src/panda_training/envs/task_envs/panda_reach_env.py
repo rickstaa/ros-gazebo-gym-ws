@@ -32,7 +32,7 @@ from geometry_msgs.msg import Pose
 # Register Openai gym environment
 register(
     id="PandaReach-v0",
-    entry_point="panda_reach_env:PandaReachTaskEnv",
+    entry_point="panda_training.envs.task_envs:PandaReachTaskEnv",
     max_episode_steps=1000,
 )
 
@@ -142,9 +142,7 @@ class PandaReachTaskEnv(PandaRobotEnv, utils.EzPickle):
         self.get_params()
 
         # Initialize parent Class to setup the Robot environment)
-        # FIXME: Change to SUPER
-        PandaRobotEnv.__init__(
-            self,
+        super(PandaReachTaskEnv, self).__init__(
             robot_EE_link=robot_EE_link,
             robot_arm_control_type=self._robot_arm_control_type,
             robot_hand_control_type=self._robot_hand_control_type,

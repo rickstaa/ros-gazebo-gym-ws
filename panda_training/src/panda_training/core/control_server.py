@@ -628,7 +628,7 @@ class PandaControlServer(object):
         self._as_arm_feedback.header = header
         self._as_arm_feedback.actual.positions = arm_state_dict["positions"].values()
         self._as_arm_feedback.actual.velocities = arm_state_dict["velocities"].values()
-        self._as_arm_feedback.actual.effort = arm_state_dict["effort"].values()
+        self._as_arm_feedback.actual.effort = arm_state_dict["efforts"].values()
 
         # Fill hand feedback message
         self._as_hand_feedback.joint_names = self._controlled_joints_traj_control[
@@ -639,7 +639,7 @@ class PandaControlServer(object):
         self._as_hand_feedback.actual.velocities = hand_state_dict[
             "velocities"
         ].values()
-        self._as_hand_feedback.actual.effort = hand_state_dict["effort"].values()
+        self._as_hand_feedback.actual.effort = hand_state_dict["efforts"].values()
         self._as_feedback.joint_names = self._controlled_joints_traj_control["both"]
         self._as_hand_feedback.header = header
 
@@ -980,12 +980,12 @@ class PandaControlServer(object):
             "arm": {
                 "positions": arm_state_position_dict,
                 "velocities": arm_state_velocities_dict,
-                "effort": arm_state_efforts_dict,
+                "efforts": arm_state_efforts_dict,
             },
             "hand": {
                 "positions": hand_state_position_dict,
                 "velocities": hand_state_velocities_dict,
-                "effort": hand_state_efforts_dict,
+                "efforts": hand_state_efforts_dict,
             },
         }
 
@@ -1292,7 +1292,7 @@ class PandaControlServer(object):
 
             # Add efforts
             arm_control_msg.trajectory.points[idx].effort = arm_state_dict[
-                "effort"
+                "efforts"
             ].values()
 
             # Add accelerations
@@ -1315,7 +1315,7 @@ class PandaControlServer(object):
 
             # Add efforts
             hand_control_msg.trajectory.points[idx].effort = hand_state_dict[
-                "effort"
+                "efforts"
             ].values()
 
             # Add accelerations
@@ -1339,10 +1339,10 @@ class PandaControlServer(object):
         ]
 
         # Validate time axis step size and throw warning if invalid
-        if input_msg.time_axis_step <= 0.0:
+        if input_msg.time_axis_step <= 0.0 and input_msg.create_time_axis:
             rospy.logwarn(
-                "A time axis step size of %s is not supported. Please supply a time"
-                "axis step greater than 0.0 if you want to automatically create the"
+                "A time axis step size of %s is not supported. Please supply a time "
+                "axis step greater than 0.0 if you want to automatically create the "
                 "trajectory time axis." % input_msg.time_axis_step
             )
             input_msg.create_time_axis = False  # Disable time axis generation
@@ -1847,7 +1847,7 @@ class PandaControlServer(object):
                         for length in acceleration_waypoints_length
                     ]
                 ),
-                "effort": any(
+                "efforts": any(
                     [
                         length != len(joint_names) and length != 0
                         for length in effort_waypoints_length
@@ -1940,7 +1940,7 @@ class PandaControlServer(object):
                             "accelerations": OrderedDict(
                                 zip(joint_names, waypoint.accelerations)
                             ),
-                            "effort": OrderedDict(zip(joint_names, waypoint.effort)),
+                            "efforts": OrderedDict(zip(joint_names, waypoint.effort)),
                         }
 
                         # Create position/velocity/acceleration and effort control
@@ -2030,16 +2030,16 @@ class PandaControlServer(object):
                             # Create effort command array
                             if len(waypoint.effort) != 0:
                                 arm_effort_commands_dict = copy.deepcopy(
-                                    arm_state_dict["effort"]
+                                    arm_state_dict["efforts"]
                                 )  # Start from the current states
                                 for (joint, effort,) in input_command_dict[
-                                    "effort"
+                                    "efforts"
                                 ].items():  # Add control commands
-                                    if joint in arm_state_dict["effort"]:
+                                    if joint in arm_state_dict["efforts"]:
                                         arm_effort_commands_dict[joint] = effort
                                 arm_effort_commands = arm_effort_commands_dict.values()
                                 hand_effort_commands = hand_state_dict[
-                                    "effort"
+                                    "efforts"
                                 ].values()
                             else:
                                 # Make sure empty effort field stays empty
@@ -2131,14 +2131,14 @@ class PandaControlServer(object):
                             # Create effort command array
                             if len(waypoint.effort) != 0:
                                 hand_effort_commands_dict = copy.deepcopy(
-                                    hand_state_dict["effort"]
+                                    hand_state_dict["efforts"]
                                 )  # Start from the current states
                                 for (joint, effort,) in input_command_dict[
-                                    "effort"
+                                    "efforts"
                                 ].items():  # Add control commands
-                                    if joint in hand_state_dict["effort"]:
+                                    if joint in hand_state_dict["efforts"]:
                                         hand_effort_commands_dict[joint] = effort
-                                arm_effort_commands = arm_state_dict["effort"].values()
+                                arm_effort_commands = arm_state_dict["efforts"].values()
                                 hand_effort_commands = (
                                     hand_effort_commands_dict.values()
                                 )
@@ -2283,22 +2283,22 @@ class PandaControlServer(object):
                             # Create arm effort control message
                             if len(waypoint.effort) != 0:
                                 arm_effort_commands_dict = copy.deepcopy(
-                                    arm_state_dict["effort"]
+                                    arm_state_dict["efforts"]
                                 )  # Start from the current states
                                 for (joint, effort,) in input_command_dict[
-                                    "effort"
+                                    "efforts"
                                 ].items():  # Add control commands
-                                    if joint in arm_state_dict["effort"]:
+                                    if joint in arm_state_dict["efforts"]:
                                         arm_effort_commands_dict[joint] = effort
 
                                 # Create hand effort control message
                                 hand_effort_commands_dict = copy.deepcopy(
-                                    hand_state_dict["effort"]
+                                    hand_state_dict["efforts"]
                                 )  # Start from the current states
                                 for (joint, effort,) in input_command_dict[
-                                    "effort"
+                                    "efforts"
                                 ].items():  # Add control commands
-                                    if joint in hand_state_dict["effort"]:
+                                    if joint in hand_state_dict["efforts"]:
                                         hand_effort_commands_dict[joint] = effort
                                 arm_effort_commands = arm_effort_commands_dict.values()
                                 hand_effort_commands = (
@@ -2478,8 +2478,8 @@ class PandaControlServer(object):
             arm_msg_type = self._arm_position_controller_msg_type
             hand_msg_type = self._hand_position_controller_msg_type
         elif control_type == "effort_control":
-            arm_state_dict = state_dict["arm"]["effort"]
-            hand_state_dict = state_dict["hand"]["effort"]
+            arm_state_dict = state_dict["arm"]["efforts"]
+            hand_state_dict = state_dict["hand"]["efforts"]
             arm_msg_type = self._arm_effort_controller_msg_type
             hand_msg_type = self._hand_effort_controller_msg_type
 

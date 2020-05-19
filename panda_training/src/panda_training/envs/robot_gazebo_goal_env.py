@@ -18,8 +18,6 @@ from openai_ros.controllers_connection import ControllersConnection
 from theconstruct_msgs.msg import RLExperimentInfo
 from gazebo_msgs.msg import ModelStates
 
-# CLEAN: Cleanup code
-
 
 #################################################
 # Panda Robot Gazebo Environment Class ##########
@@ -100,6 +98,19 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         self._model_states_sub = rospy.Subscriber(
             model_states_topic, ModelStates, self._model_states_callback
         )
+
+        # Unpause the simulation and reset the controllers if needed
+        # NOTE: To check any topic we need to have the simulations running, we need to
+        # do two things:
+        # 1) Unpause the simulation: without that th stream of data doesn't flow. This
+        # is for simulations that are pause for whatever the reason.
+        # 2) If the simulation was running already for some reason, we need to reset
+        # the controllers.
+        # This has to do with the fact that some plugins with tf, don't understand the
+        # reset of the simulation and need to be reset to work properly.
+        self.gazebo.unpauseSim()
+        if self.reset_controls:
+            self.controllers_object.reset_controllers()
 
         # Environment initiation complete message
         rospy.loginfo("Panda RobotGazeboGoal environment initialized.")

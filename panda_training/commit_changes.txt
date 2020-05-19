@@ -1,0 +1,7 @@
+- Reenables panda_control node in launch file
+- Fixes python node permissions
+- Fixes Openai gym environment register path error.
+- Fixes python2, python 3 incompatibility issues
+- Fixes some small bugs in the robot_environment
+- Adds set_joint_trajectory and set_joint_effort functions to robot environment
+- Cleaned up code of the panda_robot_environment

@@ -187,10 +187,7 @@ class PandaControlSwitcher(object):
                 "Shutting down '%s' because no connection could be established "
                 "with the '%s' service and this service is needed "
                 "when using 'joint_position_control'."
-                % (
-                    rospy.get_name(),
-                    e.args[0].strip("timeout exceeded while waiting for service"),
-                )
+                % (rospy.get_name(), "/" + e.args[0].split(" /")[1],)
             )
             sys.exit(0)
 

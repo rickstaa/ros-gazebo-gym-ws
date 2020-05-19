@@ -13,7 +13,7 @@ from panda_training.extras import EulerAngles
 
 # ROS msgs and srvs
 from actionlib_msgs.msg import GoalStatusArray
-from control_msgs.msg import FollowJointTrajectoryGoal
+from panda_training.msg import FollowJointTrajectoryGoal
 from trajectory_msgs.msg import JointTrajectoryPoint
 
 
@@ -62,25 +62,29 @@ def action_server_exists(topic_name):
 
 def joint_positions_2_follow_joint_trajectory_goal(joint_positions, time_from_start=1):
     """Converts a dictionary of joint_positions into a FollowJointTrajectoryGoal
-        msgs.
+    msgs.
 
-        Parameters
-        ----------
-        joint_positions : dict
-            The joint positions of each of the robot joints.
-        time_from_start : dict, optional
-            The time from the start at which the joint position has to be achieved, by
-            default 1 sec.
-        """
+    Parameters
+    ----------
+    joint_positions : dict
+        The joint positions of each of the robot joints.
+    time_from_start : dict, optional
+        The time from the start at which the joint position has to be achieved, by
+        default 1 sec.
+
+    Returns
+    -------
+    panda_training.msg.FollowJointTrajectoryGoal
+        New FollowJointTrajectoryGoal message.
+    """
 
     # creates a goal to send to the action server
     goal_msg = FollowJointTrajectoryGoal()
-    joint_states = JointTrajectoryPoint()
-    joint_states.time_from_start.secs = time_from_start
-    for joint_name, joint_position in joint_positions.items():
-        joint_states.positions.append(joint_position)
-        goal_msg.trajectory.joint_names.append(joint_name)
-    goal_msg.trajectory.points.append(joint_states)
+    waypoint = JointTrajectoryPoint()
+    waypoint.time_from_start.secs = time_from_start
+    waypoint.positions = list(joint_positions.values())
+    goal_msg.trajectory.joint_names = list(joint_positions.keys())
+    goal_msg.trajectory.points.append(waypoint)
 
     # Return goal msgs
     return goal_msg

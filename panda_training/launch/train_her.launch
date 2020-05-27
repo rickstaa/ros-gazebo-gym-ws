@@ -1,17 +1,14 @@
 <!-- Launch file for training using the DDQG method -->
+<!--TODO: Improve namings scheme-->
 <launch>
 
     <!--## ARGUMENTS ##-->
     <!-- Main args -->
     <arg name="moveit" default="true" />
-    <arg name="rviz" default="false" />
-
+    <arg name="rviz" default="true" />
     <!-- Controller args -->
     <arg name="use_group_controller" default="false" /> <!-- Wheter to use group controllers -->
     <arg name="preload_controllers" default="false" /> <!-- Wheter to preload all non essential controllers -->
-
-    <!-- Load learning parameters -->
-    <rosparam file="$(find panda_training)/cfg/algorithms/her_config.yaml" command="load" />
 
     <!-- Launch Panda openai simulator -->
     <include file="$(find panda_training)/launch/panda_openai_sim.launch">

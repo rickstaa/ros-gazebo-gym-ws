@@ -29,6 +29,8 @@ from panda_training.srv import (
     GetEePoseResponse,
     GetEeRpy,
     GetEeRpyResponse,
+    GetRandomJointPositions,
+    GetRandomJointPositionsResponse,
     SetEe,
     SetEeResponse,
     SetEePose,
@@ -211,6 +213,14 @@ class PandaMoveitPlannerServer(object):
                 GetEeRpy,
                 self._arm_get_ee_rpy_callback,
             )
+            rospy.logdebug(
+                "Creating '%s/get_random_joint_positions' service." % rospy.get_name()
+            )
+            self._get_random_pose_srv = rospy.Service(
+                "%s/get_random_joint_positions" % rospy.get_name()[1:],
+                GetRandomJointPositions,
+                self._get_random_joint_positions_callback,
+            )
         rospy.loginfo("'%s' services created successfully." % rospy.get_name())
 
         # Initiate service msgs
@@ -223,10 +233,10 @@ class PandaMoveitPlannerServer(object):
         #############################################
 
         # Retrieve current robot joint state and effort information
-        self._joints = None
-        while self._joints is None and not rospy.is_shutdown():
+        self._joint_states = None
+        while self._joint_states is None and not rospy.is_shutdown():
             try:
-                self._joints = rospy.wait_for_message(
+                self._joint_states = rospy.wait_for_message(
                     self._joint_state_topic, JointState, timeout=1.0
                 )
             except ROSException:
@@ -245,10 +255,12 @@ class PandaMoveitPlannerServer(object):
         # NOTE: Used to determine which values in the /joint_states topic
         # are related to the arm and which to the hand.
         self._arm_states_mask = [
-            joint in self._controlled_joints_dict["arm"] for joint in self._joints.name
+            joint in self._controlled_joints_dict["arm"]
+            for joint in self._joint_states.name
         ]
         self._hand_states_mask = [
-            joint in self._controlled_joints_dict["hand"] for joint in self._joints.name
+            joint in self._controlled_joints_dict["hand"]
+            for joint in self._joint_states.name
         ]
 
     ###############################################
@@ -600,7 +612,7 @@ class PandaMoveitPlannerServer(object):
         rospy.logdebug("Setting joint position targets.")
         resp = SetJointPositionsResponse()
 
-        # Check if joint_efforts_req.joint_names contains duplicates\
+        # Check if joint_efforts_req.joint_names contains duplicates
         duplicate_list = get_duplicate_list(set_joint_positions_req.joint_names)
         if duplicate_list:
 
@@ -933,7 +945,7 @@ class PandaMoveitPlannerServer(object):
 
         Parameters
         ----------
-        set_ee_req : panda_train.srv.SetEe
+        set_ee_req : panda_train.srv.SetEeRequest
             Request message containing the name of the end effector you want to be set.
 
         Returns
@@ -960,4 +972,48 @@ class PandaMoveitPlannerServer(object):
             )
             resp.success = False
             resp.message = "'%s' is not a valid ee link." % set_ee_req.ee_name
+        return resp
+
+    def _get_random_joint_positions_callback(self, get_random_position_req):
+        """Returns valid joint position commands for the Panda arm and hand.
+
+        Parameters
+        ----------
+        get_random_position_req : std_srvs.srv.Empty
+            Empty request.
+
+        Returns
+        -------
+        panda_train.srv.GetRandomPositionsResponse
+            Response message containing the random joints positions.
+        """
+
+        # Get random joint positions that are valid and return response
+        arm_joints = self.move_group_arm.get_active_joints()
+        hand_joints = self.move_group_hand.get_active_joints()
+        random_arm_joint_values = self.move_group_arm.get_random_joint_values()
+        random_hand_joint_values = self.move_group_hand.get_random_joint_values()
+
+        # Create response message
+        resp = GetRandomJointPositionsResponse()
+        joint_names = (
+            flatten_list([arm_joints, hand_joints])
+            if self._arm_states_mask[0]
+            else flatten_list([hand_joints, arm_joints])
+        )
+        joint_positions = (
+            flatten_list([random_arm_joint_values, random_hand_joint_values])
+            if self._arm_states_mask[0]
+            else flatten_list([random_hand_joint_values, random_arm_joint_values])
+        )
+        resp.joint_names = joint_names
+        resp.joint_positions = joint_positions
+
+        # Check if successful and return response
+        if len(
+            flatten_list([random_arm_joint_values, random_hand_joint_values])
+        ) == len(flatten_list([arm_joints, hand_joints])):
+            resp.success = True
+        else:
+            resp.success = False
         return resp

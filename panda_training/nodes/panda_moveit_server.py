@@ -22,7 +22,7 @@ if __name__ == "__main__":
     try:  # Check end effector
         arm_ee_link = rospy.get_param("~end_effector")
     except KeyError:
-        arm_ee_link = "panda_grip_site"
+        arm_ee_link = "panda_hand"
     try:  # Check required services
         create_all_services = rospy.get_param("~services_load_type")
     except KeyError:

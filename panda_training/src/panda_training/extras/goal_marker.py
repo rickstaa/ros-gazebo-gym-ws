@@ -1,6 +1,6 @@
 ﻿"""Class used for displaying a gasp goal marker in rviz. This class overloads the "
-the visualization_msgs.msgs.Marker class in order to pre-initialize some of its "
-attributes.
+visualization_msgs.msgs.Marker class in order to pre-initialize some of its attributes.
+To visualize the marker you can publish it on the 'panda_training/current_goal' topic.
 """
 
 # Main python 2/3 compatibility imports
@@ -12,10 +12,13 @@ import sys
 # ROS python imports
 import rospy
 from rospy.exceptions import ROSInitException
+from panda_training.extras import Quaternion
 
 # ROS msgs and srvs
 from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
+from std_msgs.msg import ColorRGBA
+from geometry_msgs.msg import Vector3
 
 
 #################################################
@@ -23,40 +26,73 @@ from visualization_msgs.msg import Marker
 #################################################
 class GoalMarker(Marker):
     """Class used to create an rviz goal marker.
+
+    Attributes
+    ----------
+    id : int
+        The marker object id.
+    type : string
+        The marker type.
+    action : float
+        The marker message action (add or remove).
+    pose : geometry_msgs.Pose
+        The marker pose.
+    scale : geometry_msgs.Vector3
+        The marker scale
+    color : std_msgs.ColorRGBA
+        The marker color.
+    lifetime : duration
+        The lifetime duration.
+    frame_locked : bool
+        Bool specifying whether the marker frame is locked to the world.
+    point : geometry_msgs.Point
+        The marker points.
+    string : string
+        A description.
+    mesh_resource : string
+        Marker mess location.
+    mesh_use_embedded_materials : bool
+        Bool specifying whether we want to use a mesh.
     """
 
     def __init__(self, *args, **kwds):
         """Initialize GoalMarker object
         """
 
-        # Setup superclass attributes
-        super().__init__()
-
-        # Pre-initialize header
-        header = Header()
-        try:  # Check if rostime was initialized
-            header.stamp = rospy.Time.now()
-        except ROSInitException:
-            raise Exception(
-                "Goal markers could not be created as the ROS time is not initialized. "
-                "Have you called init_node()?"
-            )
-            sys.exit(0)
-        header.frame_id = "world"
-
-        # Pre-initialize marker class attributes
-        self.id = 0
-        self.type = Marker.SPHERE
-        self.action = Marker.ADD
-        self.color.a = 1.0
-        self.color.r = 1.0
-        self.color.g = 0.0
-        self.color.b = 0.0
-        self.scale.x = 0.025
-        self.scale.y = 0.025
-        self.scale.z = 0.025
-        self.lifetime = rospy.Duration(-1)
-        self.header = header
-
-        # Apply class input arguments
+        # Apply superclass initiation
         super().__init__(*args, **kwds)
+
+        # Overwrite attributes with defaults if not supplied in the constructor
+        if "header" not in kwds.keys():
+
+            # Pre-initialize header
+            self.header = Header()
+            try:  # Check if rostime was initialized
+                self.header.stamp = rospy.Time.now()
+            except ROSInitException:
+                raise Exception(
+                    "Goal marker could not be created as the ROS time is not initialized. "
+                    "Have you called init_node()?"
+                )
+                sys.exit(0)
+            self.header.frame_id = "world"
+        if "color" not in kwds.keys():
+            self.color = ColorRGBA()
+            self.color.a = 1.0
+            self.color.r = 1.0
+            self.color.g = 0.0
+            self.color.b = 0.0
+        if "scale" not in kwds.keys():
+            self.scale = Vector3()
+            self.scale.x = 0.025
+            self.scale.y = 0.025
+            self.scale.z = 0.025
+        self.id = 0 if "id" not in kwds.keys() else self.id
+        self.type = Marker.CUBE if "type" not in kwds.keys() else self.type
+        self.action = Marker.ADD if "action" not in kwds.keys() else self.action
+        self.lifetime = (
+            rospy.Duration(-1) if "lifetime" not in kwds.keys() else self.lifetime
+        )
+
+        # Make sure the position quaternion is normalized
+        self.pose.orientation = Quaternion.normalize_quaternion(self.pose.orientation)

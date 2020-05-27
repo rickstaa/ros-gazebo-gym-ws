@@ -6,6 +6,6 @@ from __future__ import absolute_import
 # Import module classes
 # from .panda_pick_and_place_env import PandaPickAndPlaceTaskEnv
 # from .panda_push_env import PandaPushTaskEnv
-from .panda_reach_env import PandaReachTaskEnv
+from .panda_task_env import PandaTaskEnv
 
 # from .panda_slide_env import PandaSlideTaskEnv

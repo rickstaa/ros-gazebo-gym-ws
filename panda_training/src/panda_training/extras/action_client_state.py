@@ -9,7 +9,7 @@ actionlib.simple_action_client.SimpleActionClient in a more human friendly forma
 class ActionClientState(object):
     """Class used to save the action client state in a more human friendly format.
 
-    Parameters
+    Attributes
     ----------
     action_client : actionlib.simple_action_client.SimpleActionClient
         The action client to which the ActionClientState object is linked.

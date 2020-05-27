@@ -51,13 +51,18 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         Function executed each time step.
     """
 
-    def __init__(self, robot_name_space, reset_controls, reset_control_list):
+    def __init__(
+        self, robot_name_space, reset_robot_pose, reset_controls, reset_control_list
+    ):
         """Initializes a new Panda Robot Gazebo Goal environment.
 
         Parameters
         ----------
         robot_name_space : str
             Namespace of the robot.
+        reset_robot_pose : bool
+            Boolean specifying whether to reset the robot pose when the simulation is
+            reset.
         reset_controls : bool
             Boolean specifying whether to reset the controllers when the simulation
             is reset.
@@ -70,10 +75,11 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         self.gazebo = GazeboConnection(
             start_init_physics_parameters=False, reset_world_or_sim="WORLD"
         )
+        self.reset_robot_pose = reset_robot_pose
+        self.reset_controls = reset_controls
         self.controllers_object = ControllersConnection(
             namespace=robot_name_space, controllers_list=reset_control_list
         )
-        self.reset_controls = reset_controls
         rospy.loginfo(self.reset_controls)
         self.seed()
 
@@ -215,7 +221,11 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
             self.gazebo.unpauseSim()
             self.controllers_object.reset_controllers()
             self._check_all_systems_ready()
-            self._set_init_pose()
+            # TODO: Check reset_robot_pose variable
+            # TODO: ADD ee pose variable
+            if self.reset_robot_pose:  # Reset robot pose
+                self._set_init_pose()
+            self._set_init_object_pose()  # Reset object pose
             self.gazebo.pauseSim()
             self.gazebo.resetSim()
             self.gazebo.unpauseSim()
@@ -226,7 +236,9 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         else:
             self.gazebo.unpauseSim()
             self._check_all_systems_ready()
-            self._set_init_pose()
+            if self.reset_robot_pose:  # Reset robot pose
+                self._set_init_pose()
+            self._set_init_object_pose()  # Reset object pose
             self.gazebo.resetWorld()
             self._check_all_systems_ready()
 
@@ -299,6 +311,17 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
 
     def _set_init_pose(self):
         """Sets the Robot in its init pose.
+
+        Raises
+        ------
+        NotImplementedError
+        """
+        raise NotImplementedError()
+
+    # TODO: ADD ee pose
+
+    def _set_init_object_pose(self):
+        """Sets the Object to its init pose.
 
         Raises
         ------

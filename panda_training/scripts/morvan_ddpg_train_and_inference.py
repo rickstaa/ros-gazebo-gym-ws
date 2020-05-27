@@ -358,9 +358,9 @@ if __name__ == "__main__":
     # Create environment6
     env = gym.make(
         "PandaReach-v0",
-        robot_EE_link="panda_grip_site",
-        robot_arm_control_type="joint_position_control",
-        robot_hand_control_type="joint_effort_control",
+        robot_EE_link="panda_hand",
+        robot_arm_control_type="ee_control",
+        robot_hand_control_type="joint_position_control",
     )
 
     # NOTE: Simply wrap the goal-based environment using FlattenDictWrapper

@@ -5,13 +5,13 @@
     <!-- Simulation arguments -->
     <arg name="paused" default="false" />
     <arg name="world_name" default="/$(find panda_training)/resources/worlds/grasp_training.world" />
-    <arg name="rviz" default="false" />
+    <arg name="rviz" default="true" />
     <arg name="rviz_file" default="$(find panda_training)/launch/panda.rviz" />
     <arg name="moveit" default="true" />
     <!-- <arg name="moveit_rviz_file" default="$(find panda_training)/launch/panda_moveit.rviz" /> -->
     <arg name="moveit_rviz_file" default="$(find panda_training)/launch/panda.rviz" />
     <arg name="load_gripper" default="true" />
-    <arg name="grip_site" default="true" />
+    <arg name="grip_site" default="false" />
     <arg name="grip_site_xyz" default="0.0 0.0 0.10" />
     <arg name="grip_site_rpy" default="0.0 0.0 0.0" />
 

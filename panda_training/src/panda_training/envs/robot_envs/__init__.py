@@ -4,4 +4,4 @@
 from __future__ import absolute_import
 
 # Import module classes
-from .panda_env import PandaRobotEnv
+from .panda_robot_env import PandaRobotEnv

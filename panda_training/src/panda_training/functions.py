@@ -15,6 +15,7 @@ from panda_training.extras import EulerAngles
 from actionlib_msgs.msg import GoalStatusArray
 from panda_training.msg import FollowJointTrajectoryGoal
 from trajectory_msgs.msg import JointTrajectoryPoint
+from panda_training.srv import SetJointPositionsRequest
 
 
 #################################################
@@ -66,8 +67,9 @@ def joint_positions_2_follow_joint_trajectory_goal(joint_positions, time_from_st
 
     Parameters
     ----------
-    joint_positions : dict
-        The joint positions of each of the robot joints.
+    joint_positions : dict or panda_training.msg.SetJointPositionsRequest
+        Dictionary or message containing the joint positions of each of the robot
+        joints.
     time_from_start : dict, optional
         The time from the start at which the joint position has to be achieved, by
         default 1 sec.
@@ -78,12 +80,27 @@ def joint_positions_2_follow_joint_trajectory_goal(joint_positions, time_from_st
         New FollowJointTrajectoryGoal message.
     """
 
-    # creates a goal to send to the action server
+    # Initiate waypoints and new trajectory message
     goal_msg = FollowJointTrajectoryGoal()
     waypoint = JointTrajectoryPoint()
     waypoint.time_from_start.secs = time_from_start
-    waypoint.positions = list(joint_positions.values())
-    goal_msg.trajectory.joint_names = list(joint_positions.keys())
+
+    # creates waypoint from joint_posisitions
+    if isinstance(joint_positions, SetJointPositionsRequest):
+        waypoint.positions = joint_positions.joint_positions
+        goal_msg.trajectory.joint_names = joint_positions.joint_names
+    elif isinstance(joint_positions, dict):
+        waypoint.positions = list(joint_positions.values())
+        goal_msg.trajectory.joint_names = list(joint_positions.keys())
+    else:
+        TypeError(
+            "FollowJointTrajectory message could not be created since the "
+            "joint_positions argument has the %s type while the "
+            "'joint_positions_2_follow_joint_trajectory_goal' function only accepts "
+            "a dictionary or a SetJointPositions message." % type(joint_positions)
+        )
+
+    # Add waypoint to trajectory message
     goal_msg.trajectory.points.append(waypoint)
 
     # Return goal msgs
@@ -342,7 +359,30 @@ def translate_actionclient_result_error_code(actionclient_retval):
     )
 
 
-def list_2_human_text(input_list):
+def wrap_space_around(text):
+    """Wrap one additional space around text if it is not already present.
+
+    Parameters
+    ----------
+    text : str
+        Text
+
+    Returns
+    -------
+    str
+        Text with extra spaces around it.
+    """
+    if text[0] != " " and text[-1] != " ":
+        return " " + text + " "
+    elif text[0] != " ":
+        return " " + text
+    elif text[-1] != " ":
+        return text + " "
+    else:
+        return text
+
+
+def list_2_human_text(input_list, seperator=",", end_seperator="&"):
     """Function converts a list of values into human readable sentence.
 
     Example:
@@ -360,13 +400,195 @@ def list_2_human_text(input_list):
         A human readable string that can be printed.
     """
 
+    # Add spaces around seperators if not present
+    seperator = wrap_space_around(seperator)[1:]
+    end_seperator = wrap_space_around(end_seperator)
+
     # Create human readable comma deliminated text
     if isinstance(input_list, list):
         if len(input_list) > 1:
-            return ", ".join(input_list[:-1]) + " & " + input_list[-1]
+            return (
+                seperator.join([str(item) for item in input_list[:-1]])
+                + end_seperator
+                + str(input_list[-1])
+            )
+        if len(input_list) == 0:
+            return ""
+        else:
+            return str(input_list[0])
+    if isinstance(input_list, tuple):
+        input_list = list(input_list)
+        if len(input_list) > 1:
+            return (
+                seperator.join([str(item) for item in input_list[:-1]])
+                + end_seperator
+                + str(input_list[-1])
+            )
         if len(input_list) == 0:
             return ""
         else:
             return str(input_list[0])
     else:
         return input_list
+
+
+def has_invalid_type(variable, variable_types, items_types=None, depth=0):
+    """Validates whether a variable or its attributes has an invalid type.
+
+    Parameters
+    ----------
+    variable :
+        The variable you want to check.
+    variable_types : tuple
+        The type the variable can have.
+    items_types : tuple
+        The types the dictionary or list values can have.
+
+    Returns
+    --------
+    bool, depth, invalid_type
+        A tuple containing whether the variable has an invalid type, the depth at which
+        the type was invalid, and the type that was invalid.
+    """
+
+    # If one type was given make tuple
+    if isinstance(variable_types, type):
+        variable_types = (variable_types,)
+    if isinstance(items_types, type):
+        items_types = (items_types,)
+
+    # Check variable type
+    if type(variable) in variable_types:
+
+        # Check list or dictionary values
+        if items_types:
+            if isinstance(variable, dict):
+
+                # Check if the dictionary values are of the right type
+                depth += 1
+                for key, val in variable.items():
+                    if type(val) in [dict, list]:
+                        retval, depth, invalid_type = has_invalid_type(
+                            val,
+                            variable_types=items_types,
+                            items_types=items_types,
+                            depth=depth,
+                        )
+                    else:
+                        retval, depth, invalid_type = has_invalid_type(
+                            val, variable_types=items_types, depth=depth
+                        )
+                    if retval:
+                        return retval, depth, type(val)
+            elif isinstance(variable, list):
+
+                # Check if the list values are of the right type
+                depth += 1
+                for val in variable:
+                    if type(val) in [dict, list]:
+                        retval, depth, invalid_type = has_invalid_type(
+                            val,
+                            variable_types=items_types,
+                            items_types=items_types,
+                            depth=depth,
+                        )
+                    else:
+                        retval, depth, invalid_type = has_invalid_type(
+                            val, variable_types=items_types, depth=depth
+                        )
+                    if retval:
+                        return retval, depth, type(val)
+    else:
+        return True, depth, type(variable)
+
+    # Return successbool if false was not returned
+    return False, depth, []
+
+
+def contains_keys(input_dict, required_keys, exclusive=True):
+    """Function used to check if a dictionary contains keys. If 'required_keys' contains
+    a nested list it checks whether at least of the nested_list elements is found.
+
+    Parameters
+    ----------
+    input_dict : dict
+        The input dictionary.
+    required_keys : list
+        List containing the keys you want to check.
+    exclusive : bool, optional
+        Whether the dictionary can contain other keys than those in the 'required_keys'
+        argument, by default False.
+
+    Returns
+    -------
+    bool, list, list
+        A bool specifying whether the keys are present, a list containing the keys that
+        were missing and a list containing the keys that were found in addition to the
+        required keys.
+    """
+
+    # Check if dictionary contains missing keys
+    missing_keys = []
+    for key in required_keys:
+
+        # If nested list check if one of the keys is present
+        if isinstance(key, list):
+            found_keys = [
+                nested_key
+                for nested_key in key
+                if nested_key in list(input_dict.keys())
+            ]
+            if len(found_keys) == 0:
+                missing_keys.extend(key)
+        else:
+            if key not in list(input_dict.keys()):
+                missing_keys.append(key)
+
+    # Check if the dictionary contains extra keys
+    extra_keys = [
+        key for key in input_dict.keys() if key not in flatten_list(required_keys)
+    ]
+
+    # Return result
+    if len(missing_keys) > 0:
+        return False, missing_keys, extra_keys
+    elif exclusive and len(extra_keys) > 0:
+        return False, missing_keys, extra_keys
+    else:
+        return True, missing_keys, extra_keys
+
+
+def has_invalid_value(variable, valid_values):
+    """Checks whether a string or list contains invalid values.
+
+    Parameters
+    ----------
+    variable : list, str
+        Input variable
+    valid_values : list
+        The values that are correct.
+
+    Returns
+    -------
+    bool, list
+        A bool specifying whether invalid values were found and a list that contains
+        the invalid values if they were found.
+    """
+
+    # Check if list/string contains/has (a) valid value.
+    if isinstance(variable, str):
+        if variable not in valid_values:
+            return True, variable
+    elif isinstance(variable, list):
+        invalid_values = [item for item in variable if item not in valid_values]
+        if len(invalid_values) > 0:
+            return True, invalid_values
+    else:
+        rospy.logwarn(
+            "Variable could not be checked for invalid values as type '%s' "
+            "is not supported." % type(variable)
+        )
+        return False, variable
+
+    # Return success bool
+    return False, []

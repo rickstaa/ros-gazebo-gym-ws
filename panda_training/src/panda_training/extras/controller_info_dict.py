@@ -9,6 +9,7 @@ import copy
 CONTROLLER_INFO_DICT = {
     "arm": {
         "running": {
+            "ee_control": [],
             "joint_trajectory_control": [],
             "joint_position_control": [],
             "joint_effort_control": [],
@@ -16,6 +17,7 @@ CONTROLLER_INFO_DICT = {
             "joint_group_effort_control": [],
         },
         "loaded": {
+            "ee_control": [],
             "joint_trajectory_control": [],
             "joint_position_control": [],
             "joint_effort_control": [],
@@ -23,6 +25,7 @@ CONTROLLER_INFO_DICT = {
             "joint_group_effort_control": [],
         },
         "stopped": {
+            "ee_control": [],
             "joint_trajectory_control": [],
             "joint_position_control": [],
             "joint_effort_control": [],
@@ -32,6 +35,7 @@ CONTROLLER_INFO_DICT = {
     },
     "hand": {
         "running": {
+            "ee_control": [],
             "joint_trajectory_control": [],
             "joint_position_control": [],
             "joint_effort_control": [],
@@ -39,6 +43,7 @@ CONTROLLER_INFO_DICT = {
             "joint_group_effort_control": [],
         },
         "loaded": {
+            "ee_control": [],
             "joint_trajectory_control": [],
             "joint_position_control": [],
             "joint_effort_control": [],
@@ -46,6 +51,7 @@ CONTROLLER_INFO_DICT = {
             "joint_group_effort_control": [],
         },
         "stopped": {
+            "ee_control": [],
             "joint_trajectory_control": [],
             "joint_position_control": [],
             "joint_effort_control": [],
@@ -55,13 +61,15 @@ CONTROLLER_INFO_DICT = {
     },
     "other": {
         "running": {
+            "ee_control": [],
             "joint_trajectory_control": [],
-            "positio_control": [],
+            "joint_position_control": [],
             "joint_effort_control": [],
             "joint_group_position_control": [],
             "joint_group_effort_control": [],
         },
         "loaded": {
+            "ee_control": [],
             "joint_trajectory_control": [],
             "joint_position_control": [],
             "joint_effort_control": [],
@@ -69,6 +77,7 @@ CONTROLLER_INFO_DICT = {
             "joint_group_effort_control": [],
         },
         "stopped": {
+            "ee_control": [],
             "joint_trajectory_control": [],
             "joint_position_control": [],
             "joint_effort_control": [],

@@ -1,0 +1,98 @@
+# This config file contains the default values that are used in the panda_openai_sim
+# package.
+
+# Action space parameters
+action_space:
+  n_actions: 8
+  use_gripper_width: True
+  bounds:
+    low: -3.1
+    high: 3.8
+
+# Training parameters
+training:
+  reward_type : "Sparse"  # The reward type "sparse" or "dense"
+  pose_init_type: "joint_pose" # The pose type you want to initialize "joint_pose" or "ee_pose"
+  use_random_pose: True # Use random pose when resetting the simulation
+  distance_threshold: 0.05  # The threshold for determining a goal has been reached
+  block_gripper : False  # Block the gripper control
+  has_object : False  # Train with object
+
+  # Settings for setting up the object
+  object:
+    bounds:
+      x_min: -1
+      y_min: -1
+      z_min: 0.0
+      x_max: 1
+      y_max: 1
+      z_max: 1.5
+
+  # Settings for sampling of the goal
+  goal_sampling:
+    strategy: "global" # Global or local (relative to initial/current ee_pose) sampling
+    visualize: True  # Turn goal visualization on and off
+
+    # Target offset relative to the object position (Used in the panda slide task)
+    target_offset:
+      - 0.0
+      - 0.0
+      - 0.0
+
+    # Bool specifying whether the target is in the air
+    target_in_the_air: False
+
+    # Sampling bounds
+    bounds:
+      visualize: True  # Turn goal sampling region visualization on and off
+      global:  # The global sample bounds
+        x_min: -1
+        y_min: -1
+        z_min: 0.0
+        x_max: 1
+        y_max: 1
+        z_max: 1.5
+      local:  # The goal sample bounds relative to the initial/current ee_pose.
+        reference: "initial" # Use the "initial" or "current" ee pose during sampling
+        x_min: -0.15
+        y_min: -0.15
+        z_min: -0.15
+        x_max: 0.15
+        y_max: 0.15
+        z_max: 0.15
+
+# Simulation parameters
+simulation:
+
+  # Control settings
+  robot_arm_control_type: "joint_position_control"
+  robot_hand_control_type: "joint_position_control"
+
+  # End effector settings
+  # NOTE: The extra height can be added when ee_link and the center of the gripper do
+  # not align
+  ee_link: "panda_hand"  # Link that is specified as the end effector
+  gripper_extra_height: 0.10
+
+  # Initial pose given in generalized coordinates (q)
+  init_qpose:
+    panda_joint1: 1.1
+    panda_joint2: 0.0
+    panda_joint3: -0.6
+    panda_joint4: -1.5
+    panda_joint5: 0.0
+    panda_joint6: 1.5
+    panda_joint7: 0.0
+    panda_finger_joint1: 0.04
+    panda_finger_joint2: 0.04
+    gripper_width: 0.0  # Used when use_gripper_
+
+  # Initial end effector pose
+  init_ee_pose:
+      x: 0.47
+      y: 0.29
+      z: 0.35
+      rx: 0.78
+      ry: 0.62
+      rz: -0.0
+      rw: 4.42

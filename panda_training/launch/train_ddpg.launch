@@ -10,9 +10,6 @@
     <arg name="use_group_controller" default="false" /> <!-- Wheter to use group controllers -->
     <arg name="preload_controllers" default="false" /> <!-- Wheter to preload all non essential controllers -->
 
-    <!-- Load learning parameters -->
-    <rosparam file="$(find panda_training)/cfg/algorithms/ddpg_config.yaml" command="load" />
-
     <!-- Launch Panda openai simulator -->
     <include file="$(find panda_training)/launch/panda_openai_sim.launch">
         <arg name="moveit" value="$(arg moveit)" />

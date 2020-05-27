@@ -7,4 +7,7 @@ from __future__ import absolute_import
 from .action_client_state import ActionClientState
 from .controller_info_dict import ControllerInfoDict
 from .euler_angles import EulerAngles
+from .quaternion import Quaternion
 from .goal_marker import GoalMarker
+from .goal_sample_region_marker import GoalSampleRegionMarker
+from .nested_dict import NestedDict

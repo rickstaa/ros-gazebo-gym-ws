@@ -36,14 +36,8 @@ from panda_training.srv import (
 )
 
 # Global variables
-CONTROL_TYPES = [
-    "joint_trajectory_control",
-    "joint_position_control",
-    "joint_effort_control",
-    "joint_group_position_control",
-    "joint_group_effort_control",
-]
 ARM_CONTROLLERS = {
+    "ee_control": "panda_arm_controller",
     "joint_trajectory_control": "panda_arm_controller",
     "joint_position_control": [
         "panda_arm_joint1_position_controller",
@@ -88,6 +82,11 @@ CONTROLLER_DICT = {"arm": ARM_CONTROLLERS, "hand": HAND_CONTROLLERS}
 class PandaControlSwitcher(object):
     """Used for switching the Panda robot controllers.
 
+    Attributes
+    ----------
+    verbose : bool
+        Bool specifying whether we want to display log messages during switching.
+
     Methods
     -------
     switch(self, control_group, control_type, load_controllers=True):
@@ -107,8 +106,8 @@ class PandaControlSwitcher(object):
         """
 
         # Create class attributes
-        self._controller_switch_timeout = 3
         self.verbose = verbose
+        self._controller_switch_timeout = 3
 
         # Connect to controller_manager services
         try:
@@ -267,21 +266,21 @@ class PandaControlSwitcher(object):
 
         # Create load_controller request
         if type(controllers) is str:
-            req = LoadControllerRequest()
-            req.name = controllers
 
             # Send load controller request
-            resp = self._load_controller_client(req)
+            resp = self._load_controller_client(LoadControllerRequest(name=controllers))
             return [resp.ok]
         elif type(controllers) is list:
             # Loop through controllers and request to load them
             resp = []
             for controller in controllers:
-                req = LoadControllerRequest()
-                req.name = controller
 
                 # Send load controller request
-                resp.append(self._load_controller_client(req).ok)
+                resp.append(
+                    self._load_controller_client(
+                        LoadControllerRequest(name=controller)
+                    ).ok
+                )
 
             # Return result
             return resp
@@ -363,12 +362,13 @@ class PandaControlSwitcher(object):
             )
             resp.success = False
             return resp
-        if control_type not in CONTROL_TYPES:
+        if control_type not in CONTROLLER_DICT[control_group].keys():
 
             # Log result and return
             rospy.logwarn(
                 "The '%s' control type you specified is not valid. Valid control types "
-                "for the Panda robot are %s" % (control_type, CONTROL_TYPES)
+                "for the Panda robot are %s"
+                % (control_type, CONTROLLER_DICT[control_group].keys())
             )
             resp.success = False
             return resp

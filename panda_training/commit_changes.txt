@@ -1,7 +1,22 @@
-- Reenables panda_control node in launch file
-- Fixes python node permissions
-- Fixes Openai gym environment register path error.
-- Fixes python2, python 3 incompatibility issues
-- Fixes some small bugs in the robot_environment
-- Adds set_joint_trajectory and set_joint_effort functions to robot environment
-- Cleaned up code of the panda_robot_environment
+- set_ee_pose now takes a list of values
+- set_joint_positions now takes a list of values
+- set_joint_effort now takes a list of values
+- Updated joint_positions_2_follow_joint_trajectory_goal function to take SetJointPositionRequest message
+- Fixed control_switcher control type check error
+- Added goal_sample region marker
+- Fixed initiation error in GoalMarker class
+- Created automatic action space size generation
+- Added defaults configuration yaml file
+- Now the Quaternion 'quaternion_norm' function creates a identity quaternion when norm = 0.0
+- Updated goal_sample function such that it samples within the goal sample region -> Remove clip_Goal function.
+- Added ability to specify whether we ant to reset the robot pose when the simulation is reset.
+- Ability to choice whether we want to initiate the robot with a random pose.
+- Ability to specify whether we want to use the gripper_width to control the robot.
+- Automatic action space selection.
+- Added the GetRandomPose moveit service
+- Add ability to set random pose each time simulation is reset
+- Fixed control_type names in panda_control_server
+- Fixed the _set_action function to take Joint positions, joint efforts and joint joint_positions_2_follow_joint_trajectory_goal
+- Cleaned up Panda_task environment
+- Added prepend option to OrderedDict
+- Removed get_params and _get_params from task environment --> Makes it more clear where to supply arguemnets

@@ -1,0 +1,142 @@
+# This config file contains the configuration values that are used by the Panda task,
+# robot and gazebo goal environments. Variables marked with the (DEFAULT) tag are
+# overloaded by PandaTaskEnv constructor arguments.
+
+#########################################
+# Action space parameters ##############
+#########################################
+action_space:
+  use_gripper_width: True # (DEFAULT) - Whether to use gripper_width instead of individual finger joint commands
+  n_actions: 8
+  bounds:
+    low: -3.1
+    high: 3.8
+
+#########################################
+# Training related parameters ###########
+#########################################
+training:
+
+  # Main training parameters
+  main:
+    reward_type : "Sparse"  # (DEFAULT) - The reward type used in the reward function ("sparse" or "dense").
+    distance_threshold: 0.05  # The threshold for determining a goal has been reached
+    has_object : False  # (DEFAULT) - Train with object
+
+  # Settings for setting up the object
+  object_sampling:
+    distance_threshold: 0.1  # Threshold for determining whether new object pose is far enough from old obj pose
+    init_obj_pose:  # (DEFAULT) -  The initial pose of the grasp object.
+        x: 0.4
+        y: 0.0
+        z: 0.029366
+        rx: 0.0
+        ry: 0.0
+        rz: 0.0
+        rw: 1.0
+    visualize_bounds: True  # Turn object sampling region visualization on and off
+    bounds:   # (DEFAULT) - The object sampling bounds relative to the init_obj_pose
+      x_min: -1
+      y_min: -1
+      x_max: 1
+      y_max: 1
+
+  # Settings for sampling of the target (Goal position)
+  target_sampling:
+
+    # Main settings
+    main:
+      strategy: "global" # Global or local goal target sampling
+      obj_target_in_the_air: False  # (DEFAULT) - Whether the object place target can be in the air
+      visualize_target: True  # Turn on and off rviz target visualization
+      target_offset:  # (DEFAULT) - An additional offset added to the target
+        x: 0.0
+        y: 0.0
+        z: 0.0
+
+    # Target sampling bounds
+    bounds:
+      visualize_bounds: True  # (DEFAULT) - Turn goal sampling region visualization on and off
+      global:  # The global sample bounds relative to the world frame
+        x_min: -1
+        y_min: -1
+        z_min: 0.0
+        x_max: 1
+        y_max: 1
+        z_max: 1.5
+      local:  # The goal sample bounds relative to the current ee_pose.
+        x_min: -0.15
+        y_min: -0.15
+        z_min: -0.15
+        x_max: 0.15
+        y_max: 0.15
+        z_max: 0.15
+
+# TODO: I'm here
+#########################################
+# Simulation parameters #################
+#########################################
+simulation:
+
+  # Control settings
+  control:
+    robot_arm_control_type: "joint_position_control"  # (DEFAULT) - The type of control
+    robot_hand_control_type: "joint_position_control" # (DEFAULT) - The type of control
+    block_gripper : False  # (DEFAULT) - Block the gripper control
+    ee_link: "panda_hand"  # Link that is specified as the end effector. Used for the distance to the target position.
+    gripper_extra_height: 0.10  # (DEFAULT) - Add extra height 
+
+  # Init pose type
+  reset_robot_pose: True  # Whether we want to reset the pose when the environment is reset
+  random_init_pose: True  # Use random pose when resetting the simulation
+  randomize_first_episode: False  #  Also randomize the pose in the first episode
+  bound_init_pose: False  # Whether we want to clip the init pose to a region
+
+  # Initial pose given in generalized coordinates (q)
+  init_pose:
+    init_pose_type: "qpose"  # The pose type you want to initialize "qpose" or "ee_pose"
+    qpose:
+      panda_joint1: 1.1
+      panda_joint2: 0.0
+      panda_joint3: -0.6
+      panda_joint4: -1.5
+      panda_joint5: 0.0
+      panda_joint6: 1.5
+      panda_joint7: 0.0
+      panda_finger_joint1: 0.04
+      panda_finger_joint2: 0.04
+    ee_pose:
+        x: 0.47
+        y: 0.29
+        z: 0.35
+        rx: 0.78
+        ry: 0.62
+        rz: -0.0
+        rw: 4.42
+    bounds:
+      qpose:
+        panda_joint1_min: -4
+        panda_joint2_min: -4
+        panda_joint3_min: -4
+        panda_joint4_min: -4
+        panda_joint5_min: -4
+        panda_joint6_min: -4
+        panda_joint7_min: -4
+        panda_finger_joint1_min: -1
+        panda_finger_joint2_min: -1
+        panda_finger_joint1_max: -1
+        panda_finger_joint2_max: -1
+        panda_joint1_max: 4
+        panda_joint2_max: 4
+        panda_joint3_max: 4
+        panda_joint4_max: 4
+        panda_joint5_max: 4
+        panda_joint6_max: 4
+        panda_joint7_max: 4
+      ee_pose:
+        x_min: -1
+        y_min: -1
+        z_min: 0.0
+        x_max: 1
+        y_max: 1
+        z_max: 1.5

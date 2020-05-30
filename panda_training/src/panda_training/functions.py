@@ -4,6 +4,8 @@
 # Main python imports
 import copy
 from collections import OrderedDict
+import os
+import glob
 
 # Import ROS python packages
 import rospy
@@ -12,6 +14,7 @@ from tf.transformations import euler_from_quaternion
 from panda_training.extras import EulerAngles
 
 # ROS msgs and srvs
+from geometry_msgs.msg import Pose
 from actionlib_msgs.msg import GoalStatusArray
 from panda_training.msg import FollowJointTrajectoryGoal
 from trajectory_msgs.msg import JointTrajectoryPoint
@@ -447,8 +450,8 @@ def has_invalid_type(variable, variable_types, items_types=None, depth=0):
     Returns
     --------
     bool, depth, invalid_type
-        A tuple containing whether the variable has an invalid type, the depth at which
-        the type was invalid, and the type that was invalid.
+        A tuple containing whether the variable has an invalid type, the maximum depth
+        at which a type was invalid, and the types that were invalid.
     """
 
     # If one type was given make tuple
@@ -457,15 +460,16 @@ def has_invalid_type(variable, variable_types, items_types=None, depth=0):
     if isinstance(items_types, type):
         items_types = (items_types,)
 
-    # Check variable type
+    # Check if variable type is valid
     if type(variable) in variable_types:
 
-        # Check list or dictionary values
-        if items_types:
+        # Check list or dictionary value types are valid
+        if items_types:  # If items_types == None we are at the deepest level
             if isinstance(variable, dict):
 
                 # Check if the dictionary values are of the right type
                 depth += 1
+                invalid_types = []
                 for key, val in variable.items():
                     if type(val) in [dict, list]:
                         retval, depth, invalid_type = has_invalid_type(
@@ -478,12 +482,15 @@ def has_invalid_type(variable, variable_types, items_types=None, depth=0):
                         retval, depth, invalid_type = has_invalid_type(
                             val, variable_types=items_types, depth=depth
                         )
-                    if retval:
-                        return retval, depth, type(val)
+                    if retval:  # If invalid type was found
+                        if invalid_type not in invalid_types:  # If not already in list
+                            invalid_types.append(invalid_type)
+                return retval, depth, flatten_list(invalid_types)
             elif isinstance(variable, list):
 
                 # Check if the list values are of the right type
                 depth += 1
+                invalid_types = []
                 for val in variable:
                     if type(val) in [dict, list]:
                         retval, depth, invalid_type = has_invalid_type(
@@ -496,13 +503,17 @@ def has_invalid_type(variable, variable_types, items_types=None, depth=0):
                         retval, depth, invalid_type = has_invalid_type(
                             val, variable_types=items_types, depth=depth
                         )
-                    if retval:
-                        return retval, depth, type(val)
-    else:
-        return True, depth, type(variable)
+                    if retval:  # If invalid type was found
+                        if invalid_type not in invalid_types:  # If not already in list
+                            invalid_types.append(invalid_type)
+                return retval, depth, flatten_list(invalid_types)
+        else:
 
-    # Return successbool if false was not returned
-    return False, depth, []
+            # Return type not invalid bool, depth and type
+            return False, depth, []
+    else:
+        # Return type invalid bool, depth and type
+        return True, depth, type(variable)
 
 
 def contains_keys(input_dict, required_keys, exclusive=True):
@@ -592,3 +603,140 @@ def has_invalid_value(variable, valid_values):
 
     # Return success bool
     return False, []
+
+
+def find_gazebo_model_path(model_name, model_folder_path, extension=""):
+    """Finds the path of the sdf or urdf file that belongs to a given 'model_name'.
+    This is done by searching in the 'panda_training' models folder.
+
+    Parameters
+    ----------
+    model_name : srt
+        The name of the model for which you want to find the path.
+    model_folder_path : str
+        The path of the folder that contains the gazebo models.
+    extension : str, optional
+        The model path extension, by default "".
+
+    Returns
+    -------
+    str, str
+        The path where the 'sdf' or 'urdf' model file can be found and the extension of
+        the model file. If not file was found the model file path is returned empty.
+    """
+
+    # Add dot to extension if needed
+    if extension != "" and extension[0] != ".":
+        extension = "." + extension
+
+    # Try to find the model path for a given model_name
+    model_folder = os.path.join(model_folder_path, model_name)
+    if os.path.isdir(model_folder):  # Check if model_name folder exists
+        if extension != "":  # Find based on extension
+
+            # Check if sdf or urdf exists with the model_name name
+            model_path = glob.glob(os.path.join(model_folder, "model" + extension))
+            if model_path:  # If found
+                return model_path[0]
+            else:
+                rospy.logwarn(
+                    "Model path for '%s' could not be found. Please check if the"
+                    "'model.sdf' or 'model.urdf' file exist in the model directory "
+                    "'%s'." % (model_name, model_folder)
+                )
+                return "", extension[1:]
+        else:  # no extension given
+
+            # Look for sdf or urdf files
+            model_path_sdf = glob.glob(os.path.join(model_folder, "model" + ".sdf"))
+            model_path_urdf = glob.glob(os.path.join(model_folder, "model" + ".urdf"))
+
+            # Check which extension was found
+            if model_path_sdf and model_path_urdf:
+                rospy.logwarn(
+                    "Model path for '%s' could not be retrieved as both an 'model.sdf' "
+                    "and a 'model.urdf' file are present. Please make sure that only "
+                    "one is model file is present in the '%s' folder or use the "
+                    "extension argument." % (model_name, model_folder)
+                )
+                return "", ""
+            elif model_path_sdf:
+                return model_path_sdf[0], "sdf"
+            elif model_path_urdf:
+                return model_path_urdf[0], "urdf"
+            else:
+                rospy.logwarn(
+                    "Model path for '%s' could not be found. Please check if the"
+                    "'model.sdf' or 'model.urdf' file exist in the model directory "
+                    "'%s'." % (model_name, model_folder)
+                )
+                return "", ""
+    else:  # Display warning
+        rospy.logwarn(
+            "Model path for '%s' could not be found. Please check if the 'model.sdf' "
+            "or 'model.urdf' file exist in the model directory '%s'."
+            % (model_name, model_folder)
+        )
+        return "", ""
+
+
+def pose_dict_2_pose_msg(pose_dict):
+    """Create a 'geometry_msgs.msg.Pose' message out of a panda_training pose dictionary
+    {x, y, z, rx, ry, rz, rw}.
+
+    Parameters
+    ----------
+    pose_dict : dict
+        Dict containing the object position {x, y, z} and orientation {rx, ry, rz, rw}
+    """
+
+    # Create pose message out of a panda_training pose dict
+    pose_msg = Pose()
+    pose_msg.position.x = pose_dict["x"]
+    pose_msg.position.y = pose_dict["y"]
+    pose_msg.position.z = pose_dict["z"]
+    pose_msg.orientation.x = pose_dict["rx"]
+    pose_msg.orientation.y = pose_dict["ry"]
+    pose_msg.orientation.z = pose_dict["rz"]
+    pose_msg.orientation.w = pose_dict["rw"]
+
+    # Return pose_msg
+    return pose_msg
+
+
+def log_qpose(qpose, level="DEBUG"):
+    """Prints the qpose in a more human readably format.
+
+    Parameters
+    ----------
+    qpose_dict : dict
+        A dictionary containing the generalized robot pose.
+    level : str
+        The log level you want to use (info, warn or debug).
+    """
+
+    # Validate qpose message
+    if not isinstance(qpose, dict):
+        rospy.logwarn(
+            "Qpose could not be printed in a human readable format as it is of type %s"
+            "while the log_qpose function expects type 'dict'. As a result the qpose "
+            "is printed in its original format."
+        ) % type(qpose)
+        qpose_msg = qpose
+    else:
+
+        # Convert qpose dictionary to human readable format
+        qpose_msg = (
+            "q_pose:\n  "
+            + "  ".join(
+                [str(key) + ": " + str(val) + "\n" for key, val in qpose.items()]
+            )[:-2]
+        )
+
+    # Check log level and log qpose
+    if level.lower() == "warn":
+        rospy.logwarn(qpose_msg)
+    elif level.lower() == "info":
+        rospy.loginfo(qpose_msg)
+    else:
+        rospy.logdebug(qpose_msg)

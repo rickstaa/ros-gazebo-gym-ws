@@ -22,7 +22,10 @@ if __name__ == "__main__":
         "PandaReach-v0",
         robot_arm_control_type="ee_control",
         robot_hand_control_type="joint_position_control",
-        n_actions=3,
+        # n_actions=3,7
+        # init_pose_type="ee_pose",
+        bound_init_pose=False,
+        has_object=True,
         # gripper_extra_height="jan",
         # controlled_joints=["panda_joint1", "panda_joint2"],
     )

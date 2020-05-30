@@ -18,7 +18,7 @@ from panda_training.functions import (
     translate_actionclient_result_error_code,
     list_2_human_text,
 )
-from panda_training.exceptions import InputMessageInvalid
+from panda_training.exceptions import InputMessageInvalidError
 from panda_training.core import GroupPublisher
 from panda_training.extras import ActionClientState
 from collections import OrderedDict
@@ -452,7 +452,7 @@ class PandaControlServer(object):
             self._controlled_joints_traj_control = self._get_controlled_joints(
                 control_type="traj_control"
             )
-        except InputMessageInvalid:
+        except InputMessageInvalidError:
             self._controlled_joints_traj_control = PANDA_JOINTS
 
         #############################################
@@ -1066,7 +1066,7 @@ class PandaControlServer(object):
                     joint in controlled_joints["hand"]
                     for joint in self.joint_states.name
                 ]
-            except InputMessageInvalid as e:
+            except InputMessageInvalidError as e:
                 rospy.loginfo(
                     "Not waiting for control to be completed as no information could "
                     "be retrieved about which joints are controlled when using '%s' "
@@ -1224,7 +1224,7 @@ class PandaControlServer(object):
 
         Raises
         ----------
-        panda_training.exceptions.InputMessageInvalid
+        panda_training.exceptions.InputMessageInvalidError
             Raised when the input_msg could not be converted into panda_arm_controller
             control messages.
         """
@@ -1240,7 +1240,7 @@ class PandaControlServer(object):
             )
             if verbose:
                 rospy.logwarn(logwarn_message)
-            raise InputMessageInvalid(
+            raise InputMessageInvalidError(
                 message="Control_group '%s' invalid." % control_group.lower(),
                 log_message=logwarn_message,
             )
@@ -1254,7 +1254,7 @@ class PandaControlServer(object):
             controlled_joints_dict = self._get_controlled_joints(
                 control_type="traj_control", verbose=verbose
             )
-        except InputMessageInvalid:
+        except InputMessageInvalidError:
 
             # Throw error if controlled joints could not be retrieved
             logwarn_message = (
@@ -1263,7 +1263,7 @@ class PandaControlServer(object):
             )
             if verbose:
                 rospy.logwarn(logwarn_message)
-            raise InputMessageInvalid(
+            raise InputMessageInvalidError(
                 message="Required controllers not initialised.",
                 details={"controlled_joints": self._effort_controllers},
                 log_message=logwarn_message,
@@ -1443,10 +1443,10 @@ class PandaControlServer(object):
                         )
                     )
 
-                    # Send log warn message and raise InputMessageInvalid exception
+                    # Send log warn message and raise InputMessageInvalidError exception
                     if verbose:
                         rospy.logwarn(logwarn_message)
-                    raise InputMessageInvalid(
+                    raise InputMessageInvalidError(
                         message="Invalid number of joint position commands.",
                         log_message=logwarn_message,
                         details={"controlled_joints": controlled_joints_size},
@@ -1880,10 +1880,10 @@ class PandaControlServer(object):
                     % (invalid_fields_string, controlled_joints_size,)
                 )
 
-                # Send log warn message and raise InputMessageInvalid exception
+                # Send log warn message and raise InputMessageInvalidError exception
                 if verbose:
                     rospy.logwarn(logwarn_message)
-                raise InputMessageInvalid(
+                raise InputMessageInvalidError(
                     message=logwarn_message,
                     log_message=logwarn_message,
                     details={"joint_names_length": len(joint_names)},
@@ -1920,10 +1920,10 @@ class PandaControlServer(object):
                         )
                     )
 
-                    # Send log warn message and raise InputMessageInvalid exception
+                    # Send log warn message and raise InputMessageInvalidError exception
                     if verbose:
                         rospy.logwarn(logwarn_message)
-                    raise InputMessageInvalid(
+                    raise InputMessageInvalidError(
                         message="Invalid joint_names were given.",
                         log_message=logwarn_message,
                         details={"invalid_joint_names": invalid_joint_names},
@@ -2395,7 +2395,7 @@ class PandaControlServer(object):
 
         Raises
         ----------
-        panda_training.exceptions.InputMessageInvalid
+        panda_training.exceptions.InputMessageInvalidError
             Raised when the input_msg could not be converted into 'moveit_commander'
             arm hand joint position/effort commands.
         """
@@ -2411,7 +2411,7 @@ class PandaControlServer(object):
             )
             if verbose:
                 rospy.logwarn(logwarn_message)
-            raise InputMessageInvalid(
+            raise InputMessageInvalidError(
                 message="Control_group '%s' invalid." % control_group.lower(),
                 log_message=logwarn_message,
             )
@@ -2437,7 +2437,7 @@ class PandaControlServer(object):
             )
             if verbose:
                 rospy.logwarn(logwarn_message)
-            raise InputMessageInvalid(
+            raise InputMessageInvalidError(
                 message="Control_type '%s' invalid." % control_type,
                 log_message=logwarn_message,
             )
@@ -2447,7 +2447,7 @@ class PandaControlServer(object):
             controlled_joints_dict = self._get_controlled_joints(
                 control_type=control_type, verbose=verbose
             )
-        except InputMessageInvalid:
+        except InputMessageInvalidError:
 
             # Throw error if controlled joints could not be retrieved
             logwarn_message = (
@@ -2464,7 +2464,7 @@ class PandaControlServer(object):
             )
             if verbose:
                 rospy.logwarn(logwarn_message)
-            raise InputMessageInvalid(
+            raise InputMessageInvalidError(
                 message="Required controllers not initialised.",
                 details={"controlled_joints": self._effort_controllers},
                 log_message=logwarn_message,
@@ -2527,7 +2527,7 @@ class PandaControlServer(object):
                     )
                     if verbose:
                         rospy.logwarn(logwarn_message)
-                    raise InputMessageInvalid(
+                    raise InputMessageInvalidError(
                         message="Invalid number of joint position commands.",
                         log_message=logwarn_message,
                         details={
@@ -2632,10 +2632,10 @@ class PandaControlServer(object):
                     )
                 )
 
-                # Send log warn message and raise InputMessageInvalid exception
+                # Send log warn message and raise InputMessageInvalidError exception
                 if verbose:
                     rospy.logwarn(logwarn_message)
-                raise InputMessageInvalid(
+                raise InputMessageInvalidError(
                     message=(
                         "The joint_names and %s fields of the input message are of "
                         "different lengths." % (logwarn_msg_strings[4])
@@ -2685,10 +2685,10 @@ class PandaControlServer(object):
                         )
                     )
 
-                    # Send log warn message and raise InputMessageInvalid exception
+                    # Send log warn message and raise InputMessageInvalidError exception
                     if verbose:
                         rospy.logwarn(logwarn_message)
-                    raise InputMessageInvalid(
+                    raise InputMessageInvalidError(
                         message="Invalid joint_names were given.",
                         log_message=logwarn_message,
                         details={"invalid_joint_names": invalid_joint_names},
@@ -2788,7 +2788,7 @@ class PandaControlServer(object):
 
         Raises
         ----------
-        panda_training.exceptions.InputMessageInvalid
+        panda_training.exceptions.InputMessageInvalidError
             Raised when the input_msg could not be converted into 'moveit_commander'
             arm hand joint position commands.
         """
@@ -2825,7 +2825,7 @@ class PandaControlServer(object):
                 )
                 if verbose:
                     rospy.logwarn(logwarn_message)
-                raise InputMessageInvalid(
+                raise InputMessageInvalidError(
                     message="Required controllers not initialised.",
                     details={"controlled_joints": self._position_controllers},
                     log_message=logwarn_message,
@@ -2858,7 +2858,7 @@ class PandaControlServer(object):
                 )
                 if verbose:
                     rospy.logwarn(logwarn_message)
-                raise InputMessageInvalid(
+                raise InputMessageInvalidError(
                     message="Required controllers not initialised.",
                     details={"controlled_joints": self._effort_controllers},
                     log_message=logwarn_message,
@@ -2891,7 +2891,7 @@ class PandaControlServer(object):
                 )
                 if verbose:
                     rospy.logwarn(logwarn_message)
-                raise InputMessageInvalid(
+                raise InputMessageInvalidError(
                     message="Required controllers not initialised.",
                     details={"controlled_joints": self._effort_controllers},
                     log_message=logwarn_message,
@@ -2905,7 +2905,7 @@ class PandaControlServer(object):
             )
             if verbose:
                 rospy.logwarn(logwarn_message)
-            raise InputMessageInvalid(
+            raise InputMessageInvalidError(
                 message="Control_type '%s' invalid." % control_type,
                 log_message=logwarn_message,
             )
@@ -3050,7 +3050,7 @@ class PandaControlServer(object):
                 control_type="joint_position_control",
                 control_group="both",
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Print warning message and return result
             logwarn_msg = "Panda arm joint positions not set as " + lower_first_char(
@@ -3233,7 +3233,7 @@ class PandaControlServer(object):
                 control_type="joint_effort_control",
                 control_group="both",
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Print warning message and return result
             logwarn_msg = "Panda arm joint efforts not set as " + lower_first_char(
@@ -3402,7 +3402,7 @@ class PandaControlServer(object):
                 control_type="joint_position_control",
                 control_group="arm",
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Print warning message and return result
             logwarn_msg = "Panda arm joint positions not set as " + lower_first_char(
@@ -3558,7 +3558,7 @@ class PandaControlServer(object):
                 control_type="joint_effort_control",
                 control_group="arm",
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Print warning message and return result
             logwarn_msg = "Panda arm joint efforts not set as " + lower_first_char(
@@ -3715,7 +3715,7 @@ class PandaControlServer(object):
                 control_type="joint_position_control",
                 control_group="hand",
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Print warning message and return result
             logwarn_msg = "Panda hand joint positions not set as " + lower_first_char(
@@ -3871,7 +3871,7 @@ class PandaControlServer(object):
                 control_type="joint_effort_control",
                 control_group="hand",
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Print warning message and return result
             logwarn_msg = "Panda hand joint efforts not set as " + lower_first_char(
@@ -4078,7 +4078,7 @@ class PandaControlServer(object):
             resp.controlled_joints = controlled_joints_dict["both"]
             resp.controlled_joints_arm = controlled_joints_dict["arm"]
             resp.controlled_joints_hand = controlled_joints_dict["hand"]
-        except InputMessageInvalid:
+        except InputMessageInvalidError:
             resp.success = False
         return resp
 
@@ -4122,7 +4122,7 @@ class PandaControlServer(object):
             goal_msg_dict = self._create_traj_action_server_msg(
                 goal, control_group="arm"
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Create abort return message
             self._result = FollowJointTrajectoryResult()
@@ -4216,7 +4216,7 @@ class PandaControlServer(object):
             goal_msg_dict = self._create_traj_action_server_msg(
                 goal, control_group="hand"
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Create abort return message
             self._result = FollowJointTrajectoryResult()
@@ -4310,7 +4310,7 @@ class PandaControlServer(object):
             goal_msg_dict = self._create_traj_action_server_msg(
                 goal, control_group="both"
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Create abort return message
             self._result = FollowJointTrajectoryResult()

@@ -26,7 +26,7 @@ class ActionClientState(object):
     """
 
     def __init__(self, action_client=None, state=-1, state_string=""):
-        """Initializes the InputMessageInvalid exception object.
+        """Initializes the InputMessageInvalidError exception object.
 
         Parameters
         ----------

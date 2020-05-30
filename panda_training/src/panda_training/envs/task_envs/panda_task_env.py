@@ -13,6 +13,9 @@ from panda_training.envs.robot_envs import PandaRobotEnv
 from panda_training.exceptions import (
     EePoseLookupError,
     RandomJointPositionsError,
+    RandomEePoseError,
+    SpawnModelError,
+    SetModelStateError,
 )
 from panda_training.errors import (
     arg_type_error_shutdown,
@@ -21,12 +24,13 @@ from panda_training.errors import (
 )
 from panda_training.functions import (
     flatten_list,
-    list_2_human_text,
     get_orientation_euler,
     lower_first_char,
     has_invalid_type,
     contains_keys,
     has_invalid_value,
+    pose_dict_2_pose_msg,
+    log_qpose,
 )
 import yaml
 from collections import OrderedDict
@@ -38,10 +42,12 @@ from rospy.exceptions import ROSException, ROSInterruptException
 
 # ROS msgs and srvs
 from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PointStamped
 from trajectory_msgs.msg import JointTrajectoryPoint
 from panda_training.msg import FollowJointTrajectoryGoal
 from panda_training.srv import (
+    GetRandomEePose,
+    GetRandomEePoseRequest,
     GetRandomJointPositions,
     GetRandomJointPositionsRequest,
     GetControlledJoints,
@@ -55,30 +61,28 @@ register(
     max_episode_steps=1000,
 )
 
-# TODO: Change action bounds to an array
-# TODO: Take care when gripper_width and pandA_finger joint are both supplied
-# TODO: Check random pose bool
-# TODO: Adjust n_actions to control type if n_actions was not supplied
-# TODO: Randomize start position of the object
+
+# TODO: Check error and exception class
 # TODO: Add attributes to docstring
 # TODO: Add local goal region visualization
-# TODO: Check init pose fo slide joints fetch?
+# TODO: Change action bounds to an array
+# TODO: Adjust n_actions to control type if n_actions was not supplied
 # TODO: FIX joint efforts initial
-# TODO: Add goal sampling strategy in the constructor
-# TODO: Add environment setup strategy
-# TODO: ADD init_joint_pose and init_ee_pose options
-# TODO: Add reset robot_pose to init
-# TODO: Nakijken is_in_air
+# TODO: Nakijken gripper_extra_height
 # TODO: Fix action space
+# TODO: Fix init pose clip robot colapse error
+# TODO: ADd gripper width ensure prestep
+# TODO: Fix init_pose type
 
 # Script Parameters
 MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC = (
     "panda_moveit_planner_server/get_random_joint_positions"
 )
+MOVEIT_GET_RANDOM_EE_POSE_TOPIC = "panda_moveit_planner_server/get_random_ee_pose"
 GET_CONTROLLED_JOINTS_TOPIC = "panda_control_server/get_controlled_joints"
 DIRNAME = os.path.dirname(__file__)
 DEFAULT_CONFIG_PATH = os.path.abspath(
-    os.path.join(DIRNAME, "../../../../cfg/task_env_config.yaml")
+    os.path.join(DIRNAME, "../../../../cfg/env_config.yaml")
 )
 PANDA_JOINTS = {
     "arm": [
@@ -132,6 +136,8 @@ ROBOT_CONTROL_TYPES = {
 }
 GOAL_SAMPLING_STRATEGIES = ["global", "local"]
 GOAL_SAMPLING_REFERENCES = ["initial", "current"]
+INIT_POSE_TYPES = ["ee_pose", "qpose"]
+GRASP_OBJECT_NAME = "grasp_object_0"
 
 
 #################################################
@@ -150,7 +156,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
     Methods
     ----------
     get_config():
-        Retrieve default values from the defaults configuration file.
+        Retrieve default values from the panda task environment configuration file.
     goal_distance(goal_a, goal_b):
         Calculates the perpendicular distance to the goal.
     robot_get_obs(data):
@@ -159,26 +165,25 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
 
     def __init__(
         self,
-        gripper_extra_height=None,
+        gripper_extra_height=None,  # FIXME: NOt implemented
         block_gripper=None,
         has_object=None,
-        target_in_the_air=None,
+        obj_target_in_the_air=None,
         target_offset=None,
-        obj_range=None,
-        target_range=None,
+        target_bounds=None,
         distance_threshold=None,
-        pose_init_type=None,
-        init_qpose=None,
-        init_ee_pose=None,
+        init_pose_type=None,  # FIXME: Problem
+        init_pose=None,  # FIXME: Problem
+        bound_init_pose=None,  # FIXME: Problem
+        init_pose_bounds=None,  # FIXME: Problem
+        init_obj_pose=None,
+        obj_bounds=None,
         reward_type=None,
         robot_arm_control_type=None,
         robot_hand_control_type=None,
         n_actions=None,
-        goal_sampling_strategy=None,
-        goal_sampling_reference=None,
-        controlled_joints=[],
+        controlled_joints=None,
         use_gripper_width=None,
-        use_random_pose=None,
     ):
         # TODO: UPDATE DOCSTRING
         # TODO: Add contsructor elements
@@ -211,6 +216,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         # Load task environment configuration settings as class attributes
         self.get_config()
 
+        # Process constructor input arguments
         # Overload default settings if constructor arguments are supplied
         if gripper_extra_height:
             self.gripper_extra_height = gripper_extra_height
@@ -218,18 +224,33 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             self.block_gripper = block_gripper
         if has_object:
             self.has_object = has_object
-        if target_in_the_air:
-            self.target_in_the_air = target_in_the_air
+        if obj_target_in_the_air:
+            self.obj_target_in_the_air = obj_target_in_the_air
         if target_offset:
-            self.target_offset = target_offset
-        if obj_range:
-            self.obj_range = obj_range
+
+            # If list convert to dictionary
+            if isinstance(target_offset, list):
+                self.target_offset = {
+                    "x": target_offset[0],
+                    "y": target_offset[1],
+                    "z": target_offset[2],
+                }
+        if target_bounds:
+            self._target_bounds[self.target_sampling_strategy] = target_bounds
         if distance_threshold:
             self.distance_threshold = distance_threshold
-        if init_qpose:
-            self.init_qpose = init_qpose
-        if init_ee_pose:
-            self.init_ee_pose = init_ee_pose
+        if init_pose_type:  # FIXME: Fix init pose inconsistency
+            self.init_pose_type = init_pose_type
+        if init_pose:
+            self.init_pose = init_pose
+        if bound_init_pose:
+            self.bound_init_pose = bound_init_pose
+        if init_pose_bounds:
+            self.init_pose_bounds = init_pose_bounds
+        if init_obj_pose:
+            self.init_obj_pose = init_obj_pose
+        if obj_bounds:
+            self.obj_bounds = obj_bounds
         if reward_type:
             self.reward_type = reward_type.lower()
         if robot_arm_control_type:
@@ -238,22 +259,18 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             self.robot_hand_control_type = robot_hand_control_type.lower()
         if n_actions:
             self.n_actions = n_actions
-        if goal_sampling_strategy:
-            self.goal_sampling_strategy = goal_sampling_strategy.lower()
-        if goal_sampling_reference:
-            self.goal_sampling_reference = goal_sampling_reference.lower()
+        if controlled_joints:
+            self.action_space_joints = controlled_joints
+        else:
+            self.action_space_joints = []  # Initialize as list
         if use_gripper_width:
             self.use_gripper_width = use_gripper_width
-        if use_random_pose:
-            self.use_random_pose = use_random_pose
-        self.action_space_joints = controlled_joints
 
         # Validate input arguments
         self._validate_input_args()
 
-        # Update goal_bounds with 'target_range' argument if supplied
-        if target_range:
-            self._goal_bounds[self.goal_sampling_strategy] = target_range
+        # Convert init pose dictionaries to 'geometry_msgs.msg.Pose' msg
+        self.init_obj_pose = pose_dict_2_pose_msg(self.init_obj_pose)
 
         # Create other class attributes
         self._sim_time = rospy.get_time()
@@ -299,6 +316,90 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         utils.EzPickle.__init__(self)
 
         #########################################
+        # Connect to required services, #########
+        # subscribers and publishers. ###########
+        #########################################
+
+        # Connect to Moveit 'get_random_joint_positions' service
+        try:
+            rospy.logdebug(
+                "Connecting to '%s' service." % MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC
+            )
+            rospy.wait_for_service(
+                MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC,
+                timeout=self._panda_moveit_server_connection_timeout,
+            )
+            self._moveit_get_random_joint_positions_client = rospy.ServiceProxy(
+                MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC, GetRandomJointPositions
+            )
+            rospy.logdebug(
+                "Connected to '%s' service!" % MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC
+            )
+            self._services_connection_status[
+                MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC
+            ] = True
+        except (rospy.ServiceException, ROSException, ROSInterruptException):
+            rospy.logwarn(
+                "Failed to connect to '%s' service!"
+                % MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC
+            )
+            self._services_connection_status[
+                MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC
+            ] = False
+
+        # Connect to Moveit 'get_random_ee_pose' service
+        try:
+            rospy.logdebug(
+                "Connecting to '%s' service." % MOVEIT_GET_RANDOM_EE_POSE_TOPIC
+            )
+            rospy.wait_for_service(
+                MOVEIT_GET_RANDOM_EE_POSE_TOPIC,
+                timeout=self._panda_moveit_server_connection_timeout,
+            )
+            self._moveit_get_random_ee_pose_client = rospy.ServiceProxy(
+                MOVEIT_GET_RANDOM_EE_POSE_TOPIC, GetRandomEePose
+            )
+            rospy.logdebug(
+                "Connected to '%s' service!" % MOVEIT_GET_RANDOM_EE_POSE_TOPIC
+            )
+            self._services_connection_status[MOVEIT_GET_RANDOM_EE_POSE_TOPIC] = True
+        except (rospy.ServiceException, ROSException, ROSInterruptException):
+            rospy.logwarn(
+                "Failed to connect to '%s' service!" % MOVEIT_GET_RANDOM_EE_POSE_TOPIC
+            )
+            self._services_connection_status[MOVEIT_GET_RANDOM_EE_POSE_TOPIC] = False
+
+        # Connect to Panda control server 'get_controlled_joints' service
+        try:
+            rospy.logdebug("Connecting to '%s' service." % GET_CONTROLLED_JOINTS_TOPIC)
+            rospy.wait_for_service(
+                GET_CONTROLLED_JOINTS_TOPIC,
+                timeout=self._panda_moveit_server_connection_timeout,
+            )
+            self._moveit_get_controlled_joints_client = rospy.ServiceProxy(
+                GET_CONTROLLED_JOINTS_TOPIC, GetControlledJoints
+            )
+            rospy.logdebug("Connected to '%s' service!" % GET_CONTROLLED_JOINTS_TOPIC)
+            self._services_connection_status[GET_CONTROLLED_JOINTS_TOPIC] = True
+        except (rospy.ServiceException, ROSException, ROSInterruptException):
+            rospy.logwarn(
+                "Failed to connect to '%s' service!" % GET_CONTROLLED_JOINTS_TOPIC
+            )
+            self._services_connection_status[GET_CONTROLLED_JOINTS_TOPIC] = False
+
+        # Create publisher to publish the place pose
+        rospy.logdebug("Creating goal pose publisher.")
+        self._goal_pose_pub = rospy.Publisher(
+            "panda_training/current_goal", Marker, queue_size=10
+        )
+        rospy.logdebug("Goal pose publisher created.")
+        rospy.logdebug("Creating goal pose publisher.")
+        self._goal_pose_pub2 = rospy.Publisher(
+            "panda_training/current_goal2", PointStamped, queue_size=10
+        )
+        rospy.logdebug("Goal pose publisher created.")
+
+        #########################################
         # Initialize rviz and Gazebo envs #######
         #########################################
 
@@ -311,16 +412,16 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         obs = self._get_obs()
 
         # Display goal sample region in rviz
-        if self._goal_bounds["visualize"]:
+        if self._visualize_bounds:
 
             # Create goal sampling region marker
             goal_sample_region_marker_msg = GoalSampleRegionMarker(
-                x_min=self._goal_bounds["global"]["x_min"],
-                y_min=self._goal_bounds["global"]["y_min"],
-                z_min=self._goal_bounds["global"]["z_min"],
-                x_max=self._goal_bounds["global"]["x_max"],
-                y_max=self._goal_bounds["global"]["y_max"],
-                z_max=self._goal_bounds["global"]["z_max"],
+                x_min=self._target_bounds["global"]["x_min"],
+                y_min=self._target_bounds["global"]["y_min"],
+                z_min=self._target_bounds["global"]["z_min"],
+                x_max=self._target_bounds["global"]["x_max"],
+                y_max=self._target_bounds["global"]["y_max"],
+                z_max=self._target_bounds["global"]["z_max"],
             )
 
             # Publish goal sample region marker for rviz visualization
@@ -373,8 +474,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         try:
             with open(DEFAULT_CONFIG_PATH, "r") as stream:
                 try:
-                    defaults = yaml.safe_load(stream)
-                    config_file_error = False
+                    config = yaml.safe_load(stream)
                 except yaml.YAMLError as e:
                     rospy.logwarn(
                         "Shutting down '%s' as the task environment configuration "
@@ -393,42 +493,53 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             sys.exit(0)
 
         # configuration values that can be overloaded using the constructor
-        self.gripper_extra_height = defaults["simulation"]["gripper_extra_height"]
-        self.block_gripper = defaults["training"]["block_gripper"]
-        self.has_object = defaults["training"]["has_object"]
-        self.target_in_the_air = defaults["training"]["goal_sampling"][
-            "target_in_the_air"
+        self.gripper_extra_height = config["simulation"]["gripper_extra_height"]
+        self.block_gripper = config["simulation"]["block_gripper"]
+        self.has_object = config["training"]["main"]["has_object"]
+        self.obj_target_in_the_air = config["training"]["target_sampling"][
+            "obj_target_in_the_air"
         ]
-        self.obj_range = defaults["training"]["object_sampling"]["bounds"]
-        self.distance_threshold = defaults["training"]["distance_threshold"]
-        self.init_qpose = defaults["simulation"]["init_qpose"]
-        self.init_ee_pose = defaults["simulation"]["init_ee_pose"]
-        self.reward_type = defaults["training"]["reward_type"].lower()
-        self.robot_arm_control_type = defaults["simulation"][
-            "robot_arm_control_type"
-        ].lower()
-        self.robot_hand_control_type = defaults["simulation"][
-            "robot_hand_control_type"
-        ].lower()
-        self.n_actions = defaults["action_space"]["n_actions"]
-        self.goal_sampling_strategy = defaults["training"]["goal_sampling"][
+        self.target_offset = config["training"]["target_sampling"]["target_offset"]
+        self.target_sampling_strategy = config["training"]["target_sampling"][
             "strategy"
         ].lower()
-        self.goal_sampling_reference = defaults["training"]["goal_sampling"]["bounds"][
-            "local"
-        ]["reference"].lower()
-        self.use_gripper_width = defaults["action_space"]["use_gripper_width"]
-        self.use_random_pose = defaults["training"]["use_random_pose"]
-        self.target_range = defaults["training"]["goal_sampling"]["bounds"][
-            self.goal_sampling_strategy
+        self.target_bounds = config["training"]["target_sampling"]["bounds"][
+            self.target_sampling_strategy
         ]
+        self.distance_threshold = config["training"]["main"]["distance_threshold"]
+        self.init_pose_type = config["simulation"]["init_pose"]["init_pose_type"]
+        self.init_pose = config["simulation"]["init_pose"][self.init_pose_type]
+        self.bound_init_pose = config["simulation"]["bound_init_pose"]
+        self.init_pose_bounds = config["simulation"]["init_pose"]["bounds"][
+            self.init_pose_type
+        ]
+        self.init_obj_pose = config["training"]["object_sampling"]["init_obj_pose"]
+        self.obj_bounds = config["training"]["object_sampling"]["bounds"]
+        self.reward_type = config["training"]["main"]["reward_type"].lower()
+        self.robot_arm_control_type = config["simulation"]["control"][
+            "robot_arm_control_type"
+        ].lower()
+        self.robot_hand_control_type = config["simulation"]["control"][
+            "robot_hand_control_type"
+        ].lower()
+        self.n_actions = config["action_space"]["n_actions"]
+        self.use_gripper_width = config["action_space"]["use_gripper_width"]
 
         # Other configuration values
-        self._goal_bounds = defaults["training"]["goal_sampling"]["bounds"]
-        self._goal_visualize = defaults["training"]["goal_sampling"]["visualize"]
-        self._ee_link = defaults["simulation"]["ee_link"]
-        self._action_bound_low = defaults["action_space"]["bounds"]["low"]
-        self._action_bound_high = defaults["action_space"]["bounds"]["high"]
+        self._obj_sampling_distance_threshold = config["training"]["object_sampling"][
+            "distance_threshold"
+        ]
+        self._reset_robot_pose = config["simulation"]["reset_robot_pose"]
+        self._random_init_pose = config["simulation"]["random_init_pose"]
+        self._randomize_first_episode = config["simulation"]["randomize_first_episode"]
+        self._target_bounds = config["training"]["target_sampling"]["bounds"]
+        self._visualize_target = config["training"]["target_sampling"][
+            "visualize_target"
+        ]
+        self._visualize_bounds = self._target_bounds["visualize_bounds"]
+        self._ee_link = config["simulation"]["ee_link"]
+        self._action_bound_low = config["action_space"]["bounds"]["low"]
+        self._action_bound_high = config["action_space"]["bounds"]["high"]
 
     def goal_distance(self, goal_a, goal_b):
         """Calculates the perpendicular distance to the goal.
@@ -468,116 +579,91 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         if self.has_object:  # Environment has object
 
             # Set random goal pose
+            # TODO: I'm here
             # TODO: Why only use initial ee_pose?
             goal = self.initial_ee_pos + self.np_random.uniform(
                 [
-                    self._goal_bounds["local"]["x_min"],
-                    self._goal_bounds["local"]["y_min"],
-                    self._goal_bounds["local"]["z_min"],
+                    self._target_bounds["local"]["x_min"],
+                    self._target_bounds["local"]["y_min"],
+                    self._target_bounds["local"]["z_min"],
                 ],
                 [
-                    self._goal_bounds["local"]["x_max"],
-                    self._goal_bounds["local"]["y_max"],
-                    self._goal_bounds["local"]["z_max"],
+                    self._target_bounds["local"]["x_max"],
+                    self._target_bounds["local"]["y_max"],
+                    self._target_bounds["local"]["z_max"],
                 ],
                 size=3,
             )
 
             # Apply target offset (Required in the panda push task)
-            goal += self.target_offset
+            goal += [
+                self.target_offset["x"],
+                self.target_offset["y"],
+                self.target_offset["z"],
+            ]
             goal[2] = self.object_height_offset
 
             # If object is in the air add an additional height offset
-            if self.target_in_the_air and self.np_random.uniform() < 0.5:
+            if self.obj_target_in_the_air and self.np_random.uniform() < 0.5:
                 goal[2] += self.np_random.uniform(0, 0.45)
         else:
 
-            # Sample goal from goal region based on the goal_sampling_strategy
-            if self.goal_sampling_strategy == "global":
+            # Sample goal from goal region based on the target_sampling_strategy
+            if self.target_sampling_strategy == "global":
 
                 # Sample goal within the global bounds
                 goal = self.np_random.uniform(
                     [
-                        self._goal_bounds["global"]["x_min"],
-                        self._goal_bounds["global"]["y_min"],
-                        self._goal_bounds["global"]["z_min"],
+                        self._target_bounds["global"]["x_min"],
+                        self._target_bounds["global"]["y_min"],
+                        self._target_bounds["global"]["z_min"],
                     ],
                     [
-                        self._goal_bounds["global"]["x_max"],
-                        self._goal_bounds["global"]["y_max"],
-                        self._goal_bounds["global"]["z_max"],
+                        self._target_bounds["global"]["x_max"],
+                        self._target_bounds["global"]["y_max"],
+                        self._target_bounds["global"]["z_max"],
                     ],
                     size=3,
                 )
-            elif self.goal_sampling_strategy == "local":
+            elif self.target_sampling_strategy == "local":  # Rel to current EE pose
 
-                # Validate goal_sampling_reference
-                if self.goal_sampling_reference not in ["initial", "current"]:
-
-                    # Throw warning
+                # Retrieve current end effector pose
+                try:
+                    cur_ee_pose = self.get_ee_pose()  # Get ee pose
+                    cur_ee_pos = np.array(
+                        [
+                            cur_ee_pose.pose.position.x,
+                            cur_ee_pose.pose.position.y,
+                            cur_ee_pose.pose.position.z,
+                        ]
+                    )  # Retrieve position
+                except EePoseLookupError:
                     rospy.logerr(
-                        "Goal reference '%s' is invalid the 'initial' end effector "
-                        "will be used instead." % (self.goal_sampling_reference)
+                        "Shutting down '%s' since the current end effector pose "
+                        "which is needed for sampling the goals could not be "
+                        "retrieved." % (rospy.get_name())
                     )
+                    sys.exit(0)
 
-                # Sample goal rel to reference that is within the local bounds
-                if self.goal_sampling_reference == "current":
-
-                    # Retrieve current end effector pose
-                    try:
-                        cur_ee_pose = self.get_ee_pose()  # Get ee pose
-                        cur_ee_pos = np.array(
-                            [
-                                cur_ee_pose.pose.position.x,
-                                cur_ee_pose.pose.position.y,
-                                cur_ee_pose.pose.position.z,
-                            ]
-                        )  # Retrieve position
-                    except EePoseLookupError:
-                        rospy.logerr(
-                            "Shutting down '%s' since the current end effector pose "
-                            "which is needed for sampling the goals could not be "
-                            "retrieved." % (rospy.get_name())
-                        )
-                        sys.exit(0)
-
-                    # Sample goal relative to end effector pose
-                    goal = cur_ee_pos + self.np_random.uniform(
-                        [
-                            self._goal_bounds["local"]["x_min"],
-                            self._goal_bounds["local"]["y_min"],
-                            self._goal_bounds["local"]["z_min"],
-                        ],
-                        [
-                            self._goal_bounds["local"]["x_max"],
-                            self._goal_bounds["local"]["y_max"],
-                            self._goal_bounds["local"]["z_max"],
-                        ],
-                        size=3,
-                    )
-
-                else:  # Sample relative to initial pose
-
-                    # Sample goal relative to end effector pose
-                    goal = self.initial_ee_pos + self.np_random.uniform(
-                        [
-                            self._goal_bounds["local"]["x_min"],
-                            self._goal_bounds["local"]["y_min"],
-                            self._goal_bounds["local"]["z_min"],
-                        ],
-                        [
-                            self._goal_bounds["local"]["x_max"],
-                            self._goal_bounds["local"]["y_max"],
-                            self._goal_bounds["local"]["z_max"],
-                        ],
-                        size=3,
-                    )
-
+                # Sample goal relative to end effector pose
+                goal = cur_ee_pos + self.np_random.uniform(
+                    [
+                        self._target_bounds["local"]["x_min"],
+                        self._target_bounds["local"]["y_min"],
+                        self._target_bounds["local"]["z_min"],
+                    ],
+                    [
+                        self._target_bounds["local"]["x_max"],
+                        self._target_bounds["local"]["y_max"],
+                        self._target_bounds["local"]["z_max"],
+                    ],
+                    size=3,
+                )
             else:  # Thrown error if goal could not be sampled
                 rospy.logerr(
                     "Shutting down '%s' since no goal could be sampled as '%s' is not "
                     "a valid goal sampling strategy. Options are 'global' and 'local'."
-                    % (rospy.get_name(), self.goal_sampling_strategy)
+                    % (rospy.get_name(), self.target_sampling_strategy)
                 )
                 sys.exit(0)
 
@@ -585,7 +671,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         goal = self._clip_goal_position(goal)
 
         # Visualize goal marker
-        if self._goal_visualize:
+        if self._visualize_target:
 
             # Generate Rviz marker
             goal_maker_pose = Pose()
@@ -651,7 +737,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             return np.zeros(0), np.zeros(0)
 
     #############################################
-    # Overload Gazebo env virtual methods #######
+    # Overload Robot/Gazebo env virtual methods #
     #############################################
     # TODO: Change naming
     def _set_init_pose(self):
@@ -662,94 +748,135 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         Boolean
             Boolean specifying whether reset was successful.
         """
+        # TEST
+        # TODO: Make sure that the gripper width stays equal to the old gripper width
 
-        # Retrieve initial position
-        if self.episode_num > 0 and self.use_random_pose:  # Random after first episode
+        # Create pose_type string
+        init_pose_type = (
+            "end effector pose" if self.init_pose_type == "ee_pose" else "robot pose"
+        )
+
+        # Retrieve initial pose (Random or fixed)
+        if (
+            self._randomize_first_episode or self.episode_num != 0
+        ) and self._random_init_pose:
             try:
-                init_qpose = self._get_random_pose()
-            except RandomJointPositionsError as e:
+                if self.init_pose_type == "ee_pose":
+                    init_pose = self._get_random_ee_pose()
+                else:
+                    init_pose = self._get_random_joint_positions()
+            except (RandomJointPositionsError, RandomEePoseError) as e:
+                # Change warn message
                 logwarn_msg = (
-                    "End effector pose could not be retrieved as %s"
-                    % lower_first_char(e.args[0])
+                    "Random %s could not be retrieved as %s. Initial pose used instead."
+                    % (init_pose_type, lower_first_char(e.args[0]))
                 )
                 rospy.logwarn(logwarn_msg)
+                init_pose = self.init_pose
         else:
-            init_qpose = self.init_qpose
+            init_pose = self.init_pose
+
+        # Clip init pose if requested
+        if self.bound_init_pose:
+            init_pose = self._clip_init_pose(init_pose)
 
         # Log messages
-        rospy.loginfo("Setting initial robot pose.")
-        rospy.logdebug("Init joint pose:")
-        rospy.logdebug(init_qpose)
+        rospy.loginfo("Setting initial %s." % init_pose_type)
+        if self.init_pose_type == "qpose":
+            rospy.logdebug("Init joint pose:")
+            log_qpose(init_pose)
+        else:
+            rospy.logdebug("Init ee pose:")
+            rospy.logdebug(pose_dict_2_pose_msg(init_pose))
 
         # Put finger joints in the right position if use_gripper_width is True
-        if self.use_gripper_width:
-            if "gripper_width" not in init_qpose.keys():
-                rospy.logwarn(
-                    "'panda_finger_joint2' joint position values  set to that of "
-                    "'panda_finger_joint1' as 'use_gripper_width was set to True."
-                )
-                init_qpose["panda_finger_joint2"] = init_qpose["panda_finger_joint1"]
-            else:
-                init_qpose = self._translate_gripper_width_2_finger_joint_commands(
-                    init_qpose
-                )
+        if self.init_pose_type == "qpose":
+            if self.use_gripper_width:
+                if "gripper_width" not in init_pose.keys():
+                    rospy.logwarn(
+                        "The joint position of 'panda_finger_joint2' was set to be "
+                        "be equal to the value of 'panda_finger_joint1' as the "
+                        "'use_gripper_width' variable is set to True."
+                    )
+                    init_pose["panda_finger_joint2"] = init_pose["panda_finger_joint1"]
+                else:
+                    init_pose = self._translate_gripper_width_2_finger_joint_commands(
+                        init_pose
+                    )
 
         # Set initial pose
         self.gazebo.unpauseSim()
-        retval = self.set_joint_positions(init_qpose, wait=True)
+        if self.init_pose_type == "ee_pose":
+            retval = self.set_ee_pose(init_pose)
+        else:
+            retval = self.set_joint_positions(init_pose, wait=True)
 
-        # Return result
+        # Throw warning and return result
         if not retval:
             rospy.logwarn("Setting initial robot pose failed.")
         return retval
 
-    def _set_init_ee_pose(self, init_ee_pose):
-        # TODO: Check why used?
-        """Sets the Robot end effector in its init pose [x, y, z, rx, ry, rz, rw].
-
-        Parameters
-        ----------
-        init_ee_pose : list
-            Dictionary containing the initial ee pose.
+    def _set_init_obj_pose(self):
+        """Sets the grasp object to its initial pose.
 
         Returns
         -------
-        Boolean
-            Boolean specifying whether reset was successful.
+        bool
+            Success boolean.
         """
 
-        # Log messages
-        # FIXME: Get random ee_pose
-        rospy.loginfo("Setting initial ee pose.")
-        rospy.logdebug("Init ee pose:")
-        rospy.logdebug(init_ee_pose)
-
-        # Set initial ee pose
-        self.gazebo.unpauseSim()
-        retval = self.set_ee_pose(init_ee_pose)
-
-        # Return result
-        if not retval:
-            rospy.logwarn("Setting initial ee pose failed.")
-        return retval
-
-    def _set_init_object_pose(self):
-        # FIXME:
-        # TODO: Docstring
-        # TODO: Check if this is the right place
-
-        # Randomize start position of object.
+        # Set the grasp object pose
+        rospy.loginfo("Setting initial object position.")
         if self.has_object:
-            object_xpos = self.initial_gripper_xpos[:2]
-            while np.linalg.norm(object_xpos - self.initial_gripper_xpos[:2]) < 0.1:
-                object_xpos = self.initial_gripper_xpos[:2] + self.np_random.uniform(
-                    -self.obj_range, self.obj_range, size=2
+
+            # Retrieve x,y positions of the current and initial object pose
+            obj_pose = self.model_states[GRASP_OBJECT_NAME]["pose"]
+            obj_xy_positions = np.array(
+                [
+                    self.model_states[GRASP_OBJECT_NAME]["pose"].position.x,
+                    self.model_states[GRASP_OBJECT_NAME]["pose"].position.y,
+                ]
+            )
+            init_obj_xy_positions = np.array(
+                [self.init_obj_pose.position.x, self.init_obj_pose.position.y,]
+            )
+
+            # Sample an object initial object (x, y) position
+            # NOTE: This is done relative to the 'init_obj_pose' that is set in the
+            # that is supplied through the class constructor
+            while (
+                np.linalg.norm(
+                    np.array([obj_pose.position.x, obj_pose.position.y])
+                    - obj_xy_positions
                 )
-            object_qpos = self.sim.data.get_joint_qpos("object0:joint")
-            assert object_qpos.shape == (7,)
-            object_qpos[:2] = object_xpos
-            self.sim.data.set_joint_qpos("object0:joint", object_qpos)
-        return True
+                < self._obj_sampling_distance_threshold
+            ):  # Sample till is different enough from the current object pose
+                obj_xy_positions = init_obj_xy_positions + self.np_random.uniform(
+                    [self.obj_bounds["x_min"], self.obj_bounds["y_min"]],
+                    [self.obj_bounds["x_max"], self.obj_bounds["y_max"]],
+                    size=2,
+                )
+
+            # Set the sampled object x and y positions to the object pose
+            obj_pose.position.x = obj_xy_positions[0]
+            obj_pose.position.y = obj_xy_positions[1]
+
+            # Set init object pose
+            rospy.logdebug("Init object pose:")
+            rospy.logdebug(obj_pose)
+            try:
+                retval = self._set_model_state(GRASP_OBJECT_NAME, obj_pose)
+            except SetModelStateError:
+                rospy.logerr(
+                    "Shutting down '%s' since the state of the grasp object could not "
+                    "be set." % (rospy.get_name())
+                )
+                sys.exit(0)
+
+            # Return result
+            if not retval:
+                rospy.logwarn("setting initial object position failed.")
+            return retval
 
     def _get_obs(self):
         """Get robot state observation.
@@ -906,6 +1033,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             # Make sure the gripper is not moved if block_gripper == True
             # Note: When the gripper joint_commands are not present the current gripper
             # state will be used as a setpoint and thus the gripper is locked
+            # TODO: Check if block gripper is implemented the right way
             if self.block_gripper:
                 for joint in self._controlled_joints["hand"]:
                     action_dict.pop(joint)
@@ -1092,59 +1220,51 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             # Return result
             return -d
 
-    def _env_setup(self, set_qpose=True, set_ee_pose=True):
+    def _env_setup(self):
         """Sets up initial configuration of the environment. Can be used to configure
         the initial robot state and extract information from the simulation.
-
-        Parameters
-        ----------
-        set_qpose : bool, optional
-            Boolean specifying whether we want to set the initial joint positions, by
-            default True.
-        set_ee_pose : bool, optional
-            Boolean specifying whether we want to set the initial ee pose, by default
-            True.
         """
 
         # Move robot joints into their initial position
-        if set_qpose:
-            self._set_init_pose()
+        self._set_init_pose()
 
-        # Move end effector into the initial position
-        if set_ee_pose:
-            # FIXME
-            self._set_init_ee_pose(self.init_qpose)
+        # Spawn grasp object, set initial pose and calculate the gripper height offset
+        if self.has_object:
 
-        # Get initial ee pose if goal_sampling_reference == "initial"
-        if self.goal_sampling_reference == "initial":
-
-            # Try to retrieve current EE pose
+            # Spawn the object
             try:
-                cur_ee_pose = self.get_ee_pose()
-            except EePoseLookupError:
+                self._spawn_object(
+                    GRASP_OBJECT_NAME, "grasp_cube", pose=self.init_obj_pose
+                )
+            except SpawnModelError:
                 rospy.logerr(
-                    "Shutting down '%s' since initial EE pose which is needed for "
-                    "sampling the goals could not be retrieved." % (rospy.get_name())
+                    "Shutting down '%s' since the grasp object could not be spawned."
+                    % (rospy.get_name(),)
                 )
                 sys.exit(0)
 
-            # Extract ee position from pose and store as class attribute
-            cur_ee_pos = np.array(
-                [
-                    cur_ee_pose.pose.position.x,
-                    cur_ee_pose.pose.position.y,
-                    cur_ee_pose.pose.position.z,
-                ]
-            )
-            self.initial_ee_pos = cur_ee_pos.copy()
+            # Set initial object pose
+            self._set_init_obj_pose()
 
-        # Calculate object height offset if object is present
-        if self.has_object:
-            self.object_height_offset = self.model_states["object0"]["pose"].position.y
+            # Retrieve the object height
+            self.object_height_offset = self.model_states[GRASP_OBJECT_NAME][
+                "pose"
+            ].position.y
 
         # Sample a reaching goal
         self.goal = self._sample_goal()
         self._get_obs()
+
+    def _step_callback(self):
+        """A custom callback that is called after stepping the simulation. Used
+        to enforce additional constraints on the simulation state.
+        """
+        # TODO: I"m here
+        # Make sure the gripper joint positions are equal to the initial positions
+        if self.block_gripper:
+            self.set
+            self.sim.data.set_joint_qpos("robot0:l_gripper_finger_joint", 0.0)
+            self.sim.data.set_joint_qpos("robot0:r_gripper_finger_joint", 0.0)
 
     #############################################
     # Task env helper methods ###################
@@ -1158,8 +1278,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         self._sim_time = current_time
         return dt
 
-    # TODO: Add random EE pose
-    def _get_random_pose(self):
+    def _get_random_joint_positions(self):
         """Get valid joint position commands for the Panda arm and hand.
 
         Returns
@@ -1182,14 +1301,58 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             )
 
             # Convert to joint_position dictionary and return
-            joint_positions_dict = OrderedDict(
-                zip(resp.joint_positions, resp.joint_names)
-            )
-            return joint_positions_dict
+            if resp.success:
+                joint_positions_dict = OrderedDict(
+                    zip(resp.joint_positions, resp.joint_names)
+                )
+                return joint_positions_dict
+            else:
+                raise RandomJointPositionsError(
+                    message=(
+                        "A MoveItCommanderException error occurred in the '%s' service."
+                        % MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC
+                    ),
+                )
         else:
             raise RandomJointPositionsError(
                 message="'%s' service is not available."
                 % MOVEIT_GET_RANDOM_JOINT_POSITIONS_TOPIC,
+            )
+
+    def _get_random_ee_pose(self):
+        """Get a valid ee pose command for controlling the Panda Arm end effector.
+
+        Returns
+        -------
+        geometry_msgs.msg.Pose
+            Pose message containing a valid ee pose.
+
+        Raises
+        ------
+        RandomEePoseError
+            Error thrown when 'get_random_ee_pose' service is not available.
+        """
+
+        # Get random pose using moveit
+        if self._services_connection_status[MOVEIT_GET_RANDOM_EE_POSE_TOPIC]:
+
+            # Request random pose
+            resp = self._moveit_get_random_ee_pose_client(GetRandomEePoseRequest())
+
+            # Convert to joint_position dictionary and return
+            if resp.success:
+                return resp.ee_pose
+            else:
+                raise RandomJointPositionsError(
+                    message=(
+                        "A MoveItCommanderException error occurred in the '%s' service."
+                        % MOVEIT_GET_RANDOM_EE_POSE_TOPIC
+                    ),
+                )
+        else:
+            raise RandomEePoseError(
+                message="'%s' service is not available."
+                % MOVEIT_GET_RANDOM_EE_POSE_TOPIC,
             )
 
     def _clip_goal_position(self, goal_pose):
@@ -1201,25 +1364,51 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             A numpy array containing the goal x,y and z values.
         """
 
-        # Clip goal
+        # Clip goal using the goal bounds
         goal_pose[0] = np.clip(
             goal_pose[0],
-            self._goal_bounds["global"]["x_min"],
-            self._goal_bounds["global"]["x_max"],
+            self._target_bounds[self.target_sampling_strategy]["x_min"],
+            self._target_bounds[self.target_sampling_strategy]["x_max"],
         )
         goal_pose[1] = np.clip(
             goal_pose[1],
-            self._goal_bounds["global"]["y_min"],
-            self._goal_bounds["global"]["y_max"],
+            self._target_bounds[self.target_sampling_strategy]["y_min"],
+            self._target_bounds[self.target_sampling_strategy]["y_max"],
         )
         goal_pose[2] = np.clip(
             goal_pose[2],
-            self._goal_bounds["global"]["z_min"],
-            self._goal_bounds["global"]["z_max"],
+            self._target_bounds[self.target_sampling_strategy]["z_min"],
+            self._target_bounds[self.target_sampling_strategy]["z_max"],
         )
 
         # Return goal
         return goal_pose
+
+    def _clip_init_pose(self, init_pose):
+        """Limit the possible initial end effector (EE) and Robot joint positions to
+        a certain range.
+
+        Parameters
+        ----------
+        init_pose : dict
+            A dictionary containing the init pose values for each of the Robot or
+            end effector joints.
+        """
+
+        # Clip goal
+        init_pose_clipped = {}
+        for key, val in init_pose.items():
+            try:
+                init_pose_clipped[key] = np.clip(
+                    val,
+                    self.init_pose_bounds[key + "_max"],
+                    self.init_pose_bounds[key + "_min"],
+                )
+            except KeyError:
+                init_pose_clipped[key] = val
+
+        # Return goal
+        return init_pose_clipped
 
     def _translate_gripper_width_2_finger_joint_commands(self, action_dict):
         """Translate any 'gripper_width' keys that are present in the action dictionary
@@ -1248,8 +1437,6 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
                 del action_dict["gripper_width"]
                 action_dict["panda_finger_joint1"] = finger_position
                 action_dict["panda_finger_joint2"] = finger_position
-                action_dict.move_to_end("panda_finger_joint2", last=False)
-                action_dict.move_to_end("panda_finger_joint1", last=False)
         else:
 
             # Throw invalid type error
@@ -1586,128 +1773,252 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
 
         # Gripper_extra_height
         valid_types = (float, int)
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.gripper_extra_height, variable_types=valid_types
         )
         if retval:  # Validate type
             arg_type_error_shutdown(
-                "gripper_extra_height", depth, invalid_type, valid_types
+                "gripper_extra_height", depth, invalid_types, valid_types
             )
 
         # Block_gripper
         valid_types = (bool,)
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.block_gripper, variable_types=valid_types
         )
         if retval:  # Validate type
-            arg_type_error_shutdown("block_gripper", depth, invalid_type, valid_types)
+            arg_type_error_shutdown("block_gripper", depth, invalid_types, valid_types)
 
         # Has_object
         valid_types = (bool,)
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.has_object, variable_types=valid_types
         )
         if retval:  # Validate type
-            arg_type_error_shutdown("has_object", depth, invalid_type, valid_types)
+            arg_type_error_shutdown("has_object", depth, invalid_types, valid_types)
 
         # Target in the air
         valid_types = (bool,)
-        retval, depth, invalid_type = has_invalid_type(
-            self.target_in_the_air, variable_types=valid_types
+        retval, depth, invalid_types = has_invalid_type(
+            self.obj_target_in_the_air, variable_types=valid_types
         )
         if retval:  # Validate type
             arg_type_error_shutdown(
-                "target_in_the_air", depth, invalid_type, valid_types
+                "obj_target_in_the_air", depth, invalid_types, valid_types
             )
 
-        # # Object range
-        # # FIXME: Implement
-        # valid_types = (bool,)
-        # retval, depth, invalid_type = has_invalid_type(
-        #     self.obj_range, variable_types=valid_types
-        # )
-        # if retval:
-        #     arg_type_error_shutdown("obj_range", depth, invalid_type, valid_types)
-
-        # Target range
-        valid_types = (dict,)
+        # Target offset
+        valid_types = dict
         valid_items_types = (float, int)
-        retval, depth, invalid_type = has_invalid_type(
-            self.target_range, variable_types=valid_types
+        retval, depth, invalid_types = has_invalid_type(
+            self.target_offset, variable_types=valid_types,
         )
         if retval:  # Validate type
-            arg_type_error_shutdown("target_range", depth, invalid_type, valid_types)
+            arg_type_error_shutdown("target_offset", depth, invalid_types, valid_types)
         retval, missing_keys, extra_keys = contains_keys(
-            self.target_range,
+            self.target_offset, required_keys=["x", "y", "z"], exclusive=True,
+        )
+        if not retval:  # Validate keys
+            arg_keys_error_shutdown(
+                "target_offset", missing_keys=missing_keys, extra_keys=extra_keys
+            )
+
+        # Target sampling strategy
+        valid_types = (str,)
+        valid_values = GOAL_SAMPLING_STRATEGIES
+        retval, depth, invalid_types = has_invalid_type(
+            self.target_sampling_strategy, variable_types=valid_types
+        )
+        if retval:  # Validate type
+            arg_type_error_shutdown(
+                "target_sampling_strategy", depth, invalid_types, valid_types
+            )
+        retval, invalid_values = has_invalid_value(
+            self.target_sampling_strategy, valid_values=valid_values
+        )
+        if retval:  # Validate values
+            arg_value_error_shutdown(
+                "target_sampling_strategy",
+                invalid_values=invalid_values,
+                valid_values=valid_values,
+            )
+
+        # Target bounds
+        valid_types = (dict,)
+        valid_items_types = (float, int)
+        retval, depth, invalid_types = has_invalid_type(
+            self._target_bounds[self.target_sampling_strategy],
+            variable_types=valid_types,
+        )
+        if retval:  # Validate type
+            arg_type_error_shutdown("target_bounds", depth, invalid_types, valid_types)
+        retval, missing_keys, extra_keys = contains_keys(
+            self._target_bounds[self.target_sampling_strategy],
             required_keys=["x_min", "y_min", "z_min", "x_max", "y_max", "z_max"],
             exclusive=True,
         )
-        if retval:  # Validate keys
-            print(retval)
+        if not retval:  # Validate keys
+            arg_keys_error_shutdown(
+                "target_bounds", missing_keys=missing_keys, extra_keys=extra_keys
+            )
 
         # Distance threshold
         valid_types = (float, int)
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.distance_threshold, variable_types=valid_types
         )
         if retval:  # Validate type
             arg_type_error_shutdown(
-                "distance_threshold", depth, invalid_type, valid_types
+                "distance_threshold", depth, invalid_types, valid_types
             )
 
-        # Init_qpose
-        valid_types = (dict,)
-        valid_items_types = (float, int)
-        retval, depth, invalid_type = has_invalid_type(
-            self.init_qpose, variable_types=valid_types, items_types=valid_items_types
+        # Init pose type
+        valid_types = (str,)
+        valid_values = INIT_POSE_TYPES
+        retval, depth, invalid_types = has_invalid_type(
+            self.init_pose_type, variable_types=valid_types
         )
         if retval:  # Validate type
-            arg_type_error_shutdown("init_qpose", depth, invalid_type, valid_types)
+            arg_type_error_shutdown("init_pose_type", depth, invalid_types, valid_types)
+        retval, invalid_values = has_invalid_value(
+            self.init_pose_type, valid_values=valid_values
+        )
+        if retval:  # Validate values
+            arg_value_error_shutdown(
+                "init_pose_type",
+                invalid_values=invalid_values,
+                valid_values=valid_values,
+            )
+
+        # Init pose
+        valid_types = (dict,)
+        valid_items_types = (float, int)
+        if self.init_pose_type == "ee_pose":
+            required_keys = ["x", "y", "z", "rx", "ry", "rz", "rw"]
+        else:
+            required_keys = (
+                [
+                    "panda_joint1",
+                    "panda_joint2",
+                    "panda_joint3",
+                    "panda_joint4",
+                    "panda_joint5",
+                    "panda_joint6",
+                    "panda_joint7",
+                    ["panda_finger_joint1", "gripper_width"],
+                    ["panda_finger_joint2", "gripper_width"],
+                ],
+            )
+        retval, depth, invalid_types = has_invalid_type(
+            self.init_pose, variable_types=valid_types, items_types=valid_items_types
+        )
+        if retval:  # Validate type
+            arg_type_error_shutdown("init_pose", depth, invalid_types, valid_types)
         retval, missing_keys, extra_keys = contains_keys(
-            self.init_qpose,
-            required_keys=[
-                "panda_joint1",
-                "panda_joint2",
-                "panda_joint3",
-                "panda_joint4",
-                "panda_joint5",
-                "panda_joint6",
-                "panda_joint7",
-                ["panda_finger_joint1", "panda_finger_joint2", "gripper_width"],
-            ],
-            exclusive=True,
+            self.init_pose, required_keys=required_keys, exclusive=True,
         )
         if not retval:  # Validate keys
             arg_keys_error_shutdown(
-                "init_qpose", missing_keys=missing_keys, extra_keys=extra_keys
+                "init_pose", missing_keys=missing_keys, extra_keys=extra_keys
             )
 
-        # Init ee_pose
-        valid_types = (dict,)
-        valid_items_types = (float, int)
-        retval, depth, invalid_type = has_invalid_type(
-            self.init_ee_pose, variable_types=valid_types, items_types=valid_items_types
+        # Bound init pose
+        valid_types = (bool,)
+        retval, depth, invalid_types = has_invalid_type(
+            self.bound_init_pose, variable_types=valid_types
         )
         if retval:  # Validate type
-            arg_type_error_shutdown("init_ee_pose", depth, invalid_type, valid_types)
+            arg_type_error_shutdown(
+                "bound_init_pose", depth, invalid_types, valid_types
+            )
+
+        # Init pose bounds
+        valid_types = (dict,)
+        valid_items_types = (float, int)
+        if self.init_pose_type == "ee_pose":
+            required_keys = ["x_min", "y_min", "z_min", "x_max", "y_max", "z_max"]
+        else:
+            required_keys = (
+                [
+                    "panda_joint1_min",
+                    "panda_joint2_min",
+                    "panda_joint3_min",
+                    "panda_joint4_min",
+                    "panda_joint5_min",
+                    "panda_joint6_min",
+                    "panda_joint7_min",
+                    "panda_joint1_max",
+                    "panda_joint2_max",
+                    "panda_joint3_max",
+                    "panda_joint4_max",
+                    "panda_joint5_max",
+                    "panda_joint6_max",
+                    "panda_joint7_max",
+                    ["panda_finger_joint1_min", "gripper_width_min"],
+                    ["panda_finger_joint2_min", "gripper_width_min"],
+                    ["panda_finger_joint1_max", "gripper_width_max"],
+                    ["panda_finger_joint2_max", "gripper_width_max"],
+                ],
+            )
+        retval, depth, invalid_types = has_invalid_type(
+            self.init_pose_bounds,
+            variable_types=valid_types,
+            items_types=valid_items_types,
+        )
+        if retval:  # Validate type
+            arg_type_error_shutdown("init_pose", depth, invalid_types, valid_types)
         retval, missing_keys, extra_keys = contains_keys(
-            self.init_ee_pose,
-            required_keys=["x", "y", "z", "rx", "ry", "rz", "rw"],
-            exclusive=True,
+            self.init_pose_bounds, required_keys=required_keys, exclusive=True,
         )
         if not retval:  # Validate keys
             arg_keys_error_shutdown(
-                "init_ee_pose", missing_keys=missing_keys, extra_keys=extra_keys
+                "init_pose_bounds", missing_keys=missing_keys, extra_keys=extra_keys
+            )
+
+        # Init pose
+        valid_types = (dict,)
+        valid_items_types = (float, int)
+        required_keys = ["x", "y", "z", "rx", "ry", "rz", "rw"]
+        retval, depth, invalid_types = has_invalid_type(
+            self.init_obj_pose,
+            variable_types=valid_types,
+            items_types=valid_items_types,
+        )
+        if retval:  # Validate type
+            arg_type_error_shutdown("init_obj_pose", depth, invalid_types, valid_types)
+        retval, missing_keys, extra_keys = contains_keys(
+            self.init_obj_pose, required_keys=required_keys, exclusive=True,
+        )
+        if not retval:  # Validate keys
+            arg_keys_error_shutdown(
+                "init_obj_pose", missing_keys=missing_keys, extra_keys=extra_keys
+            )
+
+        # Object bounds
+        valid_types = (dict,)
+        valid_items_types = (float, int)
+        required_keys = ["x_min", "y_min", "x_max", "y_max"]
+        retval, depth, invalid_types = has_invalid_type(
+            self.obj_bounds, variable_types=valid_types, items_types=valid_items_types
+        )
+        if retval:  # Validate type
+            arg_type_error_shutdown("obj_bounds", depth, invalid_types, valid_types)
+        retval, missing_keys, extra_keys = contains_keys(
+            self.obj_bounds, required_keys=required_keys, exclusive=True,
+        )
+        if not retval:  # Validate keys
+            arg_keys_error_shutdown(
+                "obj_bounds", missing_keys=missing_keys, extra_keys=extra_keys
             )
 
         # Reward type
         valid_types = (str,)
         valid_values = REWARD_TYPES
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.reward_type, variable_types=valid_types
         )
         if retval:  # Validate type
-            arg_type_error_shutdown("reward_type", depth, invalid_type, valid_types)
+            arg_type_error_shutdown("reward_type", depth, invalid_types, valid_types)
         retval, invalid_values = has_invalid_value(
             self.reward_type, valid_values=valid_values
         )
@@ -1719,12 +2030,12 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         # Robot arm control type
         valid_types = (str,)
         valid_values = ROBOT_CONTROL_TYPES["arm"]
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.robot_arm_control_type, variable_types=valid_types
         )
         if retval:  # Validate type
             arg_type_error_shutdown(
-                "robot_arm_control_type", depth, invalid_type, valid_types
+                "robot_arm_control_type", depth, invalid_types, valid_types
             )
         retval, invalid_values = has_invalid_value(
             self.robot_arm_control_type, valid_values=valid_values
@@ -1739,12 +2050,12 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         # Robot hand control type
         valid_types = (str,)
         valid_values = ROBOT_CONTROL_TYPES["hand"]
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.robot_hand_control_type, variable_types=valid_types
         )
         if retval:  # Validate type
             arg_type_error_shutdown(
-                "robot_hand_control_type", depth, invalid_type, valid_types
+                "robot_hand_control_type", depth, invalid_types, valid_types
             )
         retval, invalid_values = has_invalid_value(
             self.robot_hand_control_type, valid_values=valid_values
@@ -1758,78 +2069,30 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
 
         # Robot n actions
         valid_types = (int,)
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.n_actions, variable_types=valid_types
         )
         if retval:  # Validate type
-            arg_type_error_shutdown("n_actions", depth, invalid_type, valid_types)
-
-        # Goal sampling strategy
-        valid_types = (str,)
-        valid_values = GOAL_SAMPLING_STRATEGIES
-        retval, depth, invalid_type = has_invalid_type(
-            self.goal_sampling_strategy, variable_types=valid_types
-        )
-        if retval:  # Validate type
-            arg_type_error_shutdown(
-                "goal_sampling_strategy", depth, invalid_type, valid_types
-            )
-        retval, invalid_values = has_invalid_value(
-            self.goal_sampling_strategy, valid_values=valid_values
-        )
-        if retval:  # Validate values
-            arg_value_error_shutdown(
-                "goal_sampling_strategy",
-                invalid_values=invalid_values,
-                valid_values=valid_values,
-            )
-
-        # Goal reference strategy
-        valid_types = (str,)
-        valid_values = GOAL_SAMPLING_REFERENCES
-        retval, depth, invalid_type = has_invalid_type(
-            self.goal_sampling_reference, variable_types=valid_types
-        )
-        if retval:  # Validate type
-            arg_type_error_shutdown(
-                "goal_sampling_reference", depth, invalid_type, valid_types
-            )
-        retval, invalid_values = has_invalid_value(
-            self.goal_sampling_reference, valid_values=valid_values
-        )
-        if retval:  # Validate values
-            arg_value_error_shutdown(
-                "goal_sampling_reference",
-                invalid_values=invalid_values,
-                valid_values=valid_values,
-            )
+            arg_type_error_shutdown("n_actions", depth, invalid_types, valid_types)
 
         # Action space joints
         # NOTE: The joint names in the action_Space_joints variable are validated at
         # the end of the constructor
         valid_types = (list,)
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.action_space_joints, variable_types=valid_types
         )
         if retval:  # Validate type
             arg_type_error_shutdown(
-                "action_space_joints", depth, invalid_type, valid_types
+                "action_space_joints", depth, invalid_types, valid_types
             )
 
         # Use gripper width
         valid_types = (bool,)
-        retval, depth, invalid_type = has_invalid_type(
+        retval, depth, invalid_types = has_invalid_type(
             self.use_gripper_width, variable_types=valid_types
         )
         if retval:  # Validate type
             arg_type_error_shutdown(
-                "use_gripper_width", depth, invalid_type, valid_types
+                "use_gripper_width", depth, invalid_types, valid_types
             )
-
-        # Use random pose
-        valid_types = (bool,)
-        retval, depth, invalid_type = has_invalid_type(
-            self.use_random_pose, variable_types=valid_types
-        )
-        if retval:  # Validate type
-            arg_type_error_shutdown("use_random_pose", depth, invalid_type, valid_types)

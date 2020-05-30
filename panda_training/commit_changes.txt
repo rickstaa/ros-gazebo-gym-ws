@@ -19,4 +19,8 @@
 - Fixed the _set_action function to take Joint positions, joint efforts and joint joint_positions_2_follow_joint_trajectory_goal
 - Cleaned up Panda_task environment
 - Added prepend option to OrderedDict
-- Removed get_params and _get_params from task environment --> Makes it more clear where to supply arguemnets
+- Removed get_params and _get_params from task environment --> Makes it more clear where to supply arguemnetis
+- Added input argument validation
+- Fixed the set_init_pose function
+- Added spawn gazebo object function
+- Aded a gazebo object pose setter

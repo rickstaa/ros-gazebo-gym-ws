@@ -9,7 +9,7 @@ import re
 import copy
 from collections import OrderedDict
 from panda_training.functions import flatten_list, lower_first_char, get_duplicate_list
-from panda_training.exceptions import InputMessageInvalid
+from panda_training.exceptions import InputMessageInvalidError
 from itertools import compress
 
 # ROS python imports
@@ -29,6 +29,8 @@ from panda_training.srv import (
     GetEePoseResponse,
     GetEeRpy,
     GetEeRpyResponse,
+    GetRandomEePose,
+    GetRandomEePoseResponse,
     GetRandomJointPositions,
     GetRandomJointPositionsResponse,
     SetEe,
@@ -216,10 +218,18 @@ class PandaMoveitPlannerServer(object):
             rospy.logdebug(
                 "Creating '%s/get_random_joint_positions' service." % rospy.get_name()
             )
-            self._get_random_pose_srv = rospy.Service(
+            self._get_random_joints_positions_srv = rospy.Service(
                 "%s/get_random_joint_positions" % rospy.get_name()[1:],
                 GetRandomJointPositions,
                 self._get_random_joint_positions_callback,
+            )
+            rospy.logdebug(
+                "Creating '%s/get_random_ee_pose' service." % rospy.get_name()
+            )
+            self._get_random_ee_pose_srv = rospy.Service(
+                "%s/get_random_ee_pose" % rospy.get_name()[1:],
+                GetRandomEePose,
+                self._get_random_ee_pose_callback,
             )
         rospy.loginfo("'%s' services created successfully." % rospy.get_name())
 
@@ -349,7 +359,7 @@ class PandaMoveitPlannerServer(object):
 
         Raises
         ----------
-        panda_training.exceptions.InputMessageInvalid
+        panda_training.exceptions.InputMessageInvalidError
             Raised when the input_msg could not be converted into 'moveit_commander'
             arm hand joint position commands.
         """
@@ -378,7 +388,7 @@ class PandaMoveitPlannerServer(object):
             )
             if verbose:
                 rospy.logwarn(logwarn_msg)
-            raise InputMessageInvalid(
+            raise InputMessageInvalidError(
                 message="Control group '%s' does not exist." % control_group.lower(),
                 log_message=logwarn_msg,
             )
@@ -415,7 +425,7 @@ class PandaMoveitPlannerServer(object):
                 )
                 if verbose:
                     rospy.logwarn(logwarn_msg)
-                raise InputMessageInvalid(
+                raise InputMessageInvalidError(
                     message="Invalid number of joint position commands.",
                     log_message=logwarn_msg,
                     details={
@@ -467,7 +477,7 @@ class PandaMoveitPlannerServer(object):
                 )
                 if verbose:
                     rospy.logwarn(logwarn_msg)
-                raise InputMessageInvalid(
+                raise InputMessageInvalidError(
                     message=(
                         "Joint_names and joint_positions fields of the input "
                         "message are of different lengths."
@@ -505,7 +515,7 @@ class PandaMoveitPlannerServer(object):
                 )
                 if verbose:
                     rospy.logwarn(logwarn_msg)
-                raise InputMessageInvalid(
+                raise InputMessageInvalidError(
                     message="Invalid joint_names were given.",
                     log_message=logwarn_msg,
                     details={"invalid_joint_names": invalid_joint_names},
@@ -633,7 +643,7 @@ class PandaMoveitPlannerServer(object):
             moveit_commander_commands = self._create_joint_positions_commands(
                 set_joint_positions_req
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidErrorError as e:
 
             # Print warning message and return result
             logwarn_msg = "Panda robot joint positions not set as " + lower_first_char(
@@ -752,7 +762,7 @@ class PandaMoveitPlannerServer(object):
             moveit_commander_commands = self._create_joint_positions_commands(
                 set_joint_positions_req, control_group="arm"
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Print warning message and return result
             logwarn_msg = "Arm joint Positions not set as " + lower_first_char(
@@ -832,7 +842,7 @@ class PandaMoveitPlannerServer(object):
             moveit_commander_commands = self._create_joint_positions_commands(
                 set_joint_positions_req, control_group="hand"
             )
-        except InputMessageInvalid as e:
+        except InputMessageInvalidError as e:
 
             # Print warning message and return result
             logwarn_msg = "Hand joint Positions not set as " + lower_first_char(
@@ -988,7 +998,7 @@ class PandaMoveitPlannerServer(object):
             Response message containing the random joints positions.
         """
 
-        # Get random joint positions that are valid and return response
+        # Get random joint positions that are valid
         arm_joints = self.move_group_arm.get_active_joints()
         hand_joints = self.move_group_hand.get_active_joints()
         random_arm_joint_values = self.move_group_arm.get_random_joint_values()
@@ -1016,4 +1026,32 @@ class PandaMoveitPlannerServer(object):
             resp.success = True
         else:
             resp.success = False
+        return resp
+
+    def _get_random_ee_pose_callback(self, get_random_ee_pose_req):
+        """Returns valid ee pose for the Panda arm.
+
+        Parameters
+        ----------
+        get_random_ee_pose_req : std_srvs.srv.Empty
+            Empty request.
+
+        Returns
+        -------
+        panda_train.srv.GetRandomEePoseResponse
+            Response message containing the random joints positions.
+        """
+
+        # Create response message
+        resp = GetRandomEePoseResponse()
+
+        # Get random ee pose
+        try:
+            random_ee_pose = self.move_group_arm.get_random_pose()
+            resp.success = True
+        except MoveItCommanderException:
+            resp.success = False
+
+        # Return response
+        resp.ee_pose = random_ee_pose.pose
         return resp

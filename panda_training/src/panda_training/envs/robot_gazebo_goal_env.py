@@ -7,16 +7,41 @@ since the goal of the robot task now is changing with each episode.
 # Main python imports
 import gym
 from gym.utils import seeding
-from panda_training.functions import model_state_msg_2_link_state_dict
+from panda_training.functions import (
+    model_state_msg_2_link_state_dict,
+    find_gazebo_model_path,
+)
+import os
 
 # ROS python imports
 import rospy
 from openai_ros.gazebo_connection import GazeboConnection
 from openai_ros.controllers_connection import ControllersConnection
+from rospy.exceptions import ROSException, ROSInterruptException
+from genpy.message import SerializationError
+from panda_training.functions import lower_first_char
+from panda_training.extras import Quaternion
+from panda_training.exceptions import SpawnModelError, SetModelStateError
 
 # ROS msgs and srvs
 from theconstruct_msgs.msg import RLExperimentInfo
-from gazebo_msgs.msg import ModelStates
+from geometry_msgs.msg import Pose, Twist
+from gazebo_msgs.msg import ModelStates, ModelState
+from gazebo_msgs.srv import (
+    SpawnModel,
+    SpawnModelRequest,
+    SetModelState,
+    SetModelStateRequest,
+)
+
+# Script Parameters
+GAZEBO_SPAWN_SDF_MODEL_TOPIC = "/gazebo/spawn_sdf_model"
+GAZEBO_SPAWN_URDF_MODEL_TOPIC = "/gazebo/spawn_urdf_model"
+GAZEBO_SET_MODEL_STATE_TOPIC = "/gazebo/set_model_state"
+DIRNAME = os.path.dirname(__file__)
+GAZEBO_MODELS_FOLDER_PATH = os.path.abspath(
+    os.path.join(DIRNAME, "../../../resources/models")
+)
 
 
 #################################################
@@ -97,6 +122,11 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         self._link_states_sub = rospy.Subscriber(
             joint_states_topic, ModelStates, self._link_states_callback
         )
+
+        #########################################
+        # Connect Gazebo services ###############
+        #########################################
+
         # Create Gazebo link state subscriber
         rospy.logdebug("Setting up Gazebo model_state subscriber.")
         model_states_topic = "/gazebo/model_states"
@@ -104,6 +134,65 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         self._model_states_sub = rospy.Subscriber(
             model_states_topic, ModelStates, self._model_states_callback
         )
+
+        # Connect to Gazebo sdf and urdf spawn model services
+        GAZEBO_SPAWN_SDF_MODEL_TOPIC = "/gazebo/spawn_sdf_model"
+        try:
+            rospy.logdebug("Connecting to '%s' service." % GAZEBO_SPAWN_SDF_MODEL_TOPIC)
+            rospy.wait_for_service(
+                GAZEBO_SPAWN_SDF_MODEL_TOPIC,
+                timeout=self._panda_moveit_server_connection_timeout,
+            )
+            self._gazebo_spawn_sdf_model_client = rospy.ServiceProxy(
+                GAZEBO_SPAWN_SDF_MODEL_TOPIC, SpawnModel
+            )
+            rospy.logdebug("Connected to '%s' service!" % GAZEBO_SPAWN_SDF_MODEL_TOPIC)
+            self._services_connection_status[GAZEBO_SPAWN_SDF_MODEL_TOPIC] = True
+        except (rospy.ServiceException, ROSException, ROSInterruptException):
+            rospy.logwarn(
+                "Failed to connect to '%s' service!" % GAZEBO_SPAWN_SDF_MODEL_TOPIC
+            )
+            self._services_connection_status[GAZEBO_SPAWN_SDF_MODEL_TOPIC] = False
+        try:
+            rospy.logdebug(
+                "Connecting to '%s' service." % GAZEBO_SPAWN_URDF_MODEL_TOPIC
+            )
+            rospy.wait_for_service(
+                GAZEBO_SPAWN_URDF_MODEL_TOPIC,
+                timeout=self._panda_moveit_server_connection_timeout,
+            )
+            self._gazebo_spawn_urdf_model_client = rospy.ServiceProxy(
+                GAZEBO_SPAWN_URDF_MODEL_TOPIC, SpawnModel
+            )
+            rospy.logdebug("Connected to '%s' service!" % GAZEBO_SPAWN_URDF_MODEL_TOPIC)
+            self._services_connection_status[GAZEBO_SPAWN_URDF_MODEL_TOPIC] = True
+        except (rospy.ServiceException, ROSException, ROSInterruptException):
+            rospy.logwarn(
+                "Failed to connect to '%s' service!" % GAZEBO_SPAWN_URDF_MODEL_TOPIC
+            )
+            self._services_connection_status[GAZEBO_SPAWN_URDF_MODEL_TOPIC] = False
+
+        # Connect to Gazebo 'set_model_state' service
+        try:
+            rospy.logdebug("Connecting to '%s' service." % GAZEBO_SET_MODEL_STATE_TOPIC)
+            rospy.wait_for_service(
+                GAZEBO_SET_MODEL_STATE_TOPIC,
+                timeout=self._panda_moveit_server_connection_timeout,
+            )
+            self._gazebo_set_model_state_client = rospy.ServiceProxy(
+                GAZEBO_SET_MODEL_STATE_TOPIC, SetModelState
+            )
+            rospy.logdebug("Connected to '%s' service!" % GAZEBO_SET_MODEL_STATE_TOPIC)
+            self._services_connection_status[GAZEBO_SET_MODEL_STATE_TOPIC] = True
+        except (rospy.ServiceException, ROSException, ROSInterruptException):
+            rospy.logwarn(
+                "Failed to connect to '%s' service!" % GAZEBO_SET_MODEL_STATE_TOPIC
+            )
+            self._services_connection_status[GAZEBO_SET_MODEL_STATE_TOPIC] = False
+
+        #########################################
+        # Unpause sim and reset controllers #####
+        #########################################
 
         # Unpause the simulation and reset the controllers if needed
         # NOTE: To check any topic we need to have the simulations running, we need to
@@ -167,6 +256,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         rospy.logdebug("Set action.")
         rospy.logdebug("Action: %s" % action)
         self._set_action(action)
+        self._step_callback()
 
         # Retrieve observation
         rospy.loginfo("Get observation.")
@@ -221,8 +311,6 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
             self.gazebo.unpauseSim()
             self.controllers_object.reset_controllers()
             self._check_all_systems_ready()
-            # TODO: Check reset_robot_pose variable
-            # TODO: ADD ee pose variable
             if self.reset_robot_pose:  # Reset robot pose
                 self._set_init_pose()
             self._set_init_object_pose()  # Reset object pose
@@ -248,6 +336,178 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
     #############################################
     # Panda Gazebo env helper methods ###########
     #############################################
+    def _spawn_object(self, object_name, model_name, pose=None):
+        """Spawns a object from the model directory into gazebo.
+
+        Parameters
+        ----------
+        object_name : str
+            The name you want the model to have.
+        model_name : str
+            The model type (The name of the xml file you want to use).
+        pose : geometry_msgs.msg.Pose, optional
+            The pose of the model, by default :class:`geometry_msgs.msg.Pose`.
+
+        Returns
+        -------
+        bool
+            A boolean specifying whether the model was successfully spawned.
+
+        Raises
+        ------
+        panda_training.exceptions.SpawnModelError
+            When model was not spawned successfully.
+        """
+
+        # Initiate default model pose
+        if not pose:
+            pose = Pose()
+            pose.orientation = Quaternion.normalize_quaternion(pose.orientation)
+
+        # Check if model is already present
+        if object_name in self.model_states.keys():
+            rospy.logwarn(
+                "A model with model name '%s' already exists. Please check if this is "
+                "the right model." % (model_name)
+            )
+            return False
+
+        # Spawn model using the gazebo spawn sdf/urdf service
+        rospy.logdebug("Spawning model '%s' as '%s'." % (model_name, object_name))
+        if (
+            self._services_connection_status[GAZEBO_SPAWN_URDF_MODEL_TOPIC]
+            and self._services_connection_status[GAZEBO_SPAWN_SDF_MODEL_TOPIC]
+        ):
+
+            # Find model xml
+            rospy.logdebug("Looking for '%s' model file." % model_name)
+            model_xml, extension = find_gazebo_model_path(
+                model_name, GAZEBO_MODELS_FOLDER_PATH
+            )
+            if not model_xml:  # If model file was not found
+                logwarn_msg = (
+                    "Spawning model '%s' as '%s' failed since the sdf/urd model file "
+                    "was not found. Please make sure you added the model sdf/urdf file "
+                    "to the '%s' folder."
+                    % (model_name, object_name, GAZEBO_MODELS_FOLDER_PATH)
+                )
+                rospy.logwarn(logwarn_msg)
+                raise SpawnModelError(message=logwarn_msg)
+
+            # Load content from the model xml file
+            xml_file = open(model_xml, "r")
+            model_xml_content = xml_file.read()
+
+            # Create spawn model request message
+            rospy.logdebug("Spawning '%s' model as '%s'." % (model_name, object_name))
+            spawn_model_req = SpawnModelRequest(
+                model_name=object_name,
+                model_xml=model_xml_content,
+                initial_pose=pose,
+                reference_frame="world",
+            )
+
+            # Request model spawn from sdf or urdf spawn service
+            if extension == "sdf":  # Use sdf service
+                try:
+                    retval = self._gazebo_spawn_sdf_model_client.call(spawn_model_req)
+                except (
+                    SerializationError,
+                    AttributeError,
+                    rospy.ServiceException,
+                ) as e:  # Raise SpawnModelError if not successfull
+                    logwarn_msg = "Spawning model '%s' as '%s' failed since %s." % (
+                        model_name,
+                        object_name,
+                        lower_first_char(e.args[0]),
+                    )
+                    rospy.logwarn(logwarn_msg)
+                    raise SpawnModelError(message=logwarn_msg, details={"exception": e})
+
+                # Return success bool
+                rospy.logdebug(retval.status_message)
+                return retval
+            else:  # Use urdf service
+                try:
+                    retval = self._gazebo_spawn_urdf_model_client.call(spawn_model_req)
+                except (
+                    SerializationError,
+                    AttributeError,
+                    rospy.ServiceException,
+                ) as e:  # Raise SpawnModelError if not successfull
+                    logwarn_msg = "Spawning model '%s' as '%s' failed since %s." % (
+                        model_name,
+                        object_name,
+                        lower_first_char(e.args[0]),
+                    )
+                    rospy.logwarn(logwarn_msg)
+                    raise SpawnModelError(message=logwarn_msg, details={"exception": e})
+
+                # Return success bool
+                rospy.logdebug(retval.status_message)
+                return retval
+        else:  # Raise SpawnModelError since service was not found
+            logwarn_msg = (
+                "Spawning model '%s' as '%s' failed since the '/%s' and '%s' services "
+                "are not available."
+                % (
+                    model_name,
+                    object_name,
+                    GAZEBO_SPAWN_SDF_MODEL_TOPIC,
+                    GAZEBO_SPAWN_URDF_MODEL_TOPIC,
+                )
+            )
+            rospy.logwarn(logwarn_msg)
+            raise SpawnModelError(message=logwarn_msg)
+
+    def _set_model_state(self, object_name, pose, twist=Twist()):
+        """Sets the model state of a gazebo object.
+
+        Parameters
+        ----------
+        object_name : str
+            The name of the object.
+        pose : geometry_msgs.Pose
+            The pose you want the object to have.
+        twist : geometry_msgs.Twist, optional
+            The twist you want the object to have, by default Twist().
+
+        Returns
+        -------
+        bool
+            A boolean specifying whether the state was successfully set.
+
+        Raises
+        ------
+        panda_training.exceptions.SpawnModelError
+            When model state was not set successfully.
+        """
+
+        # Set model state
+        rospy.logdebug("setting '%s' model state." % object_name)
+        if self._services_connection_status[GAZEBO_SET_MODEL_STATE_TOPIC]:
+
+            # Create SetModelState msg
+            model_state = ModelState(model_name=object_name, pose=pose, twist=twist)
+            set_model_state_req = SetModelStateRequest(model_state)
+
+            # Send set model state request to gazebo service
+            retval = self._gazebo_set_model_state_client.call(set_model_state_req)
+            if not retval:
+                rospy.logwarn(retval.status_message)
+            else:
+                rospy.logdebug(retval.status_message)
+            return retval
+        else:
+
+            # Raise SpawnModelError since service was not found
+            logwarn_msg = (
+                "Model state for object '%s' could not be set as the '%s' could not be "
+                "found." % (object_name, GAZEBO_SET_MODEL_STATE_TOPIC)
+            )
+            rospy.logwarn(logwarn_msg)
+            raise SetModelStateError(message=logwarn_msg)
+
     def _update_episode(self):
         """Increases the episode number by one.
         """
@@ -318,8 +578,6 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         """
         raise NotImplementedError()
 
-    # TODO: ADD ee pose
-
     def _set_init_object_pose(self):
         """Sets the Object to its init pose.
 
@@ -384,3 +642,9 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         NotImplementedError
         """
         raise NotImplementedError()
+
+    def _step_callback(self):
+        """A custom callback that is called after stepping the simulation. Can be used
+        to enforce additional constraints on the simulation state.
+        """
+        pass

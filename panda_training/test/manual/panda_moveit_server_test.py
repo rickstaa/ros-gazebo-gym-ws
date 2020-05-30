@@ -13,6 +13,8 @@ from panda_training.srv import (
     GetEePoseRequest,
     GetEeRpy,
     GetEeRpyRequest,
+    GetRandomEePose,
+    GetRandomEePoseRequest,
     GetRandomJointPositions,
     GetRandomJointPositionsRequest,
     GetEe,
@@ -115,11 +117,19 @@ if __name__ == "__main__":
     # resp = set_ee_srv.call(req)
     # print(resp)
 
-    # -- Test get random pose service --
+    # -- Test get random joint positions service --
     req = GetRandomJointPositionsRequest()
     set_ee_srv = rospy.ServiceProxy(
         "panda_moveit_planner_server/get_random_joint_positions",
         GetRandomJointPositions,
     )
     resp = set_ee_srv.call(GetRandomJointPositionsRequest())
+    print(resp)
+
+    # -- Test get random pose service --
+    req = GetRandomJointPositionsRequest()
+    set_ee_srv = rospy.ServiceProxy(
+        "panda_moveit_planner_server/get_random_ee_pose", GetRandomEePose,
+    )
+    resp = set_ee_srv.call(GetRandomEePoseRequest())
     print(resp)

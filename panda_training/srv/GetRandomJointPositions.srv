@@ -1,4 +1,5 @@
-# Service that can be used to get a valid random pose for the robot
+# Service that can be used to get valid joint positions for controlling the robot arm
+# and hand
 
 ---
 bool success

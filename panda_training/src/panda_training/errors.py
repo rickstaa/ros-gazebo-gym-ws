@@ -12,7 +12,7 @@ import rospy
 #################################################
 # Custom ROS errors #############################
 #################################################
-def arg_type_error_shutdown(self, arg_name, depth, invalid_type, valid_types):
+def arg_type_error_shutdown(arg_name, depth, invalid_types, valid_types):
     """This function displays a argument type invalid ROS error and shutdown the
     ROS node.
 
@@ -31,13 +31,16 @@ def arg_type_error_shutdown(self, arg_name, depth, invalid_type, valid_types):
     # Throw Type error and shutdown ROS node
     if depth == 0:
         logerr_msg = (
-            "Shutting down '%s' since input argument '%s' was of type '%s' while "
+            "Shutting down '%s' since input argument '%s' was of type %s while "
             "the PandaTaskEnv expects it to be of type %s. Please fix the type "
             "and try again."
             % (
                 rospy.get_name(),
                 arg_name,
-                invalid_type.__name__,
+                list_2_human_text(
+                    ["'" + str(item.__name__) + "'" for item in invalid_types],
+                    end_seperator="and",
+                ),
                 list_2_human_text(
                     ["'" + str(item.__name__) + "'" for item in valid_types],
                     end_seperator="or",
@@ -47,12 +50,15 @@ def arg_type_error_shutdown(self, arg_name, depth, invalid_type, valid_types):
     else:
         logerr_msg = (
             "Shutting down '%s' since input argument '%s' contains items that have "
-            "type '%s' while the PandaTaskEnv only expects %s. Please fix the type "
+            "type %s while the PandaTaskEnv only expects %s. Please fix the type "
             "and try again."
             % (
                 rospy.get_name(),
                 arg_name,
-                invalid_type.__name__,
+                list_2_human_text(
+                    ["'" + str(item.__name__) + "'" for item in invalid_types],
+                    end_seperator="and",
+                ),
                 list_2_human_text(
                     ["'" + str(item.__name__) + "'" for item in valid_types],
                     end_seperator="or",
@@ -63,7 +69,7 @@ def arg_type_error_shutdown(self, arg_name, depth, invalid_type, valid_types):
     sys.exit(0)
 
 
-def arg_keys_error_shutdown(self, arg_name, missing_keys, extra_keys=[]):
+def arg_keys_error_shutdown(arg_name, missing_keys, extra_keys=[]):
     """This function displays a argument keys invalid ROS error and shutdown the
     ROS node.
 
@@ -172,3 +178,13 @@ def arg_value_error_shutdown(arg_name, invalid_values, valid_values):
     )
     rospy.logerr(logerr_msg)
     sys.exit(0)
+
+
+if __name__ == "__main__":
+    arg_type_error_shutdown(
+        arg_name="beerend",
+        depth=1,
+        invalid_types=[int, bool],
+        valid_types=[float, dict],
+    )
+    print("tests")

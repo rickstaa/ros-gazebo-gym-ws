@@ -38,6 +38,8 @@ from gazebo_msgs.srv import (
 GAZEBO_SPAWN_SDF_MODEL_TOPIC = "/gazebo/spawn_sdf_model"
 GAZEBO_SPAWN_URDF_MODEL_TOPIC = "/gazebo/spawn_urdf_model"
 GAZEBO_SET_MODEL_STATE_TOPIC = "/gazebo/set_model_state"
+GAZEBO_MODEL_STATES_TOPIC = "/gazebo/model_states"
+GAZEBO_LINK_STATES_TOPIC = "/gazebo/link_states"
 DIRNAME = os.path.dirname(__file__)
 GAZEBO_MODELS_FOLDER_PATH = os.path.abspath(
     os.path.join(DIRNAME, "../../../resources/models")
@@ -105,7 +107,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         self.controllers_object = ControllersConnection(
             namespace=robot_name_space, controllers_list=reset_control_list
         )
-        rospy.loginfo(self.reset_controls)
+        rospy.logdebug("reset_robot_controls: %s" % self.reset_controls)
         self.seed()
 
         # Set up ROS related variables
@@ -114,26 +116,9 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
             "/openai/reward", RLExperimentInfo, queue_size=10
         )
 
-        # Create Gazebo link state subscriber
-        rospy.loginfo("Setting up Gazebo sensor data subscribers.")
-        rospy.logdebug("Setting up Gazebo link_states subscriber.")
-        joint_states_topic = "/gazebo/link_states"
-        self.link_states = ModelStates()
-        self._link_states_sub = rospy.Subscriber(
-            joint_states_topic, ModelStates, self._link_states_callback
-        )
-
         #########################################
         # Connect Gazebo services ###############
         #########################################
-
-        # Create Gazebo link state subscriber
-        rospy.logdebug("Setting up Gazebo model_state subscriber.")
-        model_states_topic = "/gazebo/model_states"
-        self.model_states = ModelStates()
-        self._model_states_sub = rospy.Subscriber(
-            model_states_topic, ModelStates, self._model_states_callback
-        )
 
         # Connect to Gazebo sdf and urdf spawn model services
         GAZEBO_SPAWN_SDF_MODEL_TOPIC = "/gazebo/spawn_sdf_model"
@@ -313,7 +298,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
             self._check_all_systems_ready()
             if self.reset_robot_pose:  # Reset robot pose
                 self._set_init_pose()
-            self._set_init_object_pose()  # Reset object pose
+            self._set_init_obj_pose()  # Reset object pose
             self.gazebo.pauseSim()
             self.gazebo.resetSim()
             self.gazebo.unpauseSim()
@@ -326,7 +311,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
             self._check_all_systems_ready()
             if self.reset_robot_pose:  # Reset robot pose
                 self._set_init_pose()
-            self._set_init_object_pose()  # Reset object pose
+            self._set_init_obj_pose()  # Reset object pose
             self.gazebo.resetWorld()
             self._check_all_systems_ready()
 
@@ -533,27 +518,29 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
     #############################################
     # Callback functions ########################
     #############################################
-    def _link_states_callback(self, data):
-        """Callback function for retrieving the link_state
-        data from Gazebo.
+    # NOTE: Implemented as a class property since using subscribers without the
+    # ros.spin() command did not work.
+    @property
+    def link_states(self):
+        """Callback function for retrieving the link_state data from Gazebo.
         """
 
-        # Convert Gazebo link_states msgs to a link_states dictionary
-        link_state_dict = model_state_msg_2_link_state_dict(data)
+        # Convert Gazebo link_states msgs to a link_states dictionary and store as
+        # attribute
+        return model_state_msg_2_link_state_dict(
+            rospy.wait_for_message(GAZEBO_LINK_STATES_TOPIC, ModelStates)
+        )
 
-        # Update link_states
-        self.link_states = link_state_dict
-
-    def _model_states_callback(self, data):
-        """Callback function for retrieving the model_state
-        data from Gazebo.
+    @property
+    def model_states(self):
+        """Callback function for retrieving the model_state data from gazebo.
         """
 
-        # Convert Gazebo model_states msgs to a model_states dictionary
-        model_state_dict = model_state_msg_2_link_state_dict(data)
-
-        # Update link_states
-        self.model_states = model_state_dict
+        # Convert Gazebo model_states msgs to a model_states dictionary and store as
+        # attribute
+        return model_state_msg_2_link_state_dict(
+            rospy.wait_for_message(GAZEBO_MODEL_STATES_TOPIC, ModelStates)
+        )
 
     #############################################
     # Setup virtual methods #####################
@@ -578,7 +565,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         """
         raise NotImplementedError()
 
-    def _set_init_object_pose(self):
+    def _set_init_obj_pose(self):
         """Sets the Object to its init pose.
 
         Raises

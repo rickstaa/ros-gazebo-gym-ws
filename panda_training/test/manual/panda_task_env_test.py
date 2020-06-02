@@ -24,7 +24,16 @@ if __name__ == "__main__":
         robot_hand_control_type="joint_position_control",
         # n_actions=3,7
         # init_pose_type="ee_pose",
-        bound_init_pose=False,
+        init_pose_bounds={
+            "x_min": 0,
+            "x_max": 0.4,
+            "y_min": 0,
+            "y_max": 0.4,
+            "z_min": 0,
+            "z_max": 1,
+            "gripper_width_min": 0,
+            "gripper_width_max": 0.4,
+        },
         has_object=True,
         # gripper_extra_height="jan",
         # controlled_joints=["panda_joint1", "panda_joint2"],
@@ -34,7 +43,7 @@ if __name__ == "__main__":
     # and specify the keys that you would like to use.
     env = gym.wrappers.FlattenObservation(env)
 
-    # -- TEST action funxtion --
+    # -- TEST action function --
     # -- Inference --
     # Visualize results
     obs = env.reset()

@@ -8,6 +8,6 @@ from .action_client_state import ActionClientState
 from .controller_info_dict import ControllerInfoDict
 from .euler_angles import EulerAngles
 from .quaternion import Quaternion
-from .goal_marker import GoalMarker
-from .goal_sample_region_marker import GoalSampleRegionMarker
+from .target_marker import TargetMarker
+from .sample_region_marker import SampleRegionMarker
 from .nested_dict import NestedDict

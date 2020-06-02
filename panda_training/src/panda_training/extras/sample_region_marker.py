@@ -1,4 +1,4 @@
-"""Class used for displaying the goal sampling region in rviz. This class overloads "
+"""Class used for displaying the a sampling region in rviz. This class overloads "
 the visualization_msgs.msgs.Marker class in order to pre-initialize some of its "
 attributes. It further also adds the ability to specify the marker scale using x, y, z
 max and min values. To visualize the marker you can publish it on the
@@ -24,9 +24,9 @@ from std_msgs.msg import ColorRGBA
 
 
 #################################################
-# GoalSampleRegionMarker ####################################
+# SampleRegionMarker ####################################
 #################################################
-class GoalSampleRegionMarker(Marker):
+class SampleRegionMarker(Marker):
     """Class used to create an rviz goal sample region marker.
 
     Attributes
@@ -80,7 +80,7 @@ class GoalSampleRegionMarker(Marker):
         *args,
         **kwds
     ):
-        """Initialize GoalSampleRegionMarker object
+        """Initialize SampleRegionMarker object
         """
 
         # Initiate class attributes
@@ -119,7 +119,7 @@ class GoalSampleRegionMarker(Marker):
             self.pose.position.z = 0.0
         if "color" not in kwds.keys():
             self.color = ColorRGBA()
-            self.color.a = 0.2
+            self.color.a = 0.1
             self.color.r = 1.0
             self.color.g = 0.0
             self.color.b = 0.0

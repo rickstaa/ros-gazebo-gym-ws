@@ -72,6 +72,7 @@ MOVEIT_SET_JOINT_POSITIONS_TOPIC = "panda_moveit_planner_server/set_joint_positi
 SET_JOINT_POSITIONS_TOPIC = "panda_control_server/set_joint_positions"
 SET_JOINT_EFFORTS_TOPIC = "panda_control_server/set_joint_efforts"
 SET_JOINT_TRAJECTORY_TOPIC = "panda_control_server/follow_joint_trajectory"
+JOINT_STATES_TOPIC = "/joint_states"
 REQUIRED_SERVICES_DICT = {
     "joint_trajectory_control": [SET_JOINT_TRAJECTORY_TOPIC],
     "joint_position_control": [
@@ -92,6 +93,8 @@ REQUIRED_SERVICES_DICT = {
     "joint_group_effort_control": [SET_JOINT_EFFORTS_TOPIC],
     "ee_control": [[MOVEIT_SET_EE_POSE_TOPIC, SET_JOINT_TRAJECTORY_TOPIC]],
 }
+
+# TODO: ADD debug messgaes to set joint positions
 
 
 #################################################
@@ -121,8 +124,6 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
         Get end effector pose.
     get_ee_rpy():
         Get end effector orientation.
-    get_joints():
-        Get robot joint states.
     set_ee_pose(action):
         Set end effector pose.
     set_joint_efforts(joint_efforts, wait):
@@ -217,13 +218,18 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
         self._controller_switcher_connection_timeout = 5
         self._joint_traj_action_server_default_step_size = 1  # Time from send [sec]
 
-        # Create Needed subscribers
-        rospy.loginfo("Setting up sensor data subscribers.")
-        joint_states_topic = "joint_states"
-        self.joint_states = JointState()
-        self._joint_states_sub = rospy.Subscriber(
-            joint_states_topic, JointState, self._joints_callback
+        # Initialize parent Class to setup the Gazebo environment)
+        super(PandaRobotEnv, self).__init__(
+            robot_name_space=self.robot_name_space,
+            reset_robot_pose=reset_robot_pose,
+            reset_controls=reset_controls,
+            reset_control_list=reset_control_list,
         )
+
+        #########################################
+        # Create controlswitcher and tf #########
+        # and tf listener #######################
+        #########################################
 
         # Create controller switcher
         self._controller_switcher = PandaControlSwitcher(
@@ -550,18 +556,6 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
             )
             sys.exit(0)
 
-        #########################################
-        # Initialize parent class ###############
-        #########################################
-
-        # Initialize parent Class to setup the Gazebo environment)
-        super(PandaRobotEnv, self).__init__(
-            robot_name_space=self.robot_name_space,
-            reset_robot_pose=reset_robot_pose,
-            reset_controls=reset_controls,
-            reset_control_list=reset_control_list,
-        )
-
         # Environment initiation complete message
         rospy.loginfo("Panda Robot environment initialized.")
 
@@ -583,16 +577,6 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
     #############################################
     # Panda Robot env main methods ##############
     #############################################
-    def get_joints(self):
-        """Returns the robot joint states.
-
-        Returns
-        -------
-        np.array
-            List containing the robot joint names.
-        """
-        return self.joint_states
-
     def get_ee_pose(self):
         """Returns the end effector EE pose.
 
@@ -1547,7 +1531,7 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
             Array containing the joint states.
         """
 
-        self.joint_states = None
+        self.__joint_states = None
         while self.joint_states is None and not rospy.is_shutdown():
             try:
                 self.joint_states = rospy.wait_for_message(
@@ -1565,10 +1549,19 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
     #############################################
     # Callback functions ########################
     #############################################
-    def _joints_callback(self, data):
-        """Callback function for retrieving the joint_state data.
+    # NOTE: Implemented as a class property since using subscribers without the
+    # ros.spin() command did not work.
+    @property
+    def joint_states(self):
+        """Function for retrieving the joint_state data.
         """
-        self.joint_states = data
+        return rospy.wait_for_message(JOINT_STATES_TOPIC, JointState)
+    
+    @joint_states.setter
+    def joint_states(self, val):
+        """Function for setting the joint_state data.
+        """
+        self.__joint_states = val
 
     #############################################
     # Setup virtual methods #####################
@@ -1619,4 +1612,3 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
         NotImplementedError
         """
         raise NotImplementedError()
-

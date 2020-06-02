@@ -4,6 +4,7 @@
 import rospy
 
 # Import ROS msgs and srvs
+from panda_training.msg import BoundingRegion
 from panda_training.srv import (
     SetJointPositions,
     SetJointPositionsRequest,
@@ -117,19 +118,20 @@ if __name__ == "__main__":
     # resp = set_ee_srv.call(req)
     # print(resp)
 
-    # -- Test get random joint positions service --
-    req = GetRandomJointPositionsRequest()
-    set_ee_srv = rospy.ServiceProxy(
-        "panda_moveit_planner_server/get_random_joint_positions",
-        GetRandomJointPositions,
-    )
-    resp = set_ee_srv.call(GetRandomJointPositionsRequest())
-    print(resp)
+    # # -- Test get random joint positions service --
+    # req = GetRandomJointPositionsRequest()
+    # set_ee_srv = rospy.ServiceProxy(
+    #     "panda_moveit_planner_server/get_random_joint_positions",
+    #     GetRandomJointPositions,
+    # )
+    # resp = set_ee_srv.call(GetRandomJointPositionsRequest())
+    # print(resp)
 
     # -- Test get random pose service --
-    req = GetRandomJointPositionsRequest()
+    req = GetRandomEePoseRequest()
+    req.bounding_region = BoundingRegion(x_min=0.0, x_max=1.0)
     set_ee_srv = rospy.ServiceProxy(
         "panda_moveit_planner_server/get_random_ee_pose", GetRandomEePose,
     )
-    resp = set_ee_srv.call(GetRandomEePoseRequest())
+    resp = set_ee_srv.call(req)
     print(resp)

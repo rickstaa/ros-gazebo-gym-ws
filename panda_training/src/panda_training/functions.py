@@ -307,26 +307,6 @@ def get_orientation_euler(quaternion):
     return euler
 
 
-def action_list_2_action_dict(actions, joints):
-    """Covert a list of joint actions to a action dictionary {joint: action}.
-
-    Parameters
-    ----------
-    actions : list
-        List containing a control action for each of the panda joints.
-    joints : list
-        List containing the robot joints.
-
-    Returns
-    -------
-    dict
-        Dictionary containing a control action for each of the panda joints.
-    """
-
-    action_dict = OrderedDict(zip(joints, actions))
-    return action_dict
-
-
 def translate_actionclient_result_error_code(actionclient_retval):
     """Translates the error code returned by the SimpleActionClient.get_result()
     function into a human readable error message.
@@ -360,6 +340,60 @@ def translate_actionclient_result_error_code(actionclient_retval):
         if error_dict[actionclient_retval.error_code] != "SUCCESSFUL"
         else ""
     )
+
+
+def translate_gripper_width_2_finger_joint_commands(input_dict):
+    """Translate any 'gripper_width' keys that are present in the action dictionary
+    into the corresponding finger joint control commands which are used by the
+    controllers.
+
+    Parameters
+    ----------
+    input_dict : dict
+        Dictionary containing the desired actions.
+
+    Returns
+    -------
+    dict
+        Action dictionary in which the gripper_width is translated to finger joint
+        commands.
+    """
+
+    # ensure that we don't change the action outside of this scope
+    input_dict = input_dict.copy()
+
+    # Translate any 'gripper_width' keys into Panda finger joint command keys
+    if isinstance(input_dict, dict):
+        if "gripper_width" in input_dict.keys():  # If dictionary contains commands
+            finger_position = input_dict["gripper_width"] / 2.0
+            del input_dict["gripper_width"]
+            input_dict["panda_finger_joint1"] = finger_position
+            input_dict["panda_finger_joint2"] = finger_position
+        elif (
+            "gripper_width_min" in input_dict.keys()
+            or "gripper_width_max" in input_dict.keys()
+        ):  # If dictionary contains bounds commands
+            if "gripper_width_min" in input_dict.keys():  # Translate min
+                finger_position_min = input_dict["gripper_width_min"] / 2.0
+                del input_dict["gripper_width_min"]
+                input_dict["panda_finger_joint1_min"] = finger_position_min
+                input_dict["panda_finger_joint2_min"] = finger_position_min
+            if "gripper_width_max" in input_dict.keys():  # Translate max
+                finger_position_max = input_dict["gripper_width_max"] / 2.0
+                del input_dict["gripper_width_max"]
+                input_dict["panda_finger_joint1_max"] = finger_position_max
+                input_dict["panda_finger_joint2_max"] = finger_position_max
+    else:
+
+        # Throw invalid type error
+        raise TypeError(
+            "Input argument has the wrong type the"
+            "'translate_gripper_width_2_finger_joint_commands'"
+            "function only takes a dictionary."
+        )
+
+    # Return translated list/dic
+    return input_dict
 
 
 def wrap_space_around(text):
@@ -517,8 +551,9 @@ def has_invalid_type(variable, variable_types, items_types=None, depth=0):
 
 
 def contains_keys(input_dict, required_keys, exclusive=True):
-    """Function used to check if a dictionary contains keys. If 'required_keys' contains
-    a nested list it checks whether at least of the nested_list elements is found.
+    """Function used to check if a dictionary contains the required keys. If the
+    'required_keys' argument contains a nested list it checks whether at least one of
+    the nested_list elements is present.
 
     Parameters
     ----------
@@ -533,7 +568,7 @@ def contains_keys(input_dict, required_keys, exclusive=True):
     Returns
     -------
     bool, list, list
-        A bool specifying whether the keys are present, a list containing the keys that
+        A bool specifying whether invalid keys are, a list containing the keys that
         were missing and a list containing the keys that were found in addition to the
         required keys.
     """
@@ -704,7 +739,30 @@ def pose_dict_2_pose_msg(pose_dict):
     return pose_msg
 
 
-def log_qpose(qpose, level="DEBUG"):
+def pose_msg_2_pose_dict(pose_msg):
+    """Create a panda_training pose dictionary {x, y, z, rx, ry, rz, rw} out of a
+    'geometry_msgs.msg.Pose' message.
+    .
+
+    Parameters
+    ----------
+    pose_msg : geometry_msgs.msg.Pose
+        A pose message
+    """
+    # Create dictionary out of pose message
+    pose_dict = {
+        "x": pose_msg.position.x,
+        "y": pose_msg.position.y,
+        "z": pose_msg.position.z,
+        "rx": pose_msg.orientation.x,
+        "ry": pose_msg.orientation.y,
+        "rz": pose_msg.orientation.z,
+        "rw": pose_msg.orientation.w,
+    }
+    return pose_dict
+
+
+def log_pose_dict(qpose, header="q_pose", level="DEBUG"):
     """Prints the qpose in a more human readably format.
 
     Parameters
@@ -713,6 +771,8 @@ def log_qpose(qpose, level="DEBUG"):
         A dictionary containing the generalized robot pose.
     level : str
         The log level you want to use (info, warn or debug).
+    header : str
+        The header you want to display above the dictionary elements.
     """
 
     # Validate qpose message
@@ -727,10 +787,11 @@ def log_qpose(qpose, level="DEBUG"):
 
         # Convert qpose dictionary to human readable format
         qpose_msg = (
-            "q_pose:\n  "
+            header
+            + ":\n  "
             + "  ".join(
                 [str(key) + ": " + str(val) + "\n" for key, val in qpose.items()]
-            )[:-2]
+            )[:-1]
         )
 
     # Check log level and log qpose
@@ -740,3 +801,97 @@ def log_qpose(qpose, level="DEBUG"):
         rospy.loginfo(qpose_msg)
     else:
         rospy.logdebug(qpose_msg)
+
+
+def split_dict(input_dict, *args):
+    """Split a dictionary into smaller dictionaries based on the keys.
+
+    example:
+    .. code-block:: python
+        split_dict_list = split_dict(input_dict,["first_dict_key1","first_dict_key2"],
+        ["second_dict_key1", "second_dict_key2"])
+
+    Parameters
+    ----------
+    input_dict : [type]
+        [description]
+    *args : list
+        Lists containing the keys you want to have in the successive dictionaries.
+
+    Returns
+    -------
+    list
+        A list containing the splitted dictionaries.
+    """
+
+    split_dict_list = []
+    for split_list_item in args:
+        split_dict_list.append(
+            {key: val for key, val in input_dict.items() if key in split_list_item}
+        )
+    return split_dict_list
+
+
+def split_bounds_dict(bounds_dict):
+    """Splits the bounding region dictionary into two separate bounding dictionaries,
+    one for the ee_pose and one fore the joint_pose.
+
+    Parameters
+    ----------
+    bounds_dict : dict
+        Original bounds dictionary.
+
+    Returns
+    -------
+    dict, dict
+        One ee_pose bounding region dictionary and one joint_pose bounding region
+        dictionary.
+    """
+
+    # Split bounds dict into two separate dictionaries one for the ee_pose bounds and
+    # one for the joint_pose bounds.
+    split_dict_list = split_dict(
+        bounds_dict,
+        ["x_min", "x_max", "y_min", "y_max", "z_min", "z_max"],
+        [
+            "panda_joint1_min",
+            "panda_joint2_min",
+            "panda_joint3_min",
+            "panda_joint4_min",
+            "panda_joint5_min",
+            "panda_joint6_min",
+            "panda_joint7_min",
+            "panda_finger_joint1_min",
+            "panda_finger_joint1_max",
+            "panda_finger_joint2_min",
+            "panda_finger_joint2_max",
+            "gripper_width_min",
+            "gripper_width_max",
+        ],
+    )
+    return split_dict_list[0], split_dict_list[1]
+
+
+def split_pose_dict(pose_dict):
+    """Splits a pose dictionary into two separate pose dictionaries, one for the ee_pose
+     and one fore the joint_pose.
+
+    Parameters
+    ----------
+    bounding_region : dict
+        Original bounds dictionary.
+
+    Returns
+    -------
+    dict, dict
+        One ee_pose dictionary and one joint_pose dictionary.
+    """
+
+    # Split bounds dict into two separate dictionaries one for the ee_pose and one for
+    # the joint_pose.
+    split_dict_list = split_dict(
+        pose_dict,
+        ["x", "y", "z", "rx", "ry", "rz", "rw"],
+        ["panda_finger_joint1", "panda_finger_joint2", "gripper_width"],
+    )
+    return split_dict_list[0], split_dict_list[1]

@@ -8,7 +8,6 @@
     <arg name="rviz" default="true" />
     <arg name="rviz_file" default="$(find panda_training)/launch/panda.rviz" />
     <arg name="moveit" default="true" />
-    <!-- <arg name="moveit_rviz_file" default="$(find panda_training)/launch/panda_moveit.rviz" /> -->
     <arg name="moveit_rviz_file" default="$(find panda_training)/launch/panda.rviz" />
     <arg name="load_gripper" default="true" />
     <arg name="grip_site" default="false" />

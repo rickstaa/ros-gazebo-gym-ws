@@ -7,8 +7,14 @@ to control the Panda robot or retrieve sensor data for the robot.
 import sys
 import re
 import copy
+import numpy as np
 from collections import OrderedDict
-from panda_training.functions import flatten_list, lower_first_char, get_duplicate_list
+from panda_training.functions import (
+    flatten_list,
+    lower_first_char,
+    get_duplicate_list,
+    get_unique_list,
+)
 from panda_training.exceptions import InputMessageInvalidError
 from itertools import compress
 
@@ -20,8 +26,8 @@ from rospy.exceptions import ROSException
 
 # ROS msgs and srvs
 from sensor_msgs.msg import JointState
-import moveit_msgs.msg
-import geometry_msgs.msg
+from moveit_msgs.msg import DisplayTrajectory
+from geometry_msgs.msg import Pose
 from panda_training.srv import (
     GetEe,
     GetEeResponse,
@@ -40,6 +46,10 @@ from panda_training.srv import (
     SetJointPositions,
     SetJointPositionsResponse,
 )
+
+# The maximum number times the get_random_ee_pose service tries to sample from the
+# bounding region before ignoring it.
+MAX_RANDOM_SAMPLES = 5
 
 
 #################################################
@@ -141,9 +151,7 @@ class PandaMoveitPlannerServer(object):
 
         # Create rviz trajectory publisher
         self._display_trajectory_publisher = rospy.Publisher(
-            "/move_group/display_planned_path",
-            moveit_msgs.msg.DisplayTrajectory,
-            queue_size=10,
+            "/move_group/display_planned_path", DisplayTrajectory, queue_size=10,
         )
 
         #############################################
@@ -234,7 +242,7 @@ class PandaMoveitPlannerServer(object):
         rospy.loginfo("'%s' services created successfully." % rospy.get_name())
 
         # Initiate service msgs
-        self.ee_pose_target = geometry_msgs.msg.Pose()
+        self.ee_pose_target = Pose()
         self.joint_positions_target = {}
 
         #############################################
@@ -593,15 +601,21 @@ class PandaMoveitPlannerServer(object):
         # Send trajectory message and return response
         try:
             self.move_group_arm.set_pose_target(self.ee_pose_target)
-            self._execute(control_group="arm")
+            retval = self._execute(control_group="arm")
+
+            # Check if setpoint execution was successfull
+            if not all(retval):
+                resp.success = False
+                resp.message = "Ee pose could not be set"
+            else:
+                resp.success = True
+                resp.message = "Everything went OK"
         except MoveItCommanderException as e:
             rospy.logwarn(e.message)
             resp.success = False
             resp.message = e.message
 
-        # Return success message
-        resp.success = True
-        resp.message = "Everything went OK"
+        # Return result
         return resp
 
     def _set_joint_positions_callback(self, set_joint_positions_req):
@@ -643,7 +657,7 @@ class PandaMoveitPlannerServer(object):
             moveit_commander_commands = self._create_joint_positions_commands(
                 set_joint_positions_req
             )
-        except InputMessageInvalidErrorError as e:
+        except InputMessageInvalidError as e:
 
             # Print warning message and return result
             logwarn_msg = "Panda robot joint positions not set as " + lower_first_char(
@@ -716,11 +730,24 @@ class PandaMoveitPlannerServer(object):
             resp.message = "Failed to set %s setpoints." % log_warn_string
             return resp
 
-        # Return success boolean
+        # Execute setpoints
         rospy.logdebug("Executing joint positions setpoint.")
-        self._execute()
-        resp.success = True
-        resp.message = "Everything went OK"
+        try:
+            retval = self._execute()
+
+            # Check if setpoint execution was successfull
+            if not all(retval):
+                resp.success = False
+                resp.message = "Joint position setpoint could not be set"
+            else:
+                resp.success = True
+                resp.message = "Everything went OK"
+        except MoveItCommanderException as e:
+            rospy.logwarn(e.message)
+            resp.success = False
+            resp.message = e.message
+
+        # Return result
         return resp
 
     def _arm_set_joint_positions_callback(self, set_joint_positions_req):
@@ -796,11 +823,24 @@ class PandaMoveitPlannerServer(object):
             resp.message = "Failed to set arm setpoints."
             return resp
 
-        # Return success boolean
+        # Execute setpoint
         rospy.logdebug("Executing joint positions setpoint.")
-        self._execute(control_group="arm")
-        resp.success = True
-        resp.message = "Everything went OK"
+        try:
+            retval = self._execute(control_group="arm")
+
+            # Check if setpoint execution was successfull
+            if not all(retval):
+                resp.success = False
+                resp.message = "Arm joint position setpoint could not be set"
+            else:
+                resp.success = True
+                resp.message = "Everything went OK"
+        except MoveItCommanderException as e:
+            rospy.logwarn(e.message)
+            resp.success = False
+            resp.message = e.message
+
+        # Return result
         return resp
 
     def _hand_set_joint_positions_callback(self, set_joint_positions_req):
@@ -878,11 +918,24 @@ class PandaMoveitPlannerServer(object):
             resp.message = "Failed to set arm setpoints."
             return resp
 
-        # Return success boolean
+        # Execute setpoints
         rospy.logdebug("Executing joint positions setpoint.")
-        self._execute(control_group="hand")
-        resp.success = True
-        resp.message = "Everything went OK"
+        try:
+            retval = self._execute(control_group="hand")
+
+            # Check if setpoint execution was successfull
+            if not all(retval):
+                resp.success = False
+                resp.message = "Hand joint position setpoint could not be set"
+            else:
+                resp.success = True
+                resp.message = "Everything went OK"
+        except MoveItCommanderException as e:
+            rospy.logwarn(e.message)
+            resp.success = False
+            resp.message = e.message
+
+        # Return result
         return resp
 
     def _arm_get_ee_pose_callback(self, get_ee_pose_req):
@@ -998,38 +1051,226 @@ class PandaMoveitPlannerServer(object):
             Response message containing the random joints positions.
         """
 
-        # Get random joint positions that are valid
-        arm_joints = self.move_group_arm.get_active_joints()
-        hand_joints = self.move_group_hand.get_active_joints()
-        random_arm_joint_values = self.move_group_arm.get_random_joint_values()
-        random_hand_joint_values = self.move_group_hand.get_random_joint_values()
-
         # Create response message
         resp = GetRandomJointPositionsResponse()
-        joint_names = (
-            flatten_list([arm_joints, hand_joints])
-            if self._arm_states_mask[0]
-            else flatten_list([hand_joints, arm_joints])
-        )
-        joint_positions = (
-            flatten_list([random_arm_joint_values, random_hand_joint_values])
-            if self._arm_states_mask[0]
-            else flatten_list([random_hand_joint_values, random_arm_joint_values])
-        )
-        resp.joint_names = joint_names
-        resp.joint_positions = joint_positions
 
-        # Check if successful and return response
-        if len(
-            flatten_list([random_arm_joint_values, random_hand_joint_values])
-        ) == len(flatten_list([arm_joints, hand_joints])):
-            resp.success = True
-        else:
-            resp.success = False
+        # Retrieve possible joints
+        arm_joints = self.move_group_arm.get_active_joints()
+        hand_joints = self.move_group_hand.get_active_joints()
+        valid_joint_names = flatten_list(
+            [
+                [item + "_min", item + "_max"]
+                for item in flatten_list([arm_joints, hand_joints])
+            ]
+        )
+
+        # Validate joint limits if supplied
+        if (
+            get_random_position_req.joint_limits.names
+            and get_random_position_req.joint_limits.values
+        ):
+
+            # Check if limit names and limit values are of equal length
+            if len(get_random_position_req.joint_limits.names) != len(
+                get_random_position_req.joint_limits.values
+            ):
+
+                # Throw warning and remove joint limits
+                rospy.logwarn(
+                    "Joint limits ignored as the number of joints (%s) is "
+                    "unequal to the number of limit values (%s)."
+                )
+                get_random_position_req.joint_limits.names = []
+                get_random_position_req.joint_limits.values = []
+            else:  # Check if the names in the joint_limits message are valid
+                invalid_names = []
+                for name in get_random_position_req.joint_limits.names:
+                    if name not in valid_joint_names:
+                        invalid_names.append(name)
+
+                # Throw warning if a name is invalid and remove joint limits
+                if len(invalid_names) != 0:
+                    rospy.logwarn(
+                        "Joint limits ignored as the the "
+                        "'panda_training.msg.JointLimits' field of the "
+                        "'panda_training.srv.GetRandomJointPositionsRequest' contains "
+                        "%s %s. Valid values are %s."
+                        % (
+                            "an invalid joint name"
+                            if len(invalid_names) == 1
+                            else "invalid joint names",
+                            invalid_names,
+                            valid_joint_names,
+                        )
+                    )
+                    get_random_position_req.joint_limits.names = []
+                    get_random_position_req.joint_limits.values = []
+
+        # Retrieve random joint position values
+        get_random_arm_joint_positions_srvs_exception = False
+        get_random_hand_joint_positions_srvs_exception = False
+        try:
+            random_arm_joint_values_unbounded = (
+                self.move_group_arm.get_random_joint_values()
+            )
+            random_arm_joint_values_unbounded = OrderedDict(
+                zip(arm_joints, random_arm_joint_values_unbounded)
+            )
+        except MoveItCommanderException:
+            get_random_arm_joint_positions_srvs_exception = True
+        try:
+            random_hand_joint_values_unbounded = (
+                self.move_group_hand.get_random_joint_values()
+            )
+            random_hand_joint_values_unbounded = OrderedDict(
+                zip(hand_joints, random_hand_joint_values_unbounded)
+            )
+        except MoveItCommanderException:
+            get_random_hand_joint_positions_srvs_exception = True
+
+        # Get random joint positions (while taking into possible joint limits)
+        random_arm_joint_values = random_arm_joint_values_unbounded
+        random_hand_joint_values = random_hand_joint_values_unbounded
+        if (
+            not get_random_position_req.joint_limits.names
+            and not get_random_position_req.joint_limits.values
+        ):
+
+            # Use unbounded joint positions and set success bool
+            if (
+                not get_random_arm_joint_positions_srvs_exception
+                and not get_random_hand_joint_positions_srvs_exception
+            ):
+
+                # Create response message and break out of loop
+                random_arm_joint_values = random_arm_joint_values_unbounded
+                random_hand_joint_values = random_hand_joint_values_unbounded
+                resp.success = True
+            else:
+                resp.success = False
+        else:  # Joint limits were set
+
+            # Create joint limit dictionary
+            joint_limits_dict = OrderedDict(
+                zip(
+                    get_random_position_req.joint_limits.names,
+                    get_random_position_req.joint_limits.values,
+                )
+            )
+
+            # Try to find random joint values within the joint limits
+            n_sample = 0
+            arm_joint_commands_valid = False
+            hand_joint_commands_valid = False
+            while True:  # Continue till ee pose is valid or max samples size is reached
+
+                # Loop through limited joints and sample joint values
+                for joint in get_unique_list(
+                    [
+                        names.replace("_min", "").replace("_max", "")
+                        for names in get_random_position_req.joint_limits.names
+                    ]
+                ):
+
+                    # Sample random value for the given joint within the joint limits
+                    if (
+                        joint in random_arm_joint_values.keys()
+                        and not arm_joint_commands_valid
+                    ):
+                        random_arm_joint_values[joint] = np.random.uniform(
+                            joint_limits_dict[joint + "_min"],
+                            joint_limits_dict[joint + "_max"],
+                        )
+                    if (
+                        joint in random_hand_joint_values.keys()
+                        and not hand_joint_commands_valid
+                    ):
+                        random_hand_joint_values[joint] = np.random.uniform(
+                            joint_limits_dict[joint + "_min"],
+                            joint_limits_dict[joint + "_max"],
+                        )
+
+                # Check if joint positions are valid (Plan is not empty)
+                if not arm_joint_commands_valid:
+                    try:
+                        arm_plan = self.move_group_arm.plan(random_arm_joint_values)
+                        if len(arm_plan.joint_trajectory.points) != 0:
+                            arm_joint_commands_valid = True
+                        else:
+                            arm_joint_commands_valid = False
+                    except MoveItCommanderException:
+                        arm_joint_commands_valid = False
+                if not hand_joint_commands_valid:
+                    try:
+                        hand_plan = self.move_group_arm.plan(random_hand_joint_values)
+                        if len(hand_plan.joint_trajectory.points) != 0:
+                            hand_joint_commands_valid = True
+                        else:
+                            hand_joint_commands_valid = False
+                    except MoveItCommanderException:
+                        hand_joint_commands_valid = False
+
+                # Set success boolean and break out of loop if joint positions are valid
+                # otherwise keep sampling till the max sample limit has been reached
+                if arm_joint_commands_valid and hand_joint_commands_valid:  # If valid
+                    resp.success = True
+                    break
+                elif n_sample >= MAX_RANDOM_SAMPLES:
+
+                    # Display warning
+                    rospy.logwarn(
+                        "Ignoring bounding region as the maximum number of sample "
+                        "iterations has been reached. Please make sure that the robot "
+                        "joints can reach the set joint_limits. "
+                    )
+
+                    # Use unbounded joint positions, set success bool and break out of
+                    # the loop
+                    if (
+                        not get_random_arm_joint_positions_srvs_exception
+                        and not get_random_hand_joint_positions_srvs_exception
+                    ):
+
+                        # Create response message and break out of loop
+                        random_arm_joint_values = random_arm_joint_values_unbounded
+                        random_hand_joint_values = random_hand_joint_values_unbounded
+                        resp.success = True
+                        break
+                    else:
+                        resp.success = False
+                else:
+                    rospy.logwarn(
+                        "Failed to sample valid random joint positions from the "
+                        "bounding region. Trying again."
+                    )
+                    n_sample += 1  # Increase sampling counter
+
+        # Fill response message
+        resp.joint_names = (
+            flatten_list(
+                [random_arm_joint_values.keys(), random_hand_joint_values.keys()]
+            )
+            if self._arm_states_mask[0]
+            else flatten_list(
+                [random_hand_joint_values.keys(), random_arm_joint_values.keys()]
+            )
+        )
+        resp.joint_positions = (
+            flatten_list(
+                [random_arm_joint_values.values(), random_hand_joint_values.values()]
+            )
+            if self._arm_states_mask[0]
+            else flatten_list(
+                [random_hand_joint_values.values(), random_arm_joint_values.values()]
+            )
+        )
+
+        # Return GetRandomJointPositionsResponse message
         return resp
 
     def _get_random_ee_pose_callback(self, get_random_ee_pose_req):
-        """Returns valid ee pose for the Panda arm.
+        """Returns valid ee pose for the Panda arm. This function also makes sure that
+        the ee pose is within a bounding region, if one is supplied.
 
         Parameters
         ----------
@@ -1045,13 +1286,110 @@ class PandaMoveitPlannerServer(object):
         # Create response message
         resp = GetRandomEePoseResponse()
 
-        # Get random ee pose
+        # Get a random ee pose
+        rospy.logdebug("Retrieving a valid random end effector pose.")
+        get_random_pose_srvs_exception = False
         try:
-            random_ee_pose = self.move_group_arm.get_random_pose()
-            resp.success = True
+            random_ee_pose_unbounded = self.move_group_arm.get_random_pose()
         except MoveItCommanderException:
-            resp.success = False
+            get_random_pose_srvs_exception = True
 
-        # Return response
-        resp.ee_pose = random_ee_pose.pose
+        # Get random ee pose (while taking into account a possible bounding region)
+        if (
+            sum(
+                [
+                    get_random_ee_pose_req.bounding_region.x_max
+                    - get_random_ee_pose_req.bounding_region.x_min,
+                    get_random_ee_pose_req.bounding_region.y_max
+                    - get_random_ee_pose_req.bounding_region.y_min,
+                    get_random_ee_pose_req.bounding_region.z_max
+                    - get_random_ee_pose_req.bounding_region.z_min,
+                ]
+            )
+            == 0.0
+        ):  # No bounding region was set
+
+            # Use unbounded ee_pose nand set success bool
+            if not get_random_pose_srvs_exception:
+
+                # Create response message and break out of loop
+                resp.success = True
+                resp.ee_pose = random_ee_pose_unbounded.pose
+
+            else:  # No valid random pose could be found
+                resp.success = False
+        else:  # A bounding region was set
+
+            # Try to find a valid ee_pose within the bounding region
+            n_sample = 0
+            ee_pose_valid = False
+            while True:  # Continue till ee pose is valid or max samples size is reached
+
+                # Retrieve ee_pose orientation
+                if n_sample > 0:
+                    rospy.logdebug("Retrieving a valid random end effector pose.")
+
+                # Sample ee position from bounding region
+                sampled_ee_position = np.random.uniform(
+                    [
+                        get_random_ee_pose_req.bounding_region.x_min,
+                        get_random_ee_pose_req.bounding_region.y_min,
+                        get_random_ee_pose_req.bounding_region.z_min,
+                    ],
+                    [
+                        get_random_ee_pose_req.bounding_region.x_max,
+                        get_random_ee_pose_req.bounding_region.y_max,
+                        get_random_ee_pose_req.bounding_region.z_max,
+                    ],
+                    size=3,
+                )
+
+                # Create ee_pose msg
+                random_ee_pose = Pose()
+                random_ee_pose.position.x = sampled_ee_position[0]
+                random_ee_pose.position.y = sampled_ee_position[1]
+                random_ee_pose.position.z = sampled_ee_position[2]
+                random_ee_pose.orientation = random_ee_pose_unbounded.pose.orientation
+
+                # Check if pose is valid (No exception and plan is not empty)
+                try:
+                    plan = self.move_group_arm.plan(random_ee_pose)
+                    ee_pose_valid = (
+                        True if len(plan.joint_trajectory.points) != 0 else False
+                    )
+                except MoveItCommanderException:
+                    ee_pose_valid = False
+
+                # Fill response message and break out of loop and if ee pose is valid
+                # otherwise keep sampling till the max sample limit has been reached
+                if ee_pose_valid:  # If valid
+                    resp.success = True
+                    resp.ee_pose = random_ee_pose
+                    break
+                elif n_sample >= MAX_RANDOM_SAMPLES:  # If max samples is reached
+
+                    # Display warning
+                    rospy.logwarn(
+                        "Ignoring bounding region as the maximum number of sample "
+                        "iterations has been reached. Please make sure that the robot "
+                        "end effector can reach the points inside the bounding region."
+                    )
+
+                    # Use unbounded ee_pose, set success bool and break out of the loop
+                    if not get_random_pose_srvs_exception:
+
+                        # Create response message and break out of loop
+                        resp.success = True
+                        resp.ee_pose = random_ee_pose_unbounded.pose
+                        break
+                    else:  # No valid random pose could be found
+                        resp.success = False
+                else:
+                    rospy.logwarn(
+                        "Failed to sample a valid random end effector pose from the "
+                        "bounding region. Trying again."
+                    )
+                    n_sample += 1  # Increase sampling counter
+
+        # Return randomEePose message
         return resp

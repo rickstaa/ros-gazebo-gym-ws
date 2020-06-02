@@ -1,4 +1,4 @@
-﻿"""Class used for displaying a gasp goal marker in rviz. This class overloads the "
+﻿"""Class used for displaying a gasp target goal marker in rviz. This class overloads the "
 visualization_msgs.msgs.Marker class in order to pre-initialize some of its attributes.
 To visualize the marker you can publish it on the 'panda_training/current_goal' topic.
 """
@@ -22,10 +22,10 @@ from geometry_msgs.msg import Vector3
 
 
 #################################################
-# GoalMarker ####################################
+# TargetMarker ####################################
 #################################################
-class GoalMarker(Marker):
-    """Class used to create an rviz goal marker.
+class TargetMarker(Marker):
+    """Class used to create an rviz target goal marker.
 
     Attributes
     ----------
@@ -56,7 +56,7 @@ class GoalMarker(Marker):
     """
 
     def __init__(self, *args, **kwds):
-        """Initialize GoalMarker object
+        """Initialize TargetMarker object
         """
 
         # Apply superclass initiation
@@ -71,8 +71,8 @@ class GoalMarker(Marker):
                 self.header.stamp = rospy.Time.now()
             except ROSInitException:
                 raise Exception(
-                    "Goal marker could not be created as the ROS time is not initialized. "
-                    "Have you called init_node()?"
+                    "Goal marker could not be created as the ROS time is not "
+                    "initialized. Have you called init_node()?"
                 )
                 sys.exit(0)
             self.header.frame_id = "world"

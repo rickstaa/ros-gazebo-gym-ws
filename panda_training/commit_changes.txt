@@ -4,7 +4,7 @@
 - Updated joint_positions_2_follow_joint_trajectory_goal function to take SetJointPositionRequest message
 - Fixed control_switcher control type check error
 - Added goal_sample region marker
-- Fixed initiation error in GoalMarker class
+- Fixed initiation error in TargetMarker class
 - Created automatic action space size generation
 - Added defaults configuration yaml file
 - Now the Quaternion 'quaternion_norm' function creates a identity quaternion when norm = 0.0
@@ -23,4 +23,9 @@
 - Added input argument validation
 - Fixed the set_init_pose function
 - Added spawn gazebo object function
+- Fixed waiting for model state that is not spawned
 - Aded a gazebo object pose setter
+- Removed EffortTest.cfg dynamic parameter server configuration file.
+- Fixed an error in the moveit_planner_service which let to giving a wrong retval when a setpoint was not set
+- Changed callback and subscribers to class properties since subscribers did not work without the ros.spin() command.
+- Fixed bugs in the _get_obs function.

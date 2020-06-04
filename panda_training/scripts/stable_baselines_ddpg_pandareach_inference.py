@@ -18,7 +18,7 @@ import rospy
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
 sys.path.insert(0, scriptsdir)
-import panda_training.envs.task_envs import PandaReachTaskEnv
+import panda_openai_sim.envs.task_envs import PandaReachEnv
 
 # Get current folder
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))

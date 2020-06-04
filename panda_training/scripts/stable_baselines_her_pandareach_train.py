@@ -18,7 +18,7 @@ import rospy
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
 sys.path.insert(0, scriptsdir)
-from panda_training.envs.task_envs import PandaReachTaskEnv
+from panda_openai_sim.envs.task_envs import PandaReachEnv
 
 # Model parameters
 MODEL_POLICY = "MlpPolicy"
@@ -27,7 +27,7 @@ GOAL_SELECTION_STRATEGY = (
     "future"  # Available strategies (cf paper): future, final, episode, random
 )
 NAME = "her-panda-reach-{}".format(int(time.time()))
-TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs/{}".format(NAME)
 # VIDEO_DIR = "./videos/"
 MODEL_DIR = "./panda_training/models/{}".format(NAME)
 N_STEPS = 1e5
@@ -38,7 +38,7 @@ N_STEPS = 1e5
 if __name__ == "__main__":
 
     # Initialize ros node
-    rospy.init_node("panda_training_her", log_level=rospy.DEBUG)
+    rospy.init_node("panda_openai_sim_her", log_level=rospy.DEBUG)
 
     # Print log directory
     rospy.loginfo("RL results logged to: %s", os.path.abspath(TB_LOGDIR))
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # Make environment
     env = gym.make(
         "PandaReach-v0",
-        robot_EE_link="panda_grip_site",
+        robot_EE_link="panda_hand",
         robot_arm_control_type="joint_position_control",
         robot_hand_control_type="joint_position_control",
     )

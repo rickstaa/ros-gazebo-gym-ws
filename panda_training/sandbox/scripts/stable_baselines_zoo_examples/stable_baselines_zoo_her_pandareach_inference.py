@@ -16,7 +16,7 @@ import rospy
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
 sys.path.insert(0, scriptsdir)
-import panda_training.envs.task_envs import PandaReachTaskEnv
+import panda_openai_sim.envs.task_envs import PandaReachEnv
 
 # Model parameters
 MODEL_DIR = "rl-baselines-zoo/trained_agents/her/FetchReach-v1.pkl"
@@ -25,7 +25,7 @@ MODEL_DIR = "rl-baselines-zoo/trained_agents/her/FetchReach-v1.pkl"
 if __name__ == "__main__":
 
     # Initialize ros node
-    rospy.init_node("panda_training_her", log_level=rospy.DEBUG)
+    rospy.init_node("panda_openai_sim_her", log_level=rospy.DEBUG)
 
     # Print log directory
     rospy.loginfo("RL model loaded from: %s", os.path.abspath(MODEL_DIR))

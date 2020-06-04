@@ -26,6 +26,14 @@ if __name__ == "__main__":
         robot_arm_control_type="ee_control",
         robot_hand_control_type="joint_trajectory_control",
         block_gripper=True,
+        target_bounds={
+            "x_min": -1,
+            "x_max": 1,
+            "y_min": -1,
+            "y_max": 1,
+            "z_min": 0,
+            "z_max": 1.5,
+        },
         init_pose_bounds={
             "x_min": 0,
             "x_max": 0.4,

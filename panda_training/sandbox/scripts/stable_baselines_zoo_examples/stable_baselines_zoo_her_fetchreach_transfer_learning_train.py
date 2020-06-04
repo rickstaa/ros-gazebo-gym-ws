@@ -12,7 +12,7 @@ MODEL_CLASS = DDPG  # works also with SAC, DDPG and TD
 NAME = "her-{}-fetch_reach-transferred-{}".format(
     MODEL_CLASS.__module__.split(".")[-1], int(time.time())
 )
-TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs/{}".format(NAME)
 MODEL_DIR = "./rl-baselines-zoo/trained_agents/her/FetchReach-v1.pkl"
 TRANSFER_MODEL_DIR = "./panda_training/models/{}".format(NAME)
 N_STEPS = 5e4

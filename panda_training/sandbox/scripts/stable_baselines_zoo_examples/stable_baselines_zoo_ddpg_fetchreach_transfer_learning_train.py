@@ -22,7 +22,7 @@ MODEL_CLASS = DDPG  # works also with SAC, DDPG and TD
 NAME = "{}-fetch_reach-transferred-{}".format(
     MODEL_CLASS.__module__.split(".")[-1], int(time.time())
 )
-TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs/{}".format(NAME)
 
 # Transferlearning pretrained model
 # NOTE: Her is not working since policy was trained with sac

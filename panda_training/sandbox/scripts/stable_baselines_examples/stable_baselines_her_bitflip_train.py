@@ -18,7 +18,7 @@ GOAL_SELECTION_STRATEGY = (
     "future"  # Available strategies (cf paper): future, final, episode, random
 )
 NAME = "her_bit_flip-{}".format(int(time.time()))
-TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs/{}".format(NAME)
 VIDEO_DIR = "./videos/"
 MODEL_DIR = "./panda_training/models/{}".format(NAME)
 N_BITS = 1

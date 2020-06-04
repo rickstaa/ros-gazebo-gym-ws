@@ -24,7 +24,7 @@ from tensorflow.keras.callbacks import TensorBoard
 import rospy
 
 # Import panda gym environment
-from panda_training.envs.task_envs import PandaReachTaskEnv
+from panda_openai_sim.envs.task_envs import PandaReachEnv
 
 # Create random seed
 np.random.seed(1)
@@ -46,7 +46,7 @@ LOAD = False
 MODE = ["easy", "hard"]
 n_model = 1
 NAME = "morvan-ddpg-panda-reach-{}".format(int(time.time()))
-TB_LOGDIR = "./panda_training/logs//{}".format(NAME)
+TB_LOGDIR = "./panda_training/logs/{}".format(NAME)
 # VIDEO_DIR = "./videos/"
 # SAVE_MODEL_DIR = "./panda_training/models/{}".format(NAME)
 # LOAD_MODEL_DIR = "./panda_training/models/morvan-ddpg-panda-reach-1586088349"
@@ -353,7 +353,7 @@ def eval():
 if __name__ == "__main__":
 
     # Initialize ros node
-    rospy.init_node("panda_training_her", log_level=rospy.DEBUG)
+    rospy.init_node("panda_openai_sim_her", log_level=rospy.DEBUG)
 
     # Create environment6
     env = gym.make(

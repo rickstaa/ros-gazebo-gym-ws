@@ -64,11 +64,11 @@ catkin build --cmake-args \
             -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.6m.so
 ```
 
-After this is done you can clone and build the `panda_training` package by running:
+After this is done you can clone and build the `panda_openai_sim` package by running:
 
 ```
-mkdir ~/panda_training_ws
-cd ~/panda_training_ws
+mkdir ~/panda_openai_sim_ws
+cd ~/panda_openai_sim_ws
 git clone --recursive https://github.com/rickstaa/panda_openai_sim.git src
 rosdep install --from-paths src --ignore-src --rosdistro melodic -y --skip-keys libfranka
 catkin build -j4 -DCMAKE_BUILD_TYPE=Release -DFranka_DIR:PATH=~/libfranka/build
@@ -78,22 +78,22 @@ catkin build -j4 -DCMAKE_BUILD_TYPE=Release -DFranka_DIR:PATH=~/libfranka/build
 
 1. Open two terminals or two panels in [tmux](https://github.com/tmux/tmux/wiki).
 2. Source the ROS setup.bash file.
-3. Source the panda_training setup.bash file `source ~/panda_training/devel/setup.bash`
-4. In one panel start the training simulation environment using the `roslaunch panda_training train_her.launch` or `roslaunch panda_training train_ddpg.launch`.
+3. Source the panda_openai_sim setup.bash file `source ~/panda_openai_sim/devel/setup.bash`
+4. In one panel start the training simulation environment using the `roslaunch panda_openai_sim start.launch` or `roslaunch panda_openai_sim train_ddpg.launch`.
 5. In the other terminal/panel activate the virtual environment `source ~/.catkin_ws_python3/openai_venv/bin/activate`.
 6. Source the required python3 ROS packages `source ~/.catkin_ws_python3/devel/setup.bash`.
-7. Start the training `python3 ~/panda_training_ws/src/panda_training/scripts/stable_baselines_her_pandareach_train.py`
+7. Start the training `python3 ~/panda_openai_sim_ws/src/panda_openai_sim/scripts/stable_baselines_her_pandareach_train.py`
 
 ## How to configure the algorithms
 
-The algorithm parameters can be found in the `./panda_training/cfg/algorithms` folder.
+The algorithm parameters can be found in the `./panda_openai_sim/cfg/algorithms` folder.
 
 ## How to see the progress
 
 You can use [tensorboard](https://www.tensorflow.org/tensorboard/) to visualize the model training in progress:
 
 ```bash
-cd ~/panda_training_ws/src
+cd ~/panda_openai_sim_ws/src
 tensorboard --logdir ./logs
 ```
 
@@ -106,7 +106,7 @@ You can use the trained model by running one of the inference scripts.
 **Example:**
 
 ```
-cd ~/panda_training_ws/src/panda_training/scripts
+cd ~/panda_openai_sim_ws/src/panda_openai_sim/scripts
 source ~/.catkin_ws_python3/openai_venv/bin/activate
 python stable_baselines_her_pandareach_inference.py model:=<MODEL_NAME>
 ```

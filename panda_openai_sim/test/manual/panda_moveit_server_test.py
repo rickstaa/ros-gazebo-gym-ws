@@ -74,16 +74,16 @@ if __name__ == "__main__":
     # resp = set_hand_joint_positions_srv.call(req)
     # print(resp)
 
-    # # -- Test set ee pose service --
-    # req = SetEePoseRequest()
-    # req.pose.position.x = 0.5
-    # req.pose.position.y = 0.5
-    # req.pose.position.z = 0.5
-    # set_ee_pose_srv = rospy.ServiceProxy(
-    #     "panda_moveit_planner_server/panda_arm/set_ee_pose", SetEePose
-    # )
-    # resp = set_ee_pose_srv.call(req)
-    # print(resp)
+    # -- Test set ee pose service --
+    req = SetEePoseRequest()
+    req.pose.position.x = 0
+    req.pose.position.y = 0
+    req.pose.position.z = 1.5
+    set_ee_pose_srv = rospy.ServiceProxy(
+        "panda_moveit_planner_server/panda_arm/set_ee_pose", SetEePose
+    )
+    resp = set_ee_pose_srv.call(req)
+    print(resp)
 
     # # -- Test get ee pose service --
     # req = GetEePoseRequest()
@@ -127,11 +127,11 @@ if __name__ == "__main__":
     # resp = set_ee_srv.call(GetRandomJointPositionsRequest())
     # print(resp)
 
-    # -- Test get random pose service --
-    req = GetRandomEePoseRequest()
-    req.bounding_region = BoundingRegion(x_min=0.0, x_max=1.0)
-    set_ee_srv = rospy.ServiceProxy(
-        "panda_moveit_planner_server/get_random_ee_pose", GetRandomEePose,
-    )
-    resp = set_ee_srv.call(req)
-    print(resp)
+    # # -- Test get random pose service --
+    # req = GetRandomEePoseRequest()
+    # req.bounding_region = BoundingRegion(x_min=0.0, x_max=1.0)
+    # set_ee_srv = rospy.ServiceProxy(
+    #     "panda_moveit_planner_server/get_random_ee_pose", GetRandomEePose,
+    # )
+    # resp = set_ee_srv.call(req)
+    # print(resp)

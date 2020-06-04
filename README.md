@@ -1,118 +1,33 @@
-# Panda Grasp Simulator
+# panda_openai_sim workspace
 
-Grasp simulator for the Panda Emika Franka robot that can be used to test and train DL/RL based grasping algorithms.
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/panda_openai_sim)](https://github.com/rickstaa/panda_openai_sim/releases)
+[![Python 3](https://img.shields.io/badge/python%203-3.7%20%7C%203.6%20%7C%203.5-yellow.svg)](https://www.python.org/)
+[![Python 2](https://img.shields.io/badge/python%202-2.7%20%7C%202.6%20%7C%202.5-brightgreen.svg)](https://www.python.org/)
+[![ROS versions](https://img.shields.io/badge/ROS%20versions-Melodic-brightgreen)](https://wiki.ros.org)
 
-## Dependencies
+This repository contains the workspace for the `panda_openai_sim` ROS package. It
+includes all the components (submodules and code) to create a create a
+Openai gym environment for the Panda Emika Franka robot. This workspace consists of two
+main components the `panda_openai_sim` package and the `panda_training` package. The
+the first package (`panda_openai_sim`) contains a simulated version of the Panda robot
+together with a Panda gym environment that can be used to train RL algorithms as is done
+with the original [openai_gym robotics environments](https://gym.openai.com/envs/#robotics).
+The second package (`panda_training`) contains several examples of RL training scripts
+that can be used together with the simulation and Openai gym environments of the
+`panda_openai_sim` package.
 
-- [ROS Melodic - Desktop full](https://wiki.ros.org/melodic/Installation/Ubuntu)
-- [Franka_ros (Build from source)](https://frankaemika.github.io/docs/installation_linux.html)
-- Several system dependencies
+## Environments
 
-### System dependencies
+The `panda_openai_sim` package currently contains the following task environments:
 
-The system dependencies can be installed using the following command:
+- **PandaPickAndPlace-v0:** Lift a block into the air.
+- **PandaPush-v0:** Push a block to a goal position.
+- **PandaReach-v0:** Move fetch to a goal position.
+- **PandaSlide-v0:** Slide a puck to a goal position.
 
-```bash
-sudo apt-get install ros-melodic-moveit-ros-move-group ros-melodic-controller-manager* ros-melodic-moveit* ros-melodic-effort-controllers ros-melodic-joint-trajectory-controller ros-melodic-gazebo-ros* ros-melodic-rviz* libboost-filesystem-dev libjsoncpp-dev python3-pycryptodome python3-gnupg python3-tk python-future python3-pyqt5 python3-sip python3-sip-dev python3-empy
-```
+These environments were based on the original [openai_gym robotics environments](https://gym.openai.com/envs/#robotics).
 
-## How to build
+## Installation and Usage
 
-Since ROS does not yet fully support python3 (see #17), we need to separate the training script (python3) and the ROS gazebo simulation (python2). To do this first create a virtual environment:
-
-```bash
-sudo apt install virtualenv
-virtualenv ~/.catkin_ws_python3/openai_venv --python=python3
-```
-
-This virtual environment can the be activated using the `source ~/.catkin_ws_python3/openai_venv/bin/activate` command. After the environment is activate you you have to install the following python packages in it:
-
-```bash
-pip install tensorflow-gpu
-pip install gym
-pip install pyyaml
-pip install netifaces
-pip install rospkg
-```
-
-After this is done you can then compile the [geometry2](https://github.com/ros/geometry2), [ros_comm](https://github.com/ros/ros_comm) and [geometry_msgs](https://github.com/ros/common_msgs) for python3. To do so first install some prerequisites to use Python3 with ROS:
-
-```bash
-sudo apt update
-sudo apt install python3-catkin-pkg-modules python3-rospkg-modules python3-pyqt5 python3-sip python3-sip-dev python3-empy python3-pycryptodome python3-gnupg
-```
-
-Then prepare catkin workspace:
-
-```bash
-cd ~/.catkin_ws_python3
-mkdir src
-ROS_PYTHON_VERSION=3
-wstool init src
-rosinstall_generator ros_comm common_msgs  geometry2 --rosdistro melodic --deps | wstool merge -t src -
-wstool update -t src -j8
-rosdep install --from-paths src --ignore-src -y -r
-```
-
-Finally compile for Python 3:
-
-```
-catkin build --cmake-args \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DPYTHON_EXECUTABLE=/usr/bin/python3 \
-            -DPYTHON_INCLUDE_DIR=/usr/include/python3.6m \
-            -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.6m.so
-```
-
-After this is done you can clone and build the `panda_openai_sim` package by running:
-
-```
-mkdir ~/panda_openai_sim_ws
-cd ~/panda_openai_sim_ws
-git clone --recursive https://github.com/rickstaa/panda_openai_sim.git src
-rosdep install --from-paths src --ignore-src --rosdistro melodic -y --skip-keys libfranka
-catkin build -j4 -DCMAKE_BUILD_TYPE=Release -DFranka_DIR:PATH=~/libfranka/build
-```
-
-## How to train
-
-1. Open two terminals or two panels in [tmux](https://github.com/tmux/tmux/wiki).
-2. Source the ROS setup.bash file.
-3. Source the panda_openai_sim setup.bash file `source ~/panda_openai_sim/devel/setup.bash`
-4. In one panel start the training simulation environment using the `roslaunch panda_openai_sim start.launch` or `roslaunch panda_openai_sim train_ddpg.launch`.
-5. In the other terminal/panel activate the virtual environment `source ~/.catkin_ws_python3/openai_venv/bin/activate`.
-6. Source the required python3 ROS packages `source ~/.catkin_ws_python3/devel/setup.bash`.
-7. Start the training `python3 ~/panda_openai_sim_ws/src/panda_openai_sim/scripts/stable_baselines_her_pandareach_train.py`
-
-## How to configure the algorithms
-
-The algorithm parameters can be found in the `./panda_openai_sim/cfg/algorithms` folder.
-
-## How to see the progress
-
-You can use [tensorboard](https://www.tensorflow.org/tensorboard/) to visualize the model training in progress:
-
-```bash
-cd ~/panda_openai_sim_ws/src
-tensorboard --logdir ./logs
-```
-
-The file name will be displayed when starting the training.
-
-## How to use the trained model
-
-You can use the trained model by running one of the inference scripts.
-
-**Example:**
-
-```
-cd ~/panda_openai_sim_ws/src/panda_openai_sim/scripts
-source ~/.catkin_ws_python3/openai_venv/bin/activate
-python stable_baselines_her_pandareach_inference.py model:=<MODEL_NAME>
-```
-
-## Troubleshooting
-
-### The subfolders are empty
-
-Likely the repository was cloned without the `--recurse-submodules` flag. Please use the `git submodule update --recursive` and `git submodule update --init --recursive` commands to fetch the submodules.
+Please see the [docs](https://rickstaa.github.io/panda_openai_sim/) for installation
+and usage instructions.

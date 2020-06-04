@@ -11,3 +11,4 @@ panda_training/videos/*
 
 # Files to ignore
 *.pyc
+*.code-workspace

@@ -30,7 +30,7 @@ NAME = "her-panda-reach-{}".format(int(time.time()))
 TB_LOGDIR = "./panda_training/logs/{}".format(NAME)
 # VIDEO_DIR = "./videos/"
 MODEL_DIR = "./panda_training/models/{}".format(NAME)
-N_STEPS = 1e5
+N_STEPS = 5
 
 #################################################
 # Main script ###################################

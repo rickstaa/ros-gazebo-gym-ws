@@ -1,213 +1,27 @@
-﻿"""Setup file of the `panda_openai_sim` python package.
+﻿"""A setup.py file for the 'panda_openai_sim' ros package. This setupfile is used by
+catkin to add all of the python scripts and modules to the devel and install spaces.
+Additionally it can be used to add extra python dependencies that can not be added
+to the package.xml. For example when we need a specific version of a python module.
 """
-
-# Future Imports
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 # Standard library imports
 import logging
 import os
 from setuptools import setup, find_packages
-from setuptools.command.develop import develop
-from setuptools.command.install import install
-import subprocess
 import sys
 import re
 from distutils.sysconfig import get_python_lib
 
-# Cat required paths
+# Get the relative path for including (data) files with the package
 relative_site_packages = get_python_lib().split(sys.prefix + os.sep)[1]
 date_files_relative_path = os.path.join(relative_site_packages, "panda_openai_sim")
 
-# General setup.py parameters
-TF_MAX_VERSION = "1.15"
-
-# Package requirements
-requirements = [
-    "gym",
-    "pyyaml",
-    "netifaces",
-    "futures",
-]
+# Additional python requirements that could not be specified in the package.xml
+requirements = []
 
 # Set up logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-#################################################
-# Setup functions ###############################
-#################################################
-def get_tf_dep():
-    """Check whether or not the Nvidia driver and GPUs are available and add the
-    corresponding Tensorflow dependency."""
-
-    # Find the right tensorflow version to install
-    tf_dep = "tensorflow<={}".format(TF_MAX_VERSION)
-    try:
-        gpus = (
-            subprocess.check_output(
-                ["nvidia-smi", "--query-gpu=gpu_name", "--format=csv"]
-            )
-            .decode()
-            .strip()
-            .split("\n")[1:]
-        )
-        if len(gpus) > 0:
-            tf_dep = "tensorflow-gpu<={}".format(TF_MAX_VERSION)
-        else:
-            no_device_msg = (
-                "Found Nvidia device driver but no"
-                " devices...installing Tensorflow for CPU."
-            )
-            logger.warning(no_device_msg)
-    except OSError:
-        no_driver_msg = (
-            "Could not find Nvidia device driver...installing" " Tensorflow for CPU."
-        )
-        logger.warning(no_driver_msg)
-    return tf_dep
-
-
-def list_files(path=".", exclude=[""], recursive=True, prepent_parent=False):
-    """Returns a list of files that are present in a folder.
-
-    Parameters
-    ----------
-    path : str, optional
-        Parent folder of which you want to list the files, by default '.'
-    exclude : list, optional
-        A list of files you want to exclude, by default []
-    recursive : bool, optional
-        Option specifying whether you also want to list files of subfolders,
-        by default True
-    level : int, optional
-        If recursive is enabled this specifies up till how many levels deep
-        you want to list the files, by default 0 (Defined as all levels).
-    perpent_parent: bool, optional
-        Options specifying whether you want to prepent the parent dir to the
-        output paths.
-
-    Returns
-    -------
-    List
-        A list containing the relative paths of all the files in the parent folder.
-    """
-
-    #  Get a list of files that are contained in the given path
-    file_list = list()
-    for dir_, _, files in os.walk(path):
-        for file_name in files:
-            rel_dir = os.path.relpath(dir_, path)
-
-            # Prepent parent folder if specified
-            if not prepent_parent:
-                rel_file = os.path.join(rel_dir, file_name)
-            else:
-                rel_file = os.path.join(dir_, file_name).replace("./", "")
-
-            # Add files to file list if they are not in exclude list
-            if file_name not in exclude:
-                file_list.append(rel_file)
-
-        #  Break out of loop if recursive is disabled
-        if not recursive:
-            break
-    return file_list
-
-
-#################################################
-# Setup classes #################################
-#################################################
-class DevelopCmd(develop):
-    """Overload :py:class:`setuptools.command.develop.develop` class."""
-
-    user_options_custom = [
-        ("docker", None, "installing in Docker"),
-        ("sing", None, "installing in Singularity"),
-    ]
-    user_options = getattr(develop, "user_options", []) + user_options_custom
-
-    def initialize_options(self):
-        develop.initialize_options(self)
-
-        # Initialize options.
-        self.docker = False
-        self.sing = False
-
-    def finalize_options(self):
-        develop.finalize_options(self)
-
-    def run(self):
-        """Overload the :py:mh:`setuptools.command.develop.develop.run` method."""
-
-        # Install Tensorflow dependency.
-        if not self.docker and not self.sing:
-            tf_dep = get_tf_dep()
-            subprocess.Popen([sys.executable, "-m", "pip", "install", tf_dep]).wait()
-        else:
-
-            # If we're using a Docker or singularity container, the right
-            # tensoflow version is specified in the recipe file. This is
-            # done since there is no way to check for CUDA/AMD GPU's at
-            # container build time.
-            skip_tf_msg = (
-                "Omitting Tensorflow dependency because of Docker" " installation."
-            )
-            logger.warning(skip_tf_msg)
-
-        # Run installation.
-        develop.run(self)
-
-
-class InstallCmd(install, object):
-    """Overload :py:class:`setuptools.command.install.install` class"""
-
-    # Add extra user arguments
-    user_options_custom = [
-        ("docker", None, "installing in Docker"),
-        ("sing", None, "Installing in Singularity"),
-    ]
-    user_options = getattr(install, "user_options", []) + user_options_custom
-
-    def initialize_options(self):
-        """Initialize extra argument options."""
-        install.initialize_options(self)
-
-        # Initialize options
-        self.docker = False
-        self.sing = False
-
-    def finalize_options(self):
-        """Set extra argument options."""
-        install.finalize_options(self)
-
-    def run(self):
-        """Overload the :py:meth:`setuptools.command.install.install.run` method."""
-
-        # Install Tensorflow dependency.
-        if any(["tensorflow" in item for item in self.distribution.install_requires]):
-            if not self.docker and not self.sing:
-                tf_dep = get_tf_dep()
-                subprocess.Popen(
-                    [sys.executable, "-m", "pip", "install", tf_dep]
-                ).wait()
-            else:
-
-                # If we're using a Docker or singularity container, the right
-                # tensoflow version is specified in the recipe file. This is
-                # done since there is no way to check for CUDA/AMD GPU's at
-                # container build time.
-                skip_tf_msg = (
-                    "Omitting Tensorflow dependency because of Docker" " installation."
-                )
-                logger.warning(skip_tf_msg)
-
-        # Run parent run method
-        install.run(self)
-
 
 #################################################
 # Setup script ##################################
@@ -230,14 +44,17 @@ with open("README.md") as f:
 setup(
     name="panda_openai_sim",
     version=__version__,
-    description=("Project code for the panda_openai_sim package."),
+    description=(
+        "A ROS package that creates an Openai gym environment for the Panda Emika "
+        "Franka robot."
+    ),
     long_description=readme,
     long_description_content_type="text/markdown",
     author="Rick Staa",
     author_email="rick.staa@outlook.com",
-    license="Rick Staa Copyright",
-    url="https://github.com/rickstaa/pandat_openai_sim",
-    keywords="Robot RL training package",
+    license="Rick Staa copyright",
+    url="https://github.com/rickstaa/panda_openai_sim",
+    keywords="ros, rl, panda, openai gym",
     classifiers=[
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
@@ -245,7 +62,6 @@ setup(
         "Natural Language :: English",
         "Topic :: Scientific/Engineering",
     ],
-    # scripts="scripts",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=requirements,
@@ -256,12 +72,9 @@ setup(
             "sphinx_rtd_theme",
             "sphinx-navtree",
             "sphinx-autobuild",
-            "docutils",
-            "doc8",
         ],
-        "dev": ["pytest", "bumpversion", "pylint"],
+        "dev": ["bumpversion", "flake8"],  # IMPROVE: Add black if switched to Noetic
     },
     include_package_data=True,
-    data_files=[(date_files_relative_path, ["README.md"]),],
-    cmdclass={"install": InstallCmd, "develop": DevelopCmd},
+    data_files=[(date_files_relative_path, ["README.md"])],
 )

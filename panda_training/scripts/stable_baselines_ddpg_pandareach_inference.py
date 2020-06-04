@@ -1,4 +1,5 @@
-"""Control the Panda Robot via model inference of a model trained with the DDPG algorithm
+"""Control the Panda Robot via model inference of a model trained with the DDPG
+algorithm
 """
 
 # Main python imports

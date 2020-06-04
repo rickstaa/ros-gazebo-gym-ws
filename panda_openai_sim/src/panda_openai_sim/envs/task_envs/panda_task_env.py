@@ -1367,7 +1367,6 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         self._use_gripper_width = config["action_space"]["use_gripper_width"]
 
         # Other configuration values
-        self._max_interactions = config["training"]["max_interactions"]
         self._obj_sampling_distance_threshold = config["training"]["object_sampling"][
             "distance_threshold"
         ]

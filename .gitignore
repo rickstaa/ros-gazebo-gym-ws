@@ -7,7 +7,7 @@ build/
 __pycache__/
 panda_training/models*
 panda_training/logs/*
-panda_openai_sim/videos/*
+panda_training/videos/*
 
 # Files to ignore
 *.pyc

@@ -23,16 +23,22 @@ from tensorflow.keras.callbacks import TensorBoard
 # ROS python imports
 import rospy
 
-# Import panda gym environment
-from panda_openai_sim.envs.task_envs import PandaReachEnv
+# Import panda openai sim task environments
+import panda_openai_sim.envs
 
 # Create random seed
 np.random.seed(1)
 tf.set_random_seed(1)
 
+# TODO: ADD time stamp and name to model path.
+# TODO: LOG console to file
+
 # Script parameters
-MAX_EPISODES = 600
-MAX_EP_STEPS = 200
+TASK_ENV_NAME = "PandaPush-v0"  # ("PandaReach-v0", "PandaPickAndPlace-v0","PandaSlide-v0","PandaPush-v0")
+# MAX_EPISODES = 600
+MAX_EPISODES = 5
+# MAX_EP_STEPS = 200
+MAX_EP_STEPS = 10
 LR_A = 1e-4  # learning rate for actor
 LR_C = 1e-4  # learning rate for critic
 GAMMA = 0.9  # reward discount
@@ -356,12 +362,7 @@ if __name__ == "__main__":
     rospy.init_node("panda_openai_sim_her", log_level=rospy.DEBUG)
 
     # Create environment6
-    env = gym.make(
-        "PandaReach-v0",
-        robot_EE_link="panda_hand",
-        robot_arm_control_type="ee_control",
-        robot_hand_control_type="joint_position_control",
-    )
+    env = gym.make(TASK_ENV_NAME,)
 
     # NOTE: Simply wrap the goal-based environment using FlattenDictWrapper
     # and specify the keys that you would like to use.

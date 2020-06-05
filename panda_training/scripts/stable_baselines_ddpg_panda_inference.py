@@ -1,5 +1,5 @@
-"""Control the Panda Robot via model inference of a model trained with the HER
-algorithm.
+"""Control the Panda Robot via model inference of a model trained with the DDPG
+algorithm
 """
 
 # Main python imports
@@ -10,16 +10,13 @@ from tkinter.filedialog import askopenfilename
 import inspect
 import sys
 import gym
-from stable_baselines import HER  # , DQN, SAC, DDPG, TD3
+from stable_baselines import DDPG  # , DQN, SAC, DDPG, TD3
 
 # ROS python imports
 import rospy
 
-# Import panda gym environment
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
-sys.path.insert(0, scriptsdir)
-import panda_openai_sim.envs.task_envs import PandaReachEnv
+# Import panda openai sim task environments
+import panda_openai_sim.envsv
 
 # Get current folder
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -27,6 +24,8 @@ MODEL_FOLDER_PATH = os.path.abspath(
     os.path.join(FILE_PATH, "../../panda_training/models")
 )
 
+# Script parameters
+TASK_ENV_NAME = "PandaPush-v0"  # ("PandaReach-v0", "PandaPickAndPlace-v0","PandaSlide-v0","PandaPush-v0")
 
 #################################################
 # Main script ###################################
@@ -55,13 +54,17 @@ if __name__ == "__main__":
     time.sleep(2)
 
     # Initialize ros node
-    rospy.init_node("panda_inference_her", log_level=rospy.DEBUG)
+    rospy.init_node("panda_inference_ddpg", log_level=rospy.DEBUG)
 
     # Create environment
-    env = gym.make("PandaReach-v0")
+    env = gym.make(TASK_ENV_NAME)
+
+    # NOTE: Simply wrap the goal-based environment using FlattenDictWrapper
+    # and specify the keys that you would like to use.
+    env = gym.wrappers.FlattenObservation(env)
 
     # Initialize model
-    model = HER.load(model_path, env=env)
+    model = DDPG.load(model_path, env=env)
 
     # -- Inference --
     # Visualize results

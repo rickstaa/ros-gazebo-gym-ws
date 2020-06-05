@@ -19,13 +19,11 @@ import sys
 # ROS python imports
 import rospy
 
-# Import panda gym environment
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
-sys.path.insert(0, scriptsdir)
-import panda_openai_sim.envs.task_envs import PandaReachEnv
+# Import panda openai sim task environments
+import panda_openai_sim.envs
 
 # Model parameters
+TASK_ENV_NAME = "PandaPush-v0"  # ("PandaReach-v0", "PandaPickAndPlace-v0","PandaSlide-v0","PandaPush-v0")
 MODEL_POLICY = MlpPolicy
 NAME = "ddpg-panda-reach-{}".format(int(time.time()))
 TB_LOGDIR = "./panda_training/logs/{}".format(NAME)
@@ -47,12 +45,7 @@ if __name__ == "__main__":
     rospy.sleep(2)
 
     # Create environment
-    env = gym.make(
-        "PandaReach-v0",
-        robot_EE_link="panda_hand",
-        robot_arm_control_type="joint_position_control",
-        robot_hand_control_type="joint_position_control",
-    )
+    env = gym.make(TASK_ENV_NAME,)
 
     # NOTE: Simply wrap the goal-based environment using FlattenDictWrapper
     # and specify the keys that you would like to use.

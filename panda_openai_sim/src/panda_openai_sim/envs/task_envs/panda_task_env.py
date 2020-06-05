@@ -62,19 +62,18 @@ from panda_openai_sim.srv import (
     GetControlledJointsRequest,
 )
 
-# TODO: ----- TOM STEP PLAN ------
-# 1. Check panda_task env with gym and openai_ros
-# 2. Add fix gripper rotation argument.
-# 3. Add training script and start training.
-# 5. Check control switcher
-# 6. Check why finger joints can not be controlled (Inertia)
-
+# TODO: Check panda_task env with gym and openai_ros
 # TODO: Wait for joint trajectory control
 # TODO: Add fix gripper rotation see self._set_Action of gym
 # TODO: Check log message
 # TODO: Check control switcher
 # TODO: Check why finger joints can not be controlled
 # TODO: Add wait variable to moveit and joint_trajectory control
+# TODO: ADD none note to constructor
+# TODO: ADD wait between commands config variable.
+# TODO: Check ee pose not set warning when using panda_training scripts
+# TODO: Clean up panda_training scripts
+# TODO: ADD log to file in panda_training scripts
 
 # Script Parameters
 DIRNAME = os.path.dirname(__file__)

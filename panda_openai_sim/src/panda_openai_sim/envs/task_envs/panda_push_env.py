@@ -25,8 +25,8 @@ class PandaPushEnv(PandaTaskEnv, utils.EzPickle):
         init_pose_bounds=None,
         init_obj_pose=None,
         obj_bounds=None,
-        robot_arm_control_type="joint_trajectory_control",
-        robot_hand_control_type="joint_trajectory_control",
+        robot_arm_control_type="joint_position_control",
+        robot_hand_control_type="joint_position_control",
     ):
 
         """Initializes a Panda Push task environment.

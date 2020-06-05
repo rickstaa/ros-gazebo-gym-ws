@@ -14,11 +14,8 @@ import os
 # ROS python imports
 import rospy
 
-# Import panda gym environment
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-scriptsdir = os.path.abspath(os.path.join(currentdir, "../../../scripts"))
-sys.path.insert(0, scriptsdir)
-from panda_openai_sim.envs.task_envs import PandaReachEnv
+# Import panda openai sim task environments
+import panda_openai_sim.envs
 
 # Model parameters
 MODEL_POLICY = "MlpPolicy"
@@ -46,12 +43,7 @@ if __name__ == "__main__":
     rospy.sleep(2)
 
     # Make environment
-    env = gym.make(
-        "PandaReach-v0",
-        robot_EE_link="panda_hand",
-        robot_arm_control_type="joint_position_control",
-        robot_hand_control_type="joint_position_control",
-    )
+    env = gym.make("PandaReach-v0", robot_arm_control_type="ee_control",)
 
     # Wrap the model
     model = HER(

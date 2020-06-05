@@ -19,8 +19,8 @@ of the PandaReach-v0 environment for 1000 timesteps.
 
 ```python
 import gym
-from panda_openai_sim.envs.task_envs import PandaReachEnv
-env = gym.make('CartPole-v0')
+import panda_openai_sim.envs
+env = gym.make('PandaReach-v0')
 env = gym.wrappers.FlattenObservation(env)
 env.reset()
 for _ in range(1000):

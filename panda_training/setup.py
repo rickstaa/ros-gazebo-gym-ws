@@ -185,7 +185,7 @@ with open("README.md") as f:
 
 # Run python setup
 setup(
-    name="panda_openai_sim",
+    name="panda_training",
     version=__version__,
     description=(
         "A python package with several example RL training scripts for the"
@@ -205,6 +205,7 @@ setup(
         "Natural Language :: English",
         "Topic :: Scientific/Engineering",
     ],
+    packages=["panda_training"],
     install_requires=requirements,
     extras_require={},
     include_package_data=True,

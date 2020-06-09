@@ -1,4 +1,6 @@
-"""Train the Panda Robot using the DDPG classes of Morvanzhou.
+"""Train a RL algorithm on the Panda robot of the 'panda_openai_sim' package using the
+DDPG classes o
+`Morvanzhou <https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/>`_.
 
 .. note:
     You can train this RL by using LOAD = False, after training, this model will be
@@ -13,12 +15,14 @@
 
 # Main python imports
 import tensorflow as tf
-import numpy as np
 import os
 import shutil
 import gym
-import time
-from tensorflow.keras.callbacks import TensorBoard
+import sys
+import glob
+import numpy as np
+
+from panda_training.functions import get_unique_file_suffix
 
 # ROS python imports
 import rospy
@@ -30,38 +34,84 @@ import panda_openai_sim.envs
 np.random.seed(1)
 tf.set_random_seed(1)
 
-# TODO: ADD time stamp and name to model path.
-# TODO: LOG console to file
+# Retrieve file path
+FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 
-# Script parameters
-TASK_ENV_NAME = "PandaPush-v0"  # ("PandaReach-v0", "PandaPickAndPlace-v0","PandaSlide-v0","PandaPush-v0")
-# MAX_EPISODES = 600
-MAX_EPISODES = 5
-# MAX_EP_STEPS = 200
-MAX_EP_STEPS = 10
+#################################################
+# script settings ###############################
+#################################################
+TASK_ENV_NAME = "PandaPush-v0"  # task environment name
+LOAD = False  # Whether to load a pretrained model or train a new model
+TRANSFER = False  # Whether to use transfer learning to retrain pretrained model
+MAX_EPISODES = 600  # max number of training episodes
+MAX_EP_STEPS = 200  # max number of steps per
 LR_A = 1e-4  # learning rate for actor
 LR_C = 1e-4  # learning rate for critic
 GAMMA = 0.9  # reward discount
-REPLACE_ITER_A = 1100
-REPLACE_ITER_C = 1000
-MEMORY_CAPACITY = 5000
-BATCH_SIZE = 16
-VAR_MIN = 0.1
-RENDER = True
-LOAD = False
-MODE = ["easy", "hard"]
-n_model = 1
-NAME = "morvan-ddpg-panda-reach-{}".format(int(time.time()))
-TB_LOGDIR = "./panda_training/logs/{}".format(NAME)
-# VIDEO_DIR = "./videos/"
-# SAVE_MODEL_DIR = "./panda_training/models/{}".format(NAME)
-# LOAD_MODEL_DIR = "./panda_training/models/morvan-ddpg-panda-reach-1586088349"
+REPLACE_ITER_A = 1100  # The actor update rate (After how many experiences)
+REPLACE_ITER_C = 1000  # The critic update rate (After how many experiences)
+MEMORY_CAPACITY = 5000  # The capacity of the replay memory
+BATCH_SIZE = 16  # The number of samples you want to sample from the replay buffer
+VAR_START = 3  # The variance value the training is started on
+VAR_MIN = 0.1  # Minimum exploration rate
+
+# Other settings
+INFERENCE_STEPS = 10  # The number of steps you want to perform during the inference
+FILE_SUFFIX_TYPE = "number"  # The model folder suffix type "timestamp" or "number".
+
+#############################################
+# Model name and save path ##################
+#############################################
+MODEL_DIR = os.path.abspath(
+    os.path.join(FILE_PATH, "../models/{}/movran/ddpg".format(TASK_ENV_NAME.lower()),)
+)  # Create model save folder pat
+if not os.path.isdir(MODEL_DIR):  # Create folder if it does not yet exist
+    os.makedirs(MODEL_DIR)
+    print("Created model save folder '%s' as it did not yet exits." % MODEL_DIR)
+MODEL_NAME = "ddpg-{}-{}".format(
+    TASK_ENV_NAME.lower(), get_unique_file_suffix(MODEL_DIR, FILE_SUFFIX_TYPE)
+)  # Model save name
+MODEL_FILE = os.path.abspath(
+    os.path.join(MODEL_DIR, MODEL_NAME)
+)  # Create model file path
+
+# Create tensorboard log dir
+TB_LOGDIR = os.path.abspath(
+    os.path.join(
+        FILE_PATH, "../logs/{}/morvan/{}".format(TASK_ENV_NAME.lower(), MODEL_NAME),
+    )
+)  # Tensorboard log path
+
+#############################################
+# Model load path ###########################
+#############################################
+
+# Specify the model you want to load
+MODEL_LOAD_DIR = os.path.join("./panda_training/models/morvan/ddpg-pandapush-v0-1/")
+MODEL_LOAD_DIR = os.path.abspath(
+    os.path.join(FILE_PATH, MODEL_LOAD_DIR)
+)  # Create absolute path
+
+# Validate model MODEL_LOAD_DIR if LOAD is enabled
+if LOAD:
+    MODEL_FILE = os.path.join(MODEL_LOAD_DIR, "DDPG.ckpt*")
+    FILES_LIST = glob.glob(MODEL_FILE)
+    if not FILES_LIST:
+        print(
+            "Trained model could not be loaded as the specified model file folder '%s' "
+            "does not exist. Please verify the 'MODEL_LOAD_DIR' and try again."
+            % MODEL_LOAD_DIR
+        )
+        sys.exit(0)
 
 
 #################################################
 # Actor class  ##################################
 #################################################
 class Actor(object):
+    """Actor class.
+    """
+
     def __init__(self, sess, action_dim, action_bound, learning_rate, t_replace_iter):
         self.sess = sess
         self.a_dim = action_dim
@@ -125,15 +175,13 @@ class Actor(object):
                     name="a",
                     trainable=trainable,
                 )
-                # scaled_a = tf.multiply(
-                #     actions, self.action_bound, name="scaled_a"
-                # )  # Scale output to -action_bound to action_bound
-                # scaled_a = tf.multiply(
-                #     actions, [item[0] for item in self.action_bound], name="scaled_a"
-                # )  # Scale output to -action_bound to action_bound
-                scaled_a = tf.clip_by_value(actions, *ACTION_BOUND[0])
-                # FIXME: Quick and dirty fix was performed since i did not know exactly
-                # How this worked
+                self.action_bound = (
+                    self.action_bound.T
+                    if self.action_bound.shape[1]
+                    != [val.value for val in actions.shape][1]
+                    else self.action_bound
+                )  # Make sure the shape is valid
+                scaled_a = tf.multiply(actions, self.action_bound, name="scaled_a")
         return scaled_a
 
     def learn(self, s):  # batch update
@@ -163,6 +211,9 @@ class Actor(object):
 # Critic class  #################################
 #################################################
 class Critic(object):
+    """Critic class.
+    """
+
     def __init__(
         self, sess, state_dim, action_dim, learning_rate, gamma, t_replace_iter, a, a_
     ):
@@ -225,11 +276,6 @@ class Critic(object):
                     "b1", [1, n_l1], initializer=init_b, trainable=trainable
                 )
                 net = tf.nn.relu6(tf.matmul(s, w1_s) + tf.matmul(a, w1_a) + b1)
-
-                # Create summaries
-                # tf.summary.histogram("w1_s", w1_s)
-                # tf.summary.histogram("w1_a", w1_a)
-                # tf.summary.histogram("b1", b1)
             net = tf.layers.dense(
                 net,
                 200,
@@ -269,6 +315,9 @@ class Critic(object):
 # Memory class  #################################
 #################################################
 class Memory(object):
+    """Memory buffer class.
+    """
+
     def __init__(self, capacity, dims):
         self.capacity = capacity
         self.data = np.zeros((capacity, dims))
@@ -290,23 +339,48 @@ class Memory(object):
 # Additional helper functions ###################
 #################################################
 def train():
-    var = 2.0  # control exploration
+    """Function used to start the training.
+    """
 
+    # Variables
+    var = VAR_START  # control exploration
+
+    # Create tensorboard variables
+    control_exp_pl = tf.placeholder(tf.float32)
+    mean_ep_rw_pl = tf.placeholder(tf.float32)
+    ep_rw_pl = tf.placeholder(tf.float32)
+    with tf.name_scope("reward"):
+        tf.summary.scalar("episode_reward", ep_rw_pl)
+        tf.summary.scalar("mean_episode_reward", mean_ep_rw_pl)
+    tf.summary.scalar("control_exploration", control_exp_pl)
+    merged_summaries = tf.summary.merge_all()
+    episodes_rewards = []
+
+    # Train model
     for ep in range(MAX_EPISODES):
         s = env.reset()
         ep_reward = 0
 
+        # Episode loop
         for t in range(MAX_EP_STEPS):
 
-            # Added exploration noise
+            # Choose action
             a = actor.choose_action(s)
-            a = np.clip(
-                np.random.normal(a, var), *ACTION_BOUND[0]
-            )  # add randomness to action selection for exploration
-            # FIXME: NOW cliped to only first high low?
+
+            # Add exploration noise
+            a = a + var * np.random.uniform(
+                env.action_space.low, env.action_space.high,
+            )
+
+            # add randomness to action selection for exploration
+            a = np.clip(np.random.normal(a, var), ACTION_BOUND[0], ACTION_BOUND[1])
+
+            # Clip the action to make sure they are within the set action bounds
+            a = np.clip(a, ACTION_BOUND[0], ACTION_BOUND[1])
+
+            # Take step and check result
             s_, r, done, _ = env.step(a)
             M.store_transition(s, a, r, s_)
-
             if M.pointer > MEMORY_CAPACITY:
                 var = max([var * 0.9999, VAR_MIN])  # decay the action randomness
                 b_M = M.sample(BATCH_SIZE)
@@ -317,10 +391,10 @@ def train():
 
                 critic.learn(b_s, b_a, b_r, b_s_)
                 actor.learn(b_s)
-
             s = s_
             ep_reward += r
 
+            # Check if max episodes has been reached or episode is done
             if t == MAX_EP_STEPS - 1 or done:
                 # if done:
                 result = "| done" if done else "| ----"
@@ -333,22 +407,38 @@ def train():
                 )
                 break
 
-    if os.path.isdir(path):
-        shutil.rmtree(path)
-    os.mkdir(path)
-    ckpt_path = os.path.join("./panda_training/models/" + MODE[n_model], "DDPG.ckpt")
+        # Add mean episode reward to summary
+        episodes_rewards.append(ep_reward)
+        summary = sess.run(
+            merged_summaries,
+            feed_dict={
+                ep_rw_pl: ep_reward,
+                mean_ep_rw_pl: sum(episodes_rewards) / len(episodes_rewards),
+                control_exp_pl: var,
+            },
+        )
+        writer.add_summary(summary, ep)
+
+    # Save model
+    if os.path.isdir(MODEL_FILE):
+        shutil.rmtree(MODEL_FILE)
+    os.mkdir(MODEL_FILE)
+    ckpt_path = os.path.join(MODEL_FILE, "DDPG.ckpt")
     save_path = saver.save(sess, ckpt_path, write_meta_graph=False)
-    print("\nSave Model %s\n" % save_path)
+    rospy.loginfo("RL model saved to: %s", os.path.abspath(save_path))
 
 
 def eval():
+    """Function used to run the model inference.
+    """
 
     s = env.reset()
-    for _ in range(10):
+    for _ in range(INFERENCE_STEPS):
         a = actor.choose_action(s)
         s_, r, done, _ = env.step(a)
         s = s_
 
+        # Check if done
         if done:
             s = env.reset()
 
@@ -359,18 +449,23 @@ def eval():
 if __name__ == "__main__":
 
     # Initialize ros node
-    rospy.init_node("panda_openai_sim_her", log_level=rospy.DEBUG)
+    rospy.init_node("morvan_ddpg_panda_train_and_inference", log_level=rospy.DEBUG)
 
     # Create environment6
     env = gym.make(TASK_ENV_NAME,)
+
+    # Set max_episode_steps
+    env._max_episode_steps = MAX_EP_STEPS
 
     # NOTE: Simply wrap the goal-based environment using FlattenDictWrapper
     # and specify the keys that you would like to use.
     env = gym.wrappers.FlattenObservation(env)
     STATE_DIM = env.observation_space.shape[-1]
     ACTION_DIM = env.action_space.shape[-1]
-    # FIXME to use right action bound
-    ACTION_BOUND = list(zip(list(env.action_space.low), list(env.action_space.high)))
+    ACTION_BOUND = np.array([env.action_space.low, env.action_space.high])
+
+    # Tensorflow reset default graph
+    tf.reset_default_graph()
 
     # all placeholder for tf
     with tf.name_scope("S"):
@@ -380,14 +475,8 @@ if __name__ == "__main__":
     with tf.name_scope("S_"):
         S_ = tf.placeholder(tf.float32, shape=[None, STATE_DIM], name="s_")
 
-    # Create tensorboard callback
-    tensorboard = TensorBoard(log_dir="logs/{}".format(NAME))
-
     # Create tensorflow session
     sess = tf.Session()
-
-    # $ tensorboard --logdir=logs
-    tf.summary.FileWriter(TB_LOGDIR, sess.graph)
 
     # Create actor and critic and memory objects
     actor = Actor(sess, ACTION_DIM, ACTION_BOUND, LR_A, REPLACE_ITER_A)
@@ -396,22 +485,43 @@ if __name__ == "__main__":
     )
     actor.add_grad_to_graph(critic.a_grads)
     M = Memory(MEMORY_CAPACITY, dims=2 * STATE_DIM + ACTION_DIM + 1)
-    saver = tf.train.Saver()
-    path = "./panda_training/models/" + MODE[n_model]
+
+    # Create tensorboard writer
+    writer = tf.summary.FileWriter(TB_LOGDIR, sess.graph)
 
     # Restore session if inference otherwise run new session
+    saver = tf.train.Saver()
     if LOAD:
-        saver.restore(sess, tf.train.latest_checkpoint(path))
+        rospy.loginfo(
+            "RL model will be loaded from: %s",
+            os.path.abspath(os.path.join(MODEL_LOAD_DIR, "DDPG.ckpt")),
+        )
+        rospy.sleep(2)
+        saver.restore(sess, tf.train.latest_checkpoint(MODEL_LOAD_DIR))
     else:
 
-        # Print log directory
-        rospy.loginfo("RL results logged to: %s", os.path.abspath(TB_LOGDIR))
-        rospy.loginfo("RL results saved to: %s", os.path.abspath(path))
-        rospy.sleep(2)
+        # Run session
         sess.run(tf.global_variables_initializer())
 
-    # Choose between load (inference) or train
-    if LOAD:
+    # Choose between load (inference, transfer) or train
+    if LOAD and not TRANSFER:
+        rospy.loginfo("Run model inference.")
+        rospy.sleep(2)
         eval()
     else:
+
+        # Print log and save directories
+        rospy.loginfo("RL results will be logged to: %s", os.path.abspath(TB_LOGDIR))
+        rospy.loginfo(
+            "RL model will be saved as: %s", os.path.join(MODEL_FILE, "DDPG.ckpt")
+        )
+
+        # Train model
+        rospy.loginfo("Start model training.")
+        rospy.sleep(2)
         train()
+
+    # Close writer and session
+    writer.flush()  # make sure everything is written to disk
+    writer.close()  # not really needed, but good habit
+    sess.close()

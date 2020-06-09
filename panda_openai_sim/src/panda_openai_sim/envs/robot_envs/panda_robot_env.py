@@ -1576,10 +1576,10 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
     #############################################
     # Setup virtual methods #####################
     #############################################
-    # NOTE: These virtual methods can be overloaded by the Robot env
-    def _init_env_variables(self):
-        """Inits variables needed to be initialised each time we reset at the start
-        of an episode.
+    # NOTE: These virtual methods NEED to be overloaded by the Robot and Task env
+
+    def _compute_reward(self, observations, done):
+        """Calculates the reward to give based on the observations given.
 
         Raises
         ------
@@ -1587,8 +1587,8 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
         """
         raise NotImplementedError()
 
-    def _compute_reward(self, observations, done):
-        """Calculates the reward to give based on the observations given.
+    def _get_obs(self):
+        """Returns the observation.
 
         Raises
         ------
@@ -1605,8 +1605,9 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
         """
         raise NotImplementedError()
 
-    def _get_obs(self):
-        """Gets observation data
+    def _is_done(self, observations):
+        """Indicates whether or not the episode is done. The goal was achieved or the
+        robot has fallen.
 
         Raises
         ------
@@ -1614,8 +1615,46 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
         """
         raise NotImplementedError()
 
-    def _is_done(self, observations):
-        """Checks if episode done based on observations given.
+    def _sample_goal(self):
+        """Samples a new goal and returns it.
+
+        Raises
+        ------
+        NotImplementedError
+        """
+        raise NotImplementedError()
+
+    def _env_setup(self, initial_qpos):
+        """Initial configuration of the environment. Can be used to configure initial state
+        and extract information from the simulation.
+
+        Raises
+        ------
+        NotImplementedError
+        """
+        raise NotImplementedError()
+
+    def _set_init_pose(self):
+        """Sets the Robot in its init pose.
+
+        Raises
+        ------
+        NotImplementedError
+        """
+        raise NotImplementedError()
+
+    def _set_init_obj_pose(self):
+        """Sets the Object to its init pose.
+
+        Raises
+        ------
+        NotImplementedError
+        """
+        raise NotImplementedError()
+
+    def _init_env_variables(self):
+        """Inits variables needed to be initialised each time we reset at the start
+        of an episode.
 
         Raises
         ------

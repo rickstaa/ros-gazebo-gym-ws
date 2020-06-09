@@ -74,6 +74,8 @@ from panda_openai_sim.srv import (
 # TODO: Check ee pose not set warning when using panda_training scripts
 # TODO: Clean up panda_training scripts
 # TODO: ADD log to file in panda_training scripts
+# TODO: use_grippe_width warning only one time
+# TODO: is_done always returns true?
 
 # Script Parameters
 DIRNAME = os.path.dirname(__file__)
@@ -202,7 +204,8 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         action_space_joints : list, optional
             A list containing the joints which you want to use in the action space.
             If this variable is supplied the length of the action space will be set
-            to be equal to the length of the 'action_space_joints' list, by default None.
+            to be equal to the length of the 'action_space_joints' list, by default
+            None.
         robot_arm_control_type : str, optional
             The type of control you want to use for the robot arm. Options are
             'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
@@ -420,6 +423,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         #########################################
 
         # Initiate task environment
+        # TODO: In gym it is in the gazebo goal env?
         rospy.logdebug("Setup initial environment state.")
         self._env_setup()
 
@@ -531,50 +535,353 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         rospy.loginfo("Panda Panda task environment initialized.")
 
     #############################################
-    # Panda Robot env main methods ##############
+    # Panda Task env main methods ###############
     #############################################
+    # NOTE: Overloads virtual methods that were defined in the Robot and Gazebo Goal
+    # environments
 
-    def _robot_get_obs(self, data):
-        """Returns all joint positions and velocities associated with a robot.
-
-        Parameters
-        ----------
-        param : sensor_msgs/JointState
-            Joint states message.
-
-        Returns
-        -------
-        np.array
-           Robot Positions, Robot Velocities
-        """
-
-        # Retrieve positions and velocity out of sensor_msgs/JointState msgs
-        if data.position is not None and data.name:
-            names = [n for n in data.name]
-            return (
-                np.array([data.position[i] for i in range(len(names))]),
-                np.array([data.velocity[i] for i in range(len(names))]),
-            )
-        else:
-            return np.zeros(0), np.zeros(0)
-
-    def _goal_distance(self, goal_a, goal_b):
-        """Calculates the perpendicular distance to the goal.
+    def _compute_reward(self, observations, done):
+        """Compute the reward.
 
         Parameters
         ----------
-        goal_a : np.array
-            List containing a gripper and object pose.
-        goal_b : np.array
-            List containing a gripper and object pose.
+        observations : dict
+            Dictionary containing the observations
+        done : bool
+            Bool specifying whether an episode is terminated.
 
         Returns
         -------
         np.float32
-            Perpendicular distance to the goal.
+            Reward that is received by the agent.
         """
-        assert goal_a.shape == goal_b.shape
-        return np.linalg.norm(goal_a - goal_b, axis=-1)
+
+        # Calculate the rewards based on the distance from the goal
+        d = self._goal_distance(observations["achieved_goal"], self.goal)
+        if self._reward_type == "sparse":
+
+            # Print Debug info
+            rospy.logdebug("=Reward info=")
+            rospy.logdebug("Reward type: Non sparse")
+            rospy.logdebug("Goal: %s", self.goal)
+            rospy.logdebug("Achieved goal: %s", observations["achieved_goal"])
+            rospy.logdebug("Perpendicular distance: %s", d)
+            rospy.logdebug("Threshold: %s", self._distance_threshold)
+            rospy.logdebug(
+                "Received reward: %s",
+                -(d > self._distance_threshold).astype(np.float32),
+            )
+
+            # Return result
+            return -(d > self._distance_threshold).astype(np.float32)
+        else:
+
+            # Print Debug info
+            rospy.logdebug("=Reward info=")
+            rospy.logdebug("Reward type: Sparse")
+            rospy.logdebug("Goal: %s", self.goal)
+            rospy.logdebug("Achieved goal: %s", observations["achieved_goal"])
+            rospy.logdebug("Perpendicular distance: %s", d)
+            rospy.logdebug("Threshold: %s", self._distance_threshold)
+            rospy.logdebug("Received reward: %s", -d)
+
+            # Return result
+            return -d
+
+    def _get_obs(self):
+        """Get robot state observation.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the {observation, achieved_goal, desired_goal,
+            info):
+
+            observations : list (22x1)
+                - End effector x position
+                - End effector y position
+                - End effector z position
+                - Object x position
+                - Object y position
+                - Object z position
+                - Object/gripper rel. x position
+                - Object/gripper rel. y position
+                - Object/gripper rel. z position
+                - EE joints positions
+                - Object pitch (y)
+                - Object yaw (z)
+                - Object roll (x)
+                - Object x velocity
+                - Object y velocity
+                - Object z velocity
+                - Object x angular velocity
+                - Object y angular velocity
+                - Object z angular velocity
+                - EE joints velocities
+            achieved_goal : object
+                The goal that was achieved during execution.
+            desired_goal : object
+                The desired goal that we asked the agent to attempt to achieve.
+            info : dict
+                An info dictionary with additional information
+        """
+
+        # Retrieve robot end effector pose and orientation
+        ee_pose = self.get_ee_pose()
+        ee_pos = np.array(
+            [ee_pose.pose.position.x, ee_pose.pose.position.y, ee_pose.pose.position.z]
+        )
+
+        # Retrieve robot joint pose and velocity
+        # IMPROVE: Retrieve real velocity from gazebo
+        dt = self._get_elapsed_time()
+        grip_velp = (
+            ee_pos - self._prev_grip_pos
+        ) / dt  # Velocity(position) = Distance/Time
+        robot_qpos, robot_qvel = self._robot_get_obs(self.joint_states)
+
+        # Get ee joint positions and velocities
+        # NOTE: For the parallel jaw gripper this are the finger joints
+        ee_state = robot_qpos[0:2]
+        ee_vel = robot_qvel[0:2]
+
+        # Get object pose and (angular)velocity
+        if self._has_object:
+
+            # Get object pose
+            object_pos = np.array(
+                [
+                    self.model_states[GRASP_OBJECT_NAME]["pose"].position.x,
+                    self.model_states[GRASP_OBJECT_NAME]["pose"].position.y,
+                    self.model_states[GRASP_OBJECT_NAME]["pose"].position.z,
+                ]
+            )
+
+            # Get object orientation
+            object_rot_resp = get_orientation_euler(
+                self.model_states[GRASP_OBJECT_NAME]["pose"]
+            )
+            object_rot = np.array(
+                [object_rot_resp.y, object_rot_resp.p, object_rot_resp.r]
+            )
+
+            # Get object velocity
+            object_velp = (
+                object_pos - self._prev_object_pos
+            ) / dt  # Velocity(position) = Distance/Time
+            object_velr = (
+                object_rot - self._prev_object_rot
+            ) / dt  # Velocity(rotation) = Rotation/Time
+
+            # Get relative position and velocity
+            object_rel_pos = object_pos - ee_pos
+            object_velp -= grip_velp
+        else:
+            object_pos = (
+                object_rot
+            ) = object_velp = object_velr = object_rel_pos = np.zeros(0)
+
+        # Get achieved goal
+        achieved_goal = self._sample_achieved_goal(ee_pos, object_pos)
+
+        # Concatenate observations
+        obs = np.concatenate(
+            [
+                ee_pos,
+                object_pos.ravel(),
+                object_rel_pos.ravel(),
+                ee_state,
+                object_rot.ravel(),
+                object_velp.ravel(),
+                object_velr.ravel(),
+                ee_vel,
+            ]
+        )
+
+        # Save current gripper and object positions
+        self._prev_grip_pos = ee_pos
+        self._prev_object_pos = object_pos
+        self._prev_object_rot = object_rot
+
+        # Return goal env observation dictionary
+        return {
+            "observation": obs.copy(),
+            "achieved_goal": achieved_goal.copy(),
+            "desired_goal": self.goal.copy(),
+            "info": {},
+        }
+
+    def _set_action(self, action):
+        """Take robot action.
+
+        Parameters
+        ----------
+        action : list
+            List containing joint or ee action commands.
+        """
+
+        # Throw error and shutdown if action space is not the right size
+        if not action.shape == self.action_space.shape:
+            rospy.logerr(
+                "Shutting down '%s' since the shape of the supplied action %s while "
+                "the gym action space has shape %s."
+                % (rospy.get_name(), action.shape, self.action_space.shape)
+            )
+            sys.exit(0)
+
+        # ensure that we don't change the action outside of this scope
+        action = action.copy()
+
+        # Send action commands to the controllers based on control type
+        if self._robot_arm_control_type == "ee_control":
+
+            # Create action dictionary
+            action_dict = OrderedDict(zip(self._action_space_joints, action))
+
+            # Convert gripper_width command into finger joints commands
+            if (
+                self._robot_hand_control_type in POSITION_CONTROL_TYPES
+                and self._use_gripper_width
+            ):
+                action_dict = translate_gripper_width_2_finger_joint_commands(
+                    action_dict
+                )
+
+            # Make sure the gripper is not moved if block_gripper == True
+            # Note: When the gripper joint_commands are not present the current gripper
+            # state will be used as a setpoint and thus the gripper is locked
+            if self._block_gripper:
+                for joint in self._controlled_joints["hand"]:
+                    action_dict.pop(joint)
+
+            # Print Debug info
+            rospy.logdebug("=Action set info=")
+            rospy.logdebug("Action that is set:")
+            rospy.logdebug(list(action_dict.values()))
+
+            # Split action_dict into hand and arm control_msgs
+            arm_action_dict = {
+                key: val
+                for key, val in action_dict.items()
+                if key in ["x", "y", "z", "rx", "ry", "rz", "rw"]
+            }
+            hand_action_dict = {
+                key: val
+                for key, val in action_dict.items()
+                if key in self._controlled_joints["hand"]
+            }
+
+            # Take action
+            self.set_ee_pose(arm_action_dict)
+            if self._robot_hand_control_type in POSITION_CONTROL_TYPES:
+                self.set_joint_positions(hand_action_dict)
+            elif EFFORT_CONTROL_TYPES:  # If hand uses effort control
+                self.set_joint_efforts(hand_action_dict)
+            else:  # If hand uses joint_trajectory control
+                hand_traj_msg = action_dict_2_joint_trajectory_msg(hand_action_dict)
+                self.set_joint_trajectory(hand_traj_msg)
+        else:
+
+            # Create action dictionary
+            action_dict = OrderedDict(zip(self._action_space_joints, action))
+
+            # Convert gripper_width command into finger joints commands
+            if (
+                self._robot_hand_control_type in POSITION_CONTROL_TYPES
+                and self._use_gripper_width
+            ):
+                action_dict = translate_gripper_width_2_finger_joint_commands(
+                    action_dict
+                )
+
+            # Make sure the gripper is not moved if block_gripper == True
+            # Note: When the gripper joint_commands are not present the current gripper
+            # state will be used as a setpoint and thus the gripper is locked
+            if self._block_gripper:
+                for joint in self._controlled_joints["hand"]:
+                    action_dict.pop(joint)
+
+            # Print Debug info
+            rospy.logdebug("=Action set info=")
+            rospy.logdebug("Action that is set:")
+            rospy.logdebug(list(action_dict.values()))
+
+            # Take action
+            if (
+                self._robot_arm_control_type in POSITION_CONTROL_TYPES
+                and self._robot_hand_control_type in POSITION_CONTROL_TYPES
+            ):
+                self.set_joint_positions(action_dict)
+            elif (
+                self._robot_arm_control_type in EFFORT_CONTROL_TYPES
+                and self._robot_hand_control_type in EFFORT_CONTROL_TYPES
+            ):
+                self.set_joint_efforts(action_dict)
+            elif (
+                self._robot_arm_control_type == "joint_trajectory_control"
+                and self._robot_hand_control_type == "joint_trajectory_control"
+            ):
+                traj_msg = action_dict_2_joint_trajectory_msg(action_dict)
+                self.set_joint_trajectory(traj_msg)
+            else:  # If arm and hand have different control types
+
+                # Split action_dict into hand and arm control_msgs
+                arm_action_dict = {
+                    key: val
+                    for key, val in action_dict.items()
+                    if key in self._controlled_joints["arm"]
+                }
+                hand_action_dict = {
+                    key: val
+                    for key, val in action_dict.items()
+                    if key in self._controlled_joints["hand"]
+                }
+
+                # Take arm action
+                if self._robot_arm_control_type in POSITION_CONTROL_TYPES:
+                    self.set_joint_positions(arm_action_dict)
+                elif self._robot_arm_control_type in EFFORT_CONTROL_TYPES:
+                    self.set_joint_efforts(arm_action_dict)
+                else:
+                    arm_traj_msg = action_dict_2_joint_trajectory_msg(arm_action_dict)
+                    self.set_joint_trajectory(arm_traj_msg)
+
+                # Take hand action
+                if self._robot_hand_control_type in POSITION_CONTROL_TYPES:
+                    self.set_joint_positions(hand_action_dict)
+                elif self._robot_hand_control_type in EFFORT_CONTROL_TYPES:
+                    self.set_joint_efforts(hand_action_dict)
+                else:
+                    hand_traj_msg = action_dict_2_joint_trajectory_msg(hand_action_dict)
+                    self.set_joint_trajectory(hand_traj_msg)
+
+    def _is_done(self, observations):
+        """Check if task is done.
+
+        Parameters
+        ----------
+        observations : dict
+            Dictionary containing the observations
+
+        Returns
+        -------
+        bool
+            Bool specifying whether the episode is done (e.i. distance to the goal is
+            within the distance threshold, robot has fallen etc.).
+        """
+
+        # Check if gripper is within range of the goal
+        d = self._goal_distance(observations["achieved_goal"], self.goal)
+
+        # Print Debug info
+        rospy.logdebug("=Task is done info=")
+        if (d < self._distance_threshold).astype(np.float32):
+            rospy.logdebug("Taks is done.")
+        else:
+            rospy.logdebug("Task is not done.")
+
+        # Return result
+        return (d < self._distance_threshold).astype(np.float32)
 
     def _sample_goal(self):
         """Sample a grasping goal. Sample from objects if environment has object
@@ -685,35 +992,69 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         # return goal.copy()
         return goal
 
-    def _sample_achieved_goal(self, ee_pos, object_pos):
-        """Retrieve currently achieved goal. If gripper has object return object
-        position.
-
-        Parameters
-        ----------
-        ee_pos : np.array
-            Gripper position.
-        object_pos : np.array
-            Object position.
-
-        Returns
-        -------
-        geometry_msgs.PoseStamped
-            The achieved pose.
+    def _env_setup(self):
+        """Sets up initial configuration of the environment. Can be used to configure
+        the initial robot state and extract information from the simulation.
         """
 
-        # Retrieve gripper end pose
-        if not self._has_object:  # Environment has no object
-            achieved_goal = np.squeeze(ee_pos.copy())
-        else:  # Has object
-            achieved_goal = np.squeeze(object_pos.copy())
+        # Move robot joints into their initial position
+        self._set_init_pose()
 
-        # return achieved_goal.copy()
-        return achieved_goal
+        # Spawn grasp object, set initial pose and calculate the gripper height offset
+        if self._has_object:
 
-    #############################################
-    # Overload Robot/Gazebo env virtual methods #
-    #############################################
+            # Spawn the object
+            rospy.loginfo("Spawning '%s' object." % GRASP_OBJECT_NAME)
+            try:
+                self._spawn_object(
+                    GRASP_OBJECT_NAME, "grasp_cube", pose=self._init_obj_pose
+                )
+            except SpawnModelError:
+                rospy.logerr(
+                    "Shutting down '%s' since the grasp object could not be spawned."
+                    % (rospy.get_name(),)
+                )
+                sys.exit(0)
+
+            # Set initial object pose
+            self._set_init_obj_pose()
+
+            # Retrieve the object height
+            self._object_height_offset = self.model_states[GRASP_OBJECT_NAME][
+                "pose"
+            ].position.y
+
+        # Store initial EE and qpose
+        try:
+            cur_ee_pose = self.get_ee_pose()
+        except EePoseLookupError:
+            rospy.logwarn(
+                "Initial EE pose not stored since it could not be retrieved."
+                % (rospy.get_name())
+            )
+        cur_ee_pos = np.array(
+            [
+                cur_ee_pose.pose.position.x,
+                cur_ee_pose.pose.position.y,
+                cur_ee_pose.pose.position.z,
+            ]
+        )
+        self.initial_ee_pos = cur_ee_pos.copy()
+        try:
+            cur_qpose = OrderedDict(
+                zip(list(self.joint_states.name), list(self.joint_states.position))
+            )
+        except EePoseLookupError:
+            rospy.logwarn(
+                "Initial generalized robot pose (qpose) not stored since it could not "
+                "be retrieved." % (rospy.get_name())
+            )
+        self.initial_qpose = cur_qpose.copy()
+
+        # Sample a reaching goal
+        self.goal = self._sample_goal()
+        self._get_obs()
+
     def _set_init_pose(self):
         """Sets the Robot in its init pose.
 
@@ -890,409 +1231,17 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
                 rospy.logwarn("setting initial object position failed.")
             return retval
 
-    def _get_obs(self):
-        """Get robot state observation.
-
-        Returns
-        -------
-        dict
-            A dictionary containing the {observation, achieved_goal, desired_goal):
-
-            observation list (22x1):
-                - End effector x position
-                - End effector y position
-                - End effector z position
-                - Object x position
-                - Object y position
-                - Object z position
-                - Object/gripper rel. x position
-                - Object/gripper rel. y position
-                - Object/gripper rel. z position
-                - EE joints positions
-                - Object pitch (y)
-                - Object yaw (z)
-                - Object roll (x)
-                - Object x velocity
-                - Object y velocity
-                - Object z velocity
-                - Object x angular velocity
-                - Object y angular velocity
-                - Object z angular velocity
-                - EE joints velocities
-        """
-
-        # Retrieve robot end effector pose and orientation
-        ee_pose = self.get_ee_pose()
-        ee_pos = np.array(
-            [ee_pose.pose.position.x, ee_pose.pose.position.y, ee_pose.pose.position.z]
-        )
-
-        # Retrieve robot joint pose and velocity
-        # IMPROVE: Retrieve real velocity from gazebo
-        dt = self._get_elapsed_time()
-        grip_velp = (
-            ee_pos - self._prev_grip_pos
-        ) / dt  # Velocity(position) = Distance/Time
-        robot_qpos, robot_qvel = self._robot_get_obs(self.joint_states)
-
-        # Get ee joint positions and velocities
-        # NOTE: For the parallel jaw gripper this are the finger joints
-        ee_state = robot_qpos[0:2]
-        ee_vel = robot_qvel[0:2]
-
-        # Get object pose and (angular)velocity
-        if self._has_object:
-
-            # Get object pose
-            object_pos = np.array(
-                [
-                    self.model_states[GRASP_OBJECT_NAME]["pose"].position.x,
-                    self.model_states[GRASP_OBJECT_NAME]["pose"].position.y,
-                    self.model_states[GRASP_OBJECT_NAME]["pose"].position.z,
-                ]
-            )
-
-            # Get object orientation
-            object_rot_resp = get_orientation_euler(
-                self.model_states[GRASP_OBJECT_NAME]["pose"]
-            )
-            object_rot = np.array(
-                [object_rot_resp.y, object_rot_resp.p, object_rot_resp.r]
-            )
-
-            # Get object velocity
-            object_velp = (
-                object_pos - self._prev_object_pos
-            ) / dt  # Velocity(position) = Distance/Time
-            object_velr = (
-                object_rot - self._prev_object_rot
-            ) / dt  # Velocity(rotation) = Rotation/Time
-
-            # Get relative position and velocity
-            object_rel_pos = object_pos - ee_pos
-            object_velp -= grip_velp
-        else:
-            object_pos = (
-                object_rot
-            ) = object_velp = object_velr = object_rel_pos = np.zeros(0)
-
-        # Get achieved goal
-        achieved_goal = self._sample_achieved_goal(ee_pos, object_pos)
-
-        # Concatenate observations
-        obs = np.concatenate(
-            [
-                ee_pos,
-                object_pos.ravel(),
-                object_rel_pos.ravel(),
-                ee_state,
-                object_rot.ravel(),
-                object_velp.ravel(),
-                object_velr.ravel(),
-                ee_vel,
-            ]
-        )
-
-        # Save current gripper and object positions
-        self._prev_grip_pos = ee_pos
-        self._prev_object_pos = object_pos
-        self._prev_object_rot = object_rot
-
-        # Return goal env observation dictionary
-        return {
-            "observation": obs.copy(),
-            "achieved_goal": achieved_goal.copy(),
-            "desired_goal": self.goal.copy(),
-        }
-
     def _init_env_variables(self):
         """Inits variables needed to be initialized each time we reset at the start
         of an episode.
         """
         pass
 
-    def _set_action(self, action):
-        """Take robot action.
-
-        Parameters
-        ----------
-        action : list
-            List containing joint or ee action commands.
-        """
-
-        # Throw error and shutdown if action space is not the right size
-        if not action.shape == self.action_space.shape:
-            rospy.logerr(
-                "Shutting down '%s' since the shape of the supplied action %s while "
-                "the gym action space has shape %s."
-                % (rospy.get_name(), action.shape, self.action_space.shape)
-            )
-            sys.exit(0)
-
-        # ensure that we don't change the action outside of this scope
-        action = action.copy()
-
-        # Send action commands to the controllers based on control type
-        if self._robot_arm_control_type == "ee_control":
-
-            # Create action dictionary
-            action_dict = OrderedDict(zip(self._action_space_joints, action))
-
-            # Convert gripper_width command into finger joints commands
-            if (
-                self._robot_hand_control_type in POSITION_CONTROL_TYPES
-                and self._use_gripper_width
-            ):
-                action_dict = translate_gripper_width_2_finger_joint_commands(
-                    action_dict
-                )
-
-            # Make sure the gripper is not moved if block_gripper == True
-            # Note: When the gripper joint_commands are not present the current gripper
-            # state will be used as a setpoint and thus the gripper is locked
-            if self._block_gripper:
-                for joint in self._controlled_joints["hand"]:
-                    action_dict.pop(joint)
-
-            # Print Debug info
-            rospy.logdebug("=Action set info=")
-            rospy.logdebug("Action that is set:")
-            rospy.logdebug(list(action_dict.values()))
-
-            # Split action_dict into hand and arm control_msgs
-            arm_action_dict = {
-                key: val
-                for key, val in action_dict.items()
-                if key in ["x", "y", "z", "rx", "ry", "rz", "rw"]
-            }
-            hand_action_dict = {
-                key: val
-                for key, val in action_dict.items()
-                if key in self._controlled_joints["hand"]
-            }
-
-            # Take action
-            self.set_ee_pose(arm_action_dict)
-            if self._robot_hand_control_type in POSITION_CONTROL_TYPES:
-                self.set_joint_positions(hand_action_dict)
-            elif EFFORT_CONTROL_TYPES:  # If hand uses effort control
-                self.set_joint_efforts(hand_action_dict)
-            else:  # If hand uses joint_trajectory control
-                hand_traj_msg = action_dict_2_joint_trajectory_msg(hand_action_dict)
-                self.set_joint_trajectory(hand_traj_msg)
-        else:
-
-            # Create action dictionary
-            action_dict = OrderedDict(zip(self._action_space_joints, action))
-
-            # Convert gripper_width command into finger joints commands
-            if (
-                self._robot_hand_control_type in POSITION_CONTROL_TYPES
-                and self._use_gripper_width
-            ):
-                action_dict = translate_gripper_width_2_finger_joint_commands(
-                    action_dict
-                )
-
-            # Make sure the gripper is not moved if block_gripper == True
-            # Note: When the gripper joint_commands are not present the current gripper
-            # state will be used as a setpoint and thus the gripper is locked
-            if self._block_gripper:
-                for joint in self._controlled_joints["hand"]:
-                    action_dict.pop(joint)
-
-            # Print Debug info
-            rospy.logdebug("=Action set info=")
-            rospy.logdebug("Action that is set:")
-            rospy.logdebug(list(action_dict.values()))
-
-            # Take action
-            if (
-                self._robot_arm_control_type in POSITION_CONTROL_TYPES
-                and self._robot_hand_control_type in POSITION_CONTROL_TYPES
-            ):
-                self.set_joint_positions(action_dict)
-            elif (
-                self._robot_arm_control_type in EFFORT_CONTROL_TYPES
-                and self._robot_hand_control_type in EFFORT_CONTROL_TYPES
-            ):
-                self.set_joint_efforts(action_dict)
-            elif (
-                self._robot_arm_control_type == "joint_trajectory_control"
-                and self._robot_hand_control_type == "joint_trajectory_control"
-            ):
-                traj_msg = action_dict_2_joint_trajectory_msg(action_dict)
-                self.set_joint_trajectory(traj_msg)
-            else:  # If arm and hand have different control types
-
-                # Split action_dict into hand and arm control_msgs
-                arm_action_dict = {
-                    key: val
-                    for key, val in action_dict.items()
-                    if key in self._controlled_joints["arm"]
-                }
-                hand_action_dict = {
-                    key: val
-                    for key, val in action_dict.items()
-                    if key in self._controlled_joints["hand"]
-                }
-
-                # Take arm action
-                if self._robot_arm_control_type in POSITION_CONTROL_TYPES:
-                    self.set_joint_positions(arm_action_dict)
-                elif self._robot_arm_control_type in EFFORT_CONTROL_TYPES:
-                    self.set_joint_efforts(arm_action_dict)
-                else:
-                    arm_traj_msg = action_dict_2_joint_trajectory_msg(arm_action_dict)
-                    self.set_joint_trajectory(arm_traj_msg)
-
-                # Take hand action
-                if self._robot_hand_control_type in POSITION_CONTROL_TYPES:
-                    self.set_joint_positions(hand_action_dict)
-                elif self._robot_hand_control_type in EFFORT_CONTROL_TYPES:
-                    self.set_joint_efforts(hand_action_dict)
-                else:
-                    hand_traj_msg = action_dict_2_joint_trajectory_msg(hand_action_dict)
-                    self.set_joint_trajectory(hand_traj_msg)
-
-    def _is_done(self, observations):
-        """Check if task is done.
-
-        Parameters
-        ----------
-        observations : dict
-            Dictionary containing the observations
-
-        Returns
-        -------
-        bool
-            Bool specifying whether the distance to the goal is within the distance
-            threshold and thus the episode is completed.
-        """
-
-        # Check if gripper is within range of the goal
-        d = self._goal_distance(observations["achieved_goal"], self.goal)
-
-        # Print Debug info
-        rospy.logdebug("=Task is done info=")
-        if (d < self._distance_threshold).astype(np.float32):
-            rospy.logdebug("Taks is done.")
-        else:
-            rospy.logdebug("Task is not done.")
-
-        # Return result
-        return (d < self._distance_threshold).astype(np.float32)
-
-    def _compute_reward(self, observations, done):
-        """Compute the reward.
-
-        Parameters
-        ----------
-        observations : dict
-            Dictionary containing the observations
-        done : bool
-            Bool specifying whether an episode is terminated.
-
-        Returns
-        -------
-        np.float32
-            Reward that is received by the agent.
-        """
-
-        # Calculate the rewards based on the distance from the goal
-        d = self._goal_distance(observations["achieved_goal"], self.goal)
-        if self._reward_type == "sparse":
-
-            # Print Debug info
-            rospy.logdebug("=Reward info=")
-            rospy.logdebug("Reward type: Non sparse")
-            rospy.logdebug("Goal: %s", self.goal)
-            rospy.logdebug("Achieved goal: %s", observations["achieved_goal"])
-            rospy.logdebug("Perpendicular distance: %s", d)
-            rospy.logdebug("Threshold: %s", self._distance_threshold)
-            rospy.logdebug(
-                "Received reward: %s",
-                -(d > self._distance_threshold).astype(np.float32),
-            )
-
-            # Return result
-            return -(d > self._distance_threshold).astype(np.float32)
-        else:
-
-            # Print Debug info
-            rospy.logdebug("=Reward info=")
-            rospy.logdebug("Reward type: Sparse")
-            rospy.logdebug("Goal: %s", self.goal)
-            rospy.logdebug("Achieved goal: %s", observations["achieved_goal"])
-            rospy.logdebug("Perpendicular distance: %s", d)
-            rospy.logdebug("Threshold: %s", self._distance_threshold)
-            rospy.logdebug("Received reward: %s", -d)
-
-            # Return result
-            return -d
-
-    def _env_setup(self):
-        """Sets up initial configuration of the environment. Can be used to configure
-        the initial robot state and extract information from the simulation.
-        """
-
-        # Move robot joints into their initial position
-        self._set_init_pose()
-
-        # Spawn grasp object, set initial pose and calculate the gripper height offset
-        if self._has_object:
-
-            # Spawn the object
-            rospy.loginfo("Spawning '%s' object." % GRASP_OBJECT_NAME)
-            try:
-                self._spawn_object(
-                    GRASP_OBJECT_NAME, "grasp_cube", pose=self._init_obj_pose
-                )
-            except SpawnModelError:
-                rospy.logerr(
-                    "Shutting down '%s' since the grasp object could not be spawned."
-                    % (rospy.get_name(),)
-                )
-                sys.exit(0)
-
-            # Set initial object pose
-            self._set_init_obj_pose()
-
-            # Retrieve the object height
-            self._object_height_offset = self.model_states[GRASP_OBJECT_NAME][
-                "pose"
-            ].position.y
-
-        # Store initial EE and qpose
-        try:
-            cur_ee_pose = self.get_ee_pose()
-        except EePoseLookupError:
-            rospy.logwarn(
-                "Initial EE pose not stored since it could not be retrieved."
-                % (rospy.get_name())
-            )
-        cur_ee_pos = np.array(
-            [
-                cur_ee_pose.pose.position.x,
-                cur_ee_pose.pose.position.y,
-                cur_ee_pose.pose.position.z,
-            ]
-        )
-        self.initial_ee_pos = cur_ee_pos.copy()
-        try:
-            cur_qpose = OrderedDict(
-                zip(list(self.joint_states.name), list(self.joint_states.position))
-            )
-        except EePoseLookupError:
-            rospy.logwarn(
-                "Initial generalized robot pose (qpose) not stored since it could not "
-                "be retrieved." % (rospy.get_name())
-            )
-        self.initial_qpose = cur_qpose.copy()
-
-        # Sample a reaching goal
-        self.goal = self._sample_goal()
-        self._get_obs()
+    #############################################
+    # Panda Task env extension methods ##########
+    #############################################
+    # NOTE: Overloads virtual methods that were defined in the Robot and Gazebo Goal
+    # environments
 
     def _step_callback(self):
         """A custom callback that is called after stepping the simulation. Used
@@ -1312,6 +1261,74 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
     #############################################
     # Task env helper methods ###################
     #############################################
+
+    def _robot_get_obs(self, data):
+        """Returns all joint positions and velocities associated with a robot.
+
+        Parameters
+        ----------
+        param : sensor_msgs/JointState
+            Joint states message.
+
+        Returns
+        -------
+        np.array
+           Robot Positions, Robot Velocities
+        """
+
+        # Retrieve positions and velocity out of sensor_msgs/JointState msgs
+        if data.position is not None and data.name:
+            names = [n for n in data.name]
+            return (
+                np.array([data.position[i] for i in range(len(names))]),
+                np.array([data.velocity[i] for i in range(len(names))]),
+            )
+        else:
+            return np.zeros(0), np.zeros(0)
+
+    def _goal_distance(self, goal_a, goal_b):
+        """Calculates the perpendicular distance to the goal.
+
+        Parameters
+        ----------
+        goal_a : np.array
+            List containing a gripper and object pose.
+        goal_b : np.array
+            List containing a gripper and object pose.
+
+        Returns
+        -------
+        np.float32
+            Perpendicular distance to the goal.
+        """
+        assert goal_a.shape == goal_b.shape
+        return np.linalg.norm(goal_a - goal_b, axis=-1)
+
+    def _sample_achieved_goal(self, ee_pos, object_pos):
+        """Retrieve currently achieved goal. If gripper has object return object
+        position.
+
+        Parameters
+        ----------
+        ee_pos : np.array
+            Gripper position.
+        object_pos : np.array
+            Object position.
+
+        Returns
+        -------
+        geometry_msgs.PoseStamped
+            The achieved pose.
+        """
+
+        # Retrieve gripper end pose
+        if not self._has_object:  # Environment has no object
+            achieved_goal = np.squeeze(ee_pos.copy())
+        else:  # Has object
+            achieved_goal = np.squeeze(object_pos.copy())
+
+        # return achieved_goal.copy()
+        return achieved_goal
 
     def _get_config(self):
         """Retrieve default values from the defaults configuration file.
@@ -1707,8 +1724,8 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
                             "The length of the 'action_space_joints' argument (%s) is "
                             "not equal to the requested action space size 'n_actions' "
                             "(%s). As a result the action space size 'n_actions' was "
-                            "adjusted to the size of the 'action_space_joints' argument "
-                            "(%s)."
+                            "adjusted to the size of the 'action_space_joints' "
+                            "argument (%s)."
                             % (
                                 len(self._action_space_joints),
                                 self._n_actions,
@@ -1923,8 +1940,8 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
                 ):  # If contains gripper_width
                     rospy.logwarn(
                         "'use_gripper_width' argument set to True since the "
-                        "'action_space_joints' argument contains 'gripper_with' instead "
-                        "of finger joints."
+                        "'action_space_joints' argument contains 'gripper_with' "
+                        "instead of finger joints."
                     )
                     self._use_gripper_width = True
         else:

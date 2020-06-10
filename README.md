@@ -1,7 +1,7 @@
 # panda_openai_sim workspace
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/panda_openai_sim)](https://github.com/rickstaa/panda_openai_sim/releases)
-[![Python 3](https://img.shields.io/badge/python%203-3.7%20%7C%203.6%20%7C%203.5-yellow.svg)](https://www.python.org/)
+[![Python 3](https://img.shields.io/badge/python%203-3.7%20%7C%203.6%20%7C%203.5-brightgreen.svg)](https://www.python.org/)
 [![Python 2](https://img.shields.io/badge/python%202-2.7%20%7C%202.6%20%7C%202.5-brightgreen.svg)](https://www.python.org/)
 [![ROS versions](https://img.shields.io/badge/ROS%20versions-Melodic-brightgreen)](https://wiki.ros.org)
 

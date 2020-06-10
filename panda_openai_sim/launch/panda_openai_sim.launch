@@ -16,7 +16,7 @@
     <!-- Control arguments -->
     <arg name="use_group_controller" default="false" />
     <!-- Wheter to use group controllers for the panda control server -->
-    <arg name="preload_controllers" default="false" />
+    <arg name="preload_controllers" default="true" />
     <!-- Wheter to preload all non essential controllers -->
 
     <!-- ## LOAD ROBOT DESCRIPTION ## -->

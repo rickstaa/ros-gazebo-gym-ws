@@ -1,0 +1,8 @@
+README.md
+setup.py
+panda_training/functions.py
+panda_training.egg-info/PKG-INFO
+panda_training.egg-info/SOURCES.txt
+panda_training.egg-info/dependency_links.txt
+panda_training.egg-info/requires.txt
+panda_training.egg-info/top_level.txt

@@ -1,4 +1,4 @@
-﻿"""A number of custom exceptions that are used in the `panda_openai_sim` package."""
+﻿"""Module containing several custom exceptions."""
 
 # Main python imports
 from __future__ import print_function
@@ -26,9 +26,10 @@ class InputMessageInvalidError(Exception):
         Parameters
         ----------
         message : str, optional
-            Exception message specifying whether the exception occurred, by default "".
+            Exception message specifying whether the exception occurred, by default
+            ``""``.
         log_message : str, optional
-            Full log message, by default "".
+            Full log message, by default ``""``.
         details : dict
             Additional dictionary that can be used to supply the user with more details
             about why the exception occurred.
@@ -60,9 +61,10 @@ class EePoseLookupError(Exception):
         Parameters
         ----------
         message : str, optional
-            Exception message specifying whether the exception occurred, by default "".
+            Exception message specifying whether the exception occurred, by default
+            ``""``.
         log_message : str, optional
-            Full log message, by default "".
+            Full log message, by default ``""``.
         details : dict
             Additional dictionary that can be used to supply the user with more details
             about why the exception occurred.
@@ -94,9 +96,10 @@ class EeRpyLookupError(Exception):
         Parameters
         ----------
         message : str, optional
-            Exception message specifying whether the exception occurred, by default "".
+            Exception message specifying whether the exception occurred, by default
+            ``""``.
         log_message : str, optional
-            Full log message, by default "".
+            Full log message, by default ``""``.
         details : dict
             Additional dictionary that can be used to supply the user with more details
             about why the exception occurred.
@@ -128,9 +131,10 @@ class RandomJointPositionsError(Exception):
         Parameters
         ----------
         message : str, optional
-            Exception message specifying whether the exception occurred, by default "".
+            Exception message specifying whether the exception occurred, by default
+            ``""``.
         log_message : str, optional
-            Full log message, by default "".
+            Full log message, by default ``""``.
         details : dict
             Additional dictionary that can be used to supply the user with more details
             about why the exception occurred.
@@ -162,9 +166,10 @@ class RandomEePoseError(Exception):
         Parameters
         ----------
         message : str, optional
-            Exception message specifying whether the exception occurred, by default "".
+            Exception message specifying whether the exception occurred, by default
+            ``""``.
         log_message : str, optional
-            Full log message, by default "".
+            Full log message, by default ``""``.
         details : dict
             Additional dictionary that can be used to supply the user with more details
             about why the exception occurred.
@@ -196,9 +201,10 @@ class SpawnModelError(Exception):
         Parameters
         ----------
         message : str, optional
-            Exception message specifying whether the exception occurred, by default "".
+            Exception message specifying whether the exception occurred, by default
+            ``""``.
         log_message : str, optional
-            Full log message, by default "".
+            Full log message, by default ``""``.
         details : dict
             Additional dictionary that can be used to supply the user with more details
             about why the exception occurred.
@@ -230,9 +236,10 @@ class SetModelStateError(Exception):
         Parameters
         ----------
         message : str, optional
-            Exception message specifying whether the exception occurred, by default "".
+            Exception message specifying whether the exception occurred, by default
+            ``""``.
         log_message : str, optional
-            Full log message, by default "".
+            Full log message, by default ``""``.
         details : dict
             Additional dictionary that can be used to supply the user with more details
             about why the exception occurred.

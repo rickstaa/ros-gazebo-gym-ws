@@ -82,7 +82,7 @@
   <exec_depend>actionlib_msgs</exec_depend>
   <exec_depend>control_msgs</exec_depend>
   <exec_depend>openai_ros</exec_depend>
-
+  <exec_depend>rviz</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags (Used for metapackages and
   Plugins -->

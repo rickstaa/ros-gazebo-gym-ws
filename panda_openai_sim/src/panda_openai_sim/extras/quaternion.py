@@ -34,15 +34,12 @@ class Quaternion(QuaternionParent):
     norm : float
         The quaternion norm.
 
-    Class Methods
-    -------------
-    normalize_quaternion(cls, quaternion):
-        Normalizes a given quaternion.
-    quaternion_norm(cls, Quaternion):
-        Calculates the norm of a quaternion.
-
     Methods
     -------
+    quaternion_norm(cls, Quaternion):
+        Calculates the norm of a quaternion.
+    normalize_quaternion(cls, quaternion):
+        Normalizes a given quaternion.
     normalize():
         Normalize the quaternion.
     """

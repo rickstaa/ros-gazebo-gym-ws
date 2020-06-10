@@ -1,4 +1,4 @@
-"""Train a RL algorithm on the Panda robot of the 'panda_openai_sim' package using the
+"""Trains a RL algorithm on the Panda robot of the 'panda_openai_sim' package using the
 DDPG classes o
 `Morvanzhou <https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/>`_.
 

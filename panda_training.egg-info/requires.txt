@@ -1,0 +1,4 @@
+tensorflow-gpu==1.15
+numpy
+stable_baselines
+gym

@@ -1,4 +1,4 @@
-"""Train a RL algorithm on the Panda robot of the 'panda_openai_sim' package using the
+"""Trains a RL algorithm on the Panda robot of the 'panda_openai_sim' package using the
 `stable_baselines <https://stable-baselines.readthedocs.io/en/master/index.html>`_
 `DDPG <https://stable-baselines.readthedocs.io/en/master/modules/ddpg.html>`_ model
 class in combination with the
@@ -10,10 +10,6 @@ import os
 import sys
 import gym
 
-# from stable_baselines.ddpg.policies import MlpPolicy
-from stable_baselines.common.callbacks import CheckpointCallback
-from stable_baselines import DDPG, HER  # SAC, TD3, HER
-
 from panda_training.functions import (
     get_unique_file_suffix,
     backup_model,
@@ -21,6 +17,21 @@ from panda_training.functions import (
 
 # ROS python imports
 import rospy
+
+# Import stable-baselines packages
+# from stable_baselines.ddpg.policies import MlpPolicy
+from stable_baselines.common.callbacks import CheckpointCallback
+
+try:
+    from stable_baselines import DDPG, HER  # HER, TD3, SAC
+except ImportError:
+    if __name__ == "__main__":
+        rospy.logwarn(
+            "The stable-baslines HER example can not be run the mpi requirements "
+            "are not installed on the system. Please check teh installation "
+            "documentation for more info."
+        )
+        sys.exit(0)
 
 # Import panda openai sim task environments
 import panda_openai_sim.envs

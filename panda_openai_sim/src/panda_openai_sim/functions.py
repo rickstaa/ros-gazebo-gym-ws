@@ -1,4 +1,5 @@
-"""Some additional helpfull helper functions for the panda_openai_sim package.
+"""Module containing some additional functions used in the
+:panda_openai_sim:`panda_openai_sim <>` package.
 """
 
 # Main python imports
@@ -17,6 +18,7 @@ from tf.transformations import euler_from_quaternion
 from geometry_msgs.msg import Pose
 from actionlib_msgs.msg import GoalStatusArray
 from trajectory_msgs.msg import JointTrajectoryPoint
+import control_msgs.msg as control_msgs
 
 from panda_openai_sim.msg import FollowJointTrajectoryGoal
 from panda_openai_sim.srv import SetJointPositionsRequest
@@ -55,6 +57,32 @@ def action_dict_2_joint_trajectory_msg(action_dict):
 
     # Return goal msgs
     return goal_msg
+
+
+def panda_action_msg_2_control_msgs_action_msg(panda_action_msg):
+    """Converts a panda_openai_sim FollowJointTrajectoryActionGoal action message
+    into a
+    :control_msgs:`control_msgs/FollowJointTrajectoryGoal
+    <html/action/FollowJointTrajectory.html>` action message.
+
+    Parameters
+    ----------
+    panda_action_msg : panda_openai_sim.msg.FollowJointTrajectoryGoal
+        panda_openai_sim follow joint trajectory goal message.
+
+    Returns
+    -------
+    control_msgs.msg.FollowJointTrajectoryGoal
+        Control_msgs follow joint trajectory goal message
+    """
+
+    # Fill new control_msgs.msg.FollowJointTrajectoryGoal message
+    control_msgs_action_msg = control_msgs.FollowJointTrajectoryGoal()
+    control_msgs_action_msg.trajectory = panda_action_msg.trajectory
+    control_msgs_action_msg.goal_time_tolerance = panda_action_msg.goal_time_tolerance
+    control_msgs_action_msg.goal_tolerance = panda_action_msg.goal_tolerance
+    control_msgs_action_msg.path_tolerance = panda_action_msg.path_tolerance
+    return control_msgs_action_msg
 
 
 def joint_positions_2_follow_joint_trajectory_goal(joint_positions, time_from_start=1):
@@ -104,9 +132,9 @@ def joint_positions_2_follow_joint_trajectory_goal(joint_positions, time_from_st
 
 
 def model_state_msg_2_link_state_dict(link_state_msgs):
-    """Converts the a gazebo_msgs/ModelState message into a panda_state dictionary.
-    Contrary to the original ModelState message, in the model_state dictionary the
-    poses and twists are grouped per link/model.
+    """Converts the a :gazebo_msgs:`gazebo_msgs/ModelState <html/msg/ModelState.html>`
+    message into a panda_state dictionary. Contrary to the original ModelState message,
+    in the model_state dictionary the poses and twists are grouped per link/model.
 
     Parameters
     ----------
@@ -133,8 +161,8 @@ def model_state_msg_2_link_state_dict(link_state_msgs):
 
 
 def controller_list_array_2_dict(controller_list_msgs):
-    """Converts a controller_manager list_controllers message into a
-    controller information dictionary.
+    """Converts a :controller_manager_msgs:`Controller_manager/list_controllers
+    <html/srv/ListControllers.html>` message into a controller information dictionary.
 
     Parameters
     ----------
@@ -158,13 +186,14 @@ def controller_list_array_2_dict(controller_list_msgs):
 
 
 def pose_dict_2_pose_msg(pose_dict):
-    """Create a 'geometry_msgs.msg.Pose' message out of a panda_openai_sim pose dictionary
-    {x, y, z, rx, ry, rz, rw}.
+    """Create a :geometry_msgs:`geometry_msgs.msg.Pose<html/msg/Pose.html>` message out
+    of a panda_openai_sim pose dictionary ``{x, y, z, rx, ry, rz, rw}``.
 
     Parameters
     ----------
     pose_dict : dict
-        Dict containing the object position {x, y, z} and orientation {rx, ry, rz, rw}
+        Dict containing the object position ``{x, y, z}`` and orientation
+        ``{rx, ry, rz, rw}``
     """
 
     # Create pose message out of a panda_openai_sim pose dict
@@ -182,9 +211,8 @@ def pose_dict_2_pose_msg(pose_dict):
 
 
 def pose_msg_2_pose_dict(pose_msg):
-    """Create a panda_openai_sim pose dictionary {x, y, z, rx, ry, rz, rw} out of a
-    'geometry_msgs.msg.Pose' message.
-    .
+    """Create a panda_openai_sim pose dictionary ``{x, y, z, rx, ry, rz, rw}`` out of a
+    :geometry_msgs:`geometry_msgs.msg.Pose<html/msg/Pose.html>` message.
 
     Parameters
     ----------
@@ -240,7 +268,7 @@ def translate_actionclient_result_error_code(actionclient_retval):
 
 
 def translate_gripper_width_2_finger_joint_commands(input_dict):
-    """Translate any 'gripper_width' keys that are present in the action dictionary
+    """Translate any ``gripper_width`` keys that are present in the action dictionary
     into the corresponding finger joint control commands which are used by the
     controllers.
 
@@ -309,7 +337,8 @@ def lower_first_char(string):
     string
         The de-capitalized string.
 
-    .. note::
+    Note
+    ---------
         This function is not the exact opposite of the capitalize function of the
         standard library. For example, capitalize('abC') returns Abc rather than AbC.
     """
@@ -347,8 +376,8 @@ def list_2_human_text(input_list, seperator=",", end_seperator="&"):
     """Function converts a list of values into human readable sentence.
 
     Example:
-        Using this function a list of 4 items '[item1, item2, item3, item4]' becomes
-        'item2, item3 and item4'.
+        Using this function a list of 4 items ``[item1, item2, item3, item4]`` becomes
+        ``item2, item3 and item4``.
 
     Parameters
     ----------
@@ -361,7 +390,7 @@ def list_2_human_text(input_list, seperator=",", end_seperator="&"):
         A human readable string that can be printed.
     """
 
-    # Add spaces around seperators if not present
+    # Add spaces around separators if not present
     seperator = wrap_space_around(seperator)[1:]
     end_seperator = wrap_space_around(end_seperator)
 
@@ -437,15 +466,18 @@ def log_pose_dict(qpose, header="q_pose", level="DEBUG"):
 def split_dict(input_dict, *args):
     """Split a dictionary into smaller dictionaries based on the keys.
 
-    example:
+    Example
+    -----------
+
     .. code-block:: python
+
         split_dict_list = split_dict(input_dict,["first_dict_key1","first_dict_key2"],
         ["second_dict_key1", "second_dict_key2"])
 
     Parameters
     ----------
-    input_dict : [type]
-        [description]
+    input_dict : dict
+        Input dictionary.
     *args : list
         Lists containing the keys you want to have in the successive dictionaries.
 
@@ -465,7 +497,7 @@ def split_dict(input_dict, *args):
 
 def split_bounds_dict(bounds_dict):
     """Splits the bounding region dictionary into two separate bounding dictionaries,
-    one for the ee_pose and one fore the joint_pose.
+    one for the ``ee_pose`` and one fore the ``joint_pose``.
 
     Parameters
     ----------
@@ -504,8 +536,8 @@ def split_bounds_dict(bounds_dict):
 
 
 def split_pose_dict(pose_dict):
-    """Splits a pose dictionary into two separate pose dictionaries, one for the ee_pose
-     and one fore the joint_pose.
+    """Splits a pose dictionary into two separate pose dictionaries, one for the
+    ``ee_pose`` and one fore the ``joint_pose``.
 
     Parameters
     ----------
@@ -574,7 +606,7 @@ def dict_clean(input_dict):
 
 
 def get_unique_list(input_list):
-    """Removes non-unique items from a list
+    """Removes non-unique items from a list.
 
     Parameters
     ----------
@@ -722,7 +754,7 @@ def has_invalid_type(variable, variable_types, items_types=None, depth=0):
 
 def contains_keys(input_dict, required_keys, exclusive=True):
     """Function used to check if a dictionary contains the required keys. If the
-    'required_keys' argument contains a nested list it checks whether at least one of
+    ``required_keys`` argument contains a nested list it checks whether at least one of
     the nested_list elements is present.
 
     Parameters
@@ -814,8 +846,8 @@ def has_invalid_value(variable, valid_values):
 # Other functions ###############################
 #################################################
 def find_gazebo_model_path(model_name, model_folder_path, extension=""):
-    """Finds the path of the sdf or urdf file that belongs to a given 'model_name'.
-    This is done by searching in the 'panda_openai_sim' models folder.
+    """Finds the path of the ``sdf`` or ``urdf`` file that belongs to a given
+    ``model_name``. This is done by searching in the ``model_folder_path`` folder.
 
     Parameters
     ----------
@@ -824,13 +856,14 @@ def find_gazebo_model_path(model_name, model_folder_path, extension=""):
     model_folder_path : str
         The path of the folder that contains the gazebo models.
     extension : str, optional
-        The model path extension, by default "".
+        The model path extension, by default ``""``.
 
     Returns
     -------
     str, str
-        The path where the 'sdf' or 'urdf' model file can be found and the extension of
-        the model file. If not file was found the model file path is returned empty.
+        The path where the ``sdf`` or ``urdf`` model file can be found and the
+        extension of the model file. If not file was found the model file path is
+        returned empty.
     """
 
     # Add dot to extension if needed
@@ -900,7 +933,7 @@ def action_server_exists(topic_name):
     Returns
     -------
     bool
-        Bool specifying whether the action service exists.
+        Boolean specifying whether the action service exists.
     """
 
     # Strip action server specific topics from topic name

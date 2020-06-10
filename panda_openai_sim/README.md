@@ -28,9 +28,9 @@ for _ in range(1000):
 env.close()
 ```
 
-For this to work you must run the simulated Panda robot. After you have
+For this to work, you must run the simulated Panda robot. After you have
 successfully build the `panda_openai_sim` ROS package and installed all the dependencies
-you can run the simulation using the following ros command:
+you can run the simulation using the following ROS command:
 
 ```bash
 roslaunch panda_openai_sim start.launch

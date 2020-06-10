@@ -21,8 +21,15 @@ from panda_openai_sim.exceptions import InputMessageInvalidError
 
 # ROS python imports
 import rospy
-import moveit_commander
-from moveit_commander.exception import MoveItCommanderException
+
+try:  # TODO: Remove when moveit is released for python 3 (ROS Noetic)
+    import moveit_commander
+except ImportError:
+    pass
+try:  # TODO: Remove when moveit is released for python 3 (ROS Noetic)
+    from moveit_commander.exception import MoveItCommanderException
+except ImportError:
+    pass
 from rospy.exceptions import ROSException
 
 # ROS msgs and srvs
@@ -90,16 +97,17 @@ class PandaMoveitPlannerServer(object):
         ----------
         arm_move_group : str, optional
             The name of the move group you want to use for controlling the Panda arm,
-            by default "panda_arm".
+            by default panda_arm.
         arm_ee_link : str, optional
             The end effector you want moveit to use when controlling
-            the Panda arm by default "panda_link8".
+            the Panda arm by default panda_link8.
         hand_move_group : str, optional
             The name of the move group you want to use for controlling the Panda
-            hand, by default "hand".
+            hand, by default hand.
         create_all_services : bool, optional
             Specifies whether we want to create all the available services or only the
-            ones that are crucial for the panda_openai_sim package, by default False.
+            ones that are crucial for the panda_openai_sim package, by default
+            False.
         """
 
         # Create class attributes
@@ -296,7 +304,7 @@ class PandaMoveitPlannerServer(object):
 
         Returns
         -------
-        Bool
+        bool
             Boolean specifying whether the link exists.
         """
         return link_name in self.robot.get_link_names()
@@ -308,12 +316,12 @@ class PandaMoveitPlannerServer(object):
         ----------
         control_group : str, optional
             The robot control group for which you want to execute the control. Options
-            are "arm" or "hand" or "both, by default "both".
+            are ``arm`` or ``hand`` or ``both``, by default both.
         Returns
         -------
         list
             List specifying whether the arm and/or hand execution was successfull. If
-            control_group == "both" then ["arm_success", "hand_success"].
+            ``control_group == "both"`` then ``["arm_success", "hand_success"]``.
         """
 
         # Plan and execute
@@ -356,14 +364,14 @@ class PandaMoveitPlannerServer(object):
             The service input message we want to validate.
         control_group : str, optional
             The robot control group for which you want to execute the control. Options
-            are "arm" or "hand" or "both, by default "both".
+            are ``arm`` or ``hand`` or ``both``, by default both.
         verbose : bool
-            Bool specifying whether you want to send a warning message to the ROS
+            Boolean specifying whether you want to send a warning message to the ROS
             logger.
 
         Returns
         -------
-        Dict
+        dict
             Dictionary that contains the 'moveit_commander' arm and hand joint
             position commands. Grouped by control group.
 
@@ -1095,8 +1103,8 @@ class PandaMoveitPlannerServer(object):
                     rospy.logwarn(
                         "Joint limits ignored as the the "
                         "'panda_openai_sim.msg.JointLimits' field of the "
-                        "'panda_openai_sim.srv.GetRandomJointPositionsRequest' contains "
-                        "%s %s. Valid values are %s."
+                        "'panda_openai_sim.srv.GetRandomJointPositionsRequest' "
+                        "contains %s %s. Valid values are %s."
                         % (
                             "an invalid joint name"
                             if len(invalid_names) == 1

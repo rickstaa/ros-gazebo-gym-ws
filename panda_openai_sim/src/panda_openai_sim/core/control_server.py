@@ -23,6 +23,7 @@ from panda_openai_sim.functions import (
     get_duplicate_list,
     translate_actionclient_result_error_code,
     list_2_human_text,
+    panda_action_msg_2_control_msgs_action_msg,
 )
 from panda_openai_sim.exceptions import InputMessageInvalidError
 from panda_openai_sim.core import GroupPublisher
@@ -139,7 +140,7 @@ class PandaControlServer(object):
         autofill_traj_positions=False,
         connection_timeout=10,
     ):
-        """Initializes the PandaControlServer object
+        """Initializes the PandaControlServer object.
 
         Parameters
         ----------
@@ -602,35 +603,10 @@ class PandaControlServer(object):
     ###############################################
     # Panda control member functions ##############
     ###############################################
-    def _panda_action_msg_2_control_msgs_action_msg(self, panda_action_msg):
-        """Converts a panda_openai_sim FollowJointTrajectoryActionGoal action message
-        into a control_msgs FollowJointTrajectoryGoal action message.
-
-        Parameters
-        ----------
-        panda_action_msg : panda_openai_sim.msg.FollowJointTrajectoryGoal
-            panda_openai_sim follow joint trajectory goal message.
-
-        Returns
-        -------
-        control_msgs.msg.FollowJointTrajectoryGoal
-            Control_msgs follow joint trajectory goal message
-        """
-
-        # Fill new control_msgs.msg.FollowJointTrajectoryGoal message
-        control_msgs_action_msg = control_msgs.FollowJointTrajectoryGoal()
-        control_msgs_action_msg.trajectory = panda_action_msg.trajectory
-        control_msgs_action_msg.goal_time_tolerance = (
-            panda_action_msg.goal_time_tolerance
-        )
-        control_msgs_action_msg.goal_tolerance = panda_action_msg.goal_tolerance
-        control_msgs_action_msg.path_tolerance = panda_action_msg.path_tolerance
-        return control_msgs_action_msg
-
     def _init_action_servers_fb_msgs(self):
-        """Initiate the 'panda_control_server/panda_arm/follow_joint_trajectory' and
-        'panda_control_server/panda_hand/follow_joint_trajectory' feedback messages with
-        the current robot states.
+        """Initiate the ``panda_control_server/panda_arm/follow_joint_trajectory`` and
+        ``panda_control_server/panda_hand/follow_joint_trajectory`` feedback messages
+        with the current robot states.
         """
 
         # Create header
@@ -669,10 +645,10 @@ class PandaControlServer(object):
 
     def _get_combined_action_server_fb_msg(self):
         """Combine the action server feedback messages from the original
-        'panda_arm_controller/follow_joint_trajectory' and
-        'panda_hand_controller/follow_joint_trajectory' action servers so that they can
-        be used as a feedback message to the
-        'panda_control_server/follow_joint_trajectory' wrapper action server.
+        ``panda_arm_controller/follow_joint_trajectory`` and
+        ``panda_hand_controller/follow_joint_trajectory`` action servers so that they
+        can be used as a feedback message to the
+        ``panda_control_server/follow_joint_trajectory`` wrapper action server.
 
         Returns
         -------
@@ -1018,7 +994,7 @@ class PandaControlServer(object):
         ----------
         control_type : str
             The type of control that is being executed and on which we should wait.
-            Options are 'joint_effort_control' and 'joint_position_control'.
+            Options are ``joint_effort_control`` and ``joint_position_control``.
         control_group : str, optional
             The control group  for which the control is being performed, defaults to
             "both".
@@ -1208,10 +1184,12 @@ class PandaControlServer(object):
         return True
 
     def _create_traj_action_server_msg(self, input_msg, control_group, verbose=False):
-        """Converts the panda_openai_sim.msg.FollowJointTrajectoryGoal message that is
-        received by the 'panda_control_server' follow joint trajectory wrapper action
-        servers into the right format for the origina `panda_arm_controller` and
-        'panda_hand_controller'  follow joint trajectory action servers.
+        """Converts the ``panda_openai_sim.msg.FollowJointTrajectoryGoal`` message that
+        is received by the ``panda_control_server`` follow joint trajectory wrapper
+        action servers into the right format for the original ``panda_arm_controller``
+        and ``panda_hand_controller``
+        `follow_joint_trajectory <https://wiki.ros.org/joint_trajectory_action/>`_
+        action servers.
 
         Parameters
         ----------
@@ -1219,16 +1197,17 @@ class PandaControlServer(object):
             The service input message we want to validate.
         control_type : str
             The type of control that is being executed and on which we should wait.
-            Options are 'joint_effort_control' and 'joint_position_control'.
+            Options are ``joint_effort_control`` and ``joint_position_control``.
         verbose : bool
-            Bool specifying whether you want to send a warning message to the ROS
+            Boolean specifying whether you want to send a warning message to the ROS
             logger.
 
         Returns
         -------
         dict
             A dictionary containing the arm and hand panda_arm_controller
-            'control_msgs.msg.FollowJointTrajectoryGoal' messages.
+            :control_msgs:`control_msgs.msg.FollowJointTrajectoryGoal
+            <html/action/FollowJointTrajectory.html>` messages.
 
         Raises
         ----------
@@ -1266,8 +1245,8 @@ class PandaControlServer(object):
 
             # Throw error if controlled joints could not be retrieved
             logwarn_message = (
-                "The joint trajectory publisher messages could not be created as the "
-                "'%' are not initialized." % (self._traj_controllers)
+                "The joint trajectory publisher message could not be created as the "
+                "'%s' are not initialized." % (self._traj_controllers)
             )
             if verbose:
                 rospy.logwarn(logwarn_message)
@@ -1835,12 +1814,8 @@ class PandaControlServer(object):
 
             # Return new action server messages
             return {
-                "arm": self._panda_action_msg_2_control_msgs_action_msg(
-                    arm_control_msg
-                ),
-                "hand": self._panda_action_msg_2_control_msgs_action_msg(
-                    hand_control_msg
-                ),
+                "arm": panda_action_msg_2_control_msgs_action_msg(arm_control_msg),
+                "hand": panda_action_msg_2_control_msgs_action_msg(hand_control_msg),
             }
 
         else:  # If joints were specified
@@ -2365,10 +2340,10 @@ class PandaControlServer(object):
 
                     # Return new action server messages
                     return {
-                        "arm": self._panda_action_msg_2_control_msgs_action_msg(
+                        "arm": panda_action_msg_2_control_msgs_action_msg(
                             arm_control_msg
                         ),
-                        "hand": self._panda_action_msg_2_control_msgs_action_msg(
+                        "hand": panda_action_msg_2_control_msgs_action_msg(
                             hand_control_msg
                         ),
                     }
@@ -2386,17 +2361,17 @@ class PandaControlServer(object):
             The service input message we want to validate.
         control_type : str
             The type of control that is being executed and on which we should wait.
-            Options are 'joint_effort_control' and 'joint_position_control'.
+            Options are ``joint_effort_control`` and ``joint_position_control``.
         control_group : str
-            The robot control group which is being controlled. Options are "arm",
-            "hand" or "both".
+            The robot control group which is being controlled. Options are ``arm``,
+            ``hand`` or ``both``.
         verbose : bool
-            Bool specifying whether you want to send a warning message to the ROS
+            Boolean specifying whether you want to send a warning message to the ROS
             logger.
 
         Returns
         -------
-        (Dict, Dict)
+        (dict, dict)
             Two dictionaries. The first dictionary contains the Panda arm and hand
             control commands in the order which is are required by the publishers.
             The second dictionary contains the joints that are being controlled.
@@ -2404,7 +2379,7 @@ class PandaControlServer(object):
         Raises
         ----------
         panda_openai_sim.exceptions.InputMessageInvalidError
-            Raised when the input_msg could not be converted into 'moveit_commander'
+            Raised when the input_msg could not be converted into ``moveit_commander``
             arm hand joint position/effort commands.
         """
 
@@ -2459,7 +2434,7 @@ class PandaControlServer(object):
 
             # Throw error if controlled joints could not be retrieved
             logwarn_message = (
-                "The %s publisher messages could not be created as the '%s' '%s' "
+                "The '%s' publisher messages could not be created as the '%s' %s "
                 "are not initialized."
                 % (
                     "effort control"
@@ -2468,6 +2443,9 @@ class PandaControlServer(object):
                     self._effort_controllers
                     if control_type == "joint_effort_control"
                     else self._position_controllers,
+                    "joint effort controllers"
+                    if control_type == "joint_effort_control"
+                    else "joint position controllers",
                 )
             )
             if verbose:
@@ -2783,21 +2761,21 @@ class PandaControlServer(object):
         ----------
         control_type : str
             The type of control that is being executed and on which we should wait.
-            Options are 'joint_effort_control' and 'joint_position_control'.
+            Options are ``joint_effort_control`` and ``joint_position_control``.
         verbose : bool
-            Bool specifying whether you want to send a warning message to the ROS
+            Boolean specifying whether you want to send a warning message to the ROS
             logger.
 
         Returns
         -------
         dict
             A dictionary containing the joints that are controlled when using a given
-            control type, grouped by control group ("arm" and "hand).
+            control type, grouped by control group (``arm`` and ``hand``).
 
         Raises
         ----------
         panda_openai_sim.exceptions.InputMessageInvalidError
-            Raised when the input_msg could not be converted into 'moveit_commander'
+            Raised when the input_msg could not be converted into ``moveit_commander``
             arm hand joint position commands.
         """
 
@@ -4033,7 +4011,7 @@ class PandaControlServer(object):
         Returns
         -------
         panda_openai_sim.srv.ListControlTypeResponse
-            Service response. Options: 'joint_group_control' and 'joint_control'.
+            Service response. Options: ``joint_group_control`` and ``joint_control``.
         """
 
         # Check if verbose was set to True
@@ -4072,7 +4050,7 @@ class PandaControlServer(object):
         Returns
         -------
         panda_openai_sim.srv.GetControlledJointsResponse
-            The response message that contains the 'controlled_joints' list that
+            The response message that contains the ``controlled_joints`` list that
             specifies the joints that are controlled.
         """
 
@@ -4429,8 +4407,9 @@ class PandaControlServer(object):
 
     def _arm_joint_traj_feedback_cb(self, feedback):
         """Relays the feedback messages from the original
-        'panda_arm_controller/follow_joint_trajectory' server to our to our
-        'panda_control_server/panda_arm/follow_joint_trajectory' wrapper action server.
+        ``panda_arm_controller/follow_joint_trajectory`` server to our to our
+        ``panda_control_server/panda_arm/follow_joint_trajectory`` wrapper action
+        server.
 
         Parameters
         ----------
@@ -4457,8 +4436,9 @@ class PandaControlServer(object):
 
     def _hand_joint_traj_feedback_cb(self, feedback):
         """Relays the feedback messages from the original
-        'panda_hand_controller/follow_joint_trajectory' server to our to our
-        'panda_control_server/panda_hand/follow_joint_trajectory' wrapper action server.
+        ``panda_hand_controller/follow_joint_trajectory`` server to our to our
+        ``panda_control_server/panda_hand/follow_joint_trajectory`` wrapper action
+        server.
 
         Parameters
         ----------
@@ -4485,8 +4465,8 @@ class PandaControlServer(object):
 
     def _arm_joint_traj_preempt_cb(self):
         """Relays the preempt request made to the
-        'panda_control_server/panda_arm/follow_joint_trajectory' action server wrapper
-        to the original 'panda_arm_controller/follow_joint_trajectory' action server.
+        ``panda_control_server/panda_arm/follow_joint_trajectory`` action server wrapper
+        to the original ``panda_arm_controller/follow_joint_trajectory`` action server.
         """
 
         # Stop panda_arm_controller action server
@@ -4496,8 +4476,9 @@ class PandaControlServer(object):
 
     def _hand_joint_traj_preempt_cb(self):
         """Relays the preempt request made to the
-        'panda_control_server/panda_hand/follow_joint_trajectory' action server wrapper
-        to the original 'panda_hand_controller/follow_joint_trajectory' action server.
+        ``panda_control_server/panda_hand/follow_joint_trajectory`` action server
+        wrapper to the original ``panda_hand_controller/follow_joint_trajectory``
+        action server.
         """
 
         # Stop panda_hand_controller action server
@@ -4507,9 +4488,9 @@ class PandaControlServer(object):
 
     def _joint_traj_preempt_cb(self):
         """Relays the preempt request made to the
-        'panda_control_server/follow_joint_trajectory' action server wrapper
-        to the original 'panda_arm_controller/follow_joint_trajectory' and
-        'panda_hand_controller/follow_joint_trajectory' action servers.
+        ``panda_control_server/follow_joint_trajectory`` action server wrapper
+        to the original ``panda_arm_controller/follow_joint_trajectory`` and
+        ``panda_hand_controller/follow_joint_trajectory`` action servers.
         """
 
         # Stop panda_arm_controller and panda_hand_controller action servers
@@ -4517,29 +4498,3 @@ class PandaControlServer(object):
         self._hand_joint_traj_client.cancel_goal()
         self._joint_traj_as.set_preempted()
         self._full_joint_traj_control = False
-
-
-#################################################
-# Main script ###################################
-#################################################
-if __name__ == "__main__":
-
-    # Initiate ROS nodetypes
-    rospy.init_node("panda_control_server")
-
-    # Get ROS parameters
-    try:  # Check end effector
-        use_group_controller = rospy.get_param("~use_group_controller")
-    except KeyError:
-        use_group_controller = False
-    try:  # Auto fill joint traj position field if left empty
-        autofill_traj_positions = rospy.get_param("~autofill_traj_positions")
-    except KeyError:
-        autofill_traj_positions = False
-
-    # Start control server
-    control_server = PandaControlServer(
-        use_group_controller=use_group_controller,
-        autofill_traj_positions=autofill_traj_positions,
-    )
-    rospy.spin()  # Maintain the service open.

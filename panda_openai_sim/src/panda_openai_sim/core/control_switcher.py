@@ -1,12 +1,18 @@
 """This class is responsible for switching the control type that is used for
-controlling the Panda Robot robot 'arm' and 'hand'. It serves as a wrapper around the
-services created by the ROS 'controller_manager' class. It allows the user to switch
-between the following control types:
-    - joint_trajectory_control
-    - joint_position_control
-    - joint_effort_control
-    - joint_group_position_control
-    - joint_group_effort_control
+controlling the Panda Robot robot ``arm`` and ``hand``. It serves as a wrapper around
+the services created by the ROS
+`controller_manager <https://wiki.ros.org/controller_manager>`_ class. It allows the
+user to switch between the following control types:
+
+* `joint_trajectory_control <https://wiki.ros.org/joint_trajectory_controller/>`_
+
+* `joint_position_control <https://wiki.ros.org/position_controllers/>`_
+
+* `joint_effort_control <https://wiki.ros.org/effort_controllers/>`_
+
+* `joint_group_position_control <https://wiki.ros.org/ros_controllers/>`_
+
+* `joint_group_effort_control <https://wiki.ros.org/ros_controllers/>`_
 """
 
 # Main python imports
@@ -86,7 +92,7 @@ class PandaControlSwitcher(object):
     Attributes
     ----------
     verbose : bool
-        Bool specifying whether we want to display log messages during switching.
+        Boolean specifying whether we want to display log messages during switching.
 
     Methods
     -------
@@ -311,15 +317,15 @@ class PandaControlSwitcher(object):
             are 'hand' or 'arm'.
         control_type : str
             The robot control type you want to switch to for the given 'control_group'.
-            Options are: 'joint_trajectory_control', 'joint_position_control',
-            'joint_effort_control', 'joint_group_position_control' and
-            'joint_group_effort_control'.
+            Options are: ``joint_trajectory_control``, ``joint_position_control``,
+            ``joint_effort_control``, ``joint_group_position_control`` and
+            ``joint_group_effort_control``.
         load_controllers : bool
             Try to load the required controllers for a given control_type if they are
             not yet loaded.
         timeout : int, optional
             The timout for switching to a given controller, by default
-            self._controller_switch_timeout.
+            :py:attr:`self._controller_switch_timeout`.
         verbose : bool, optional
             Whether to display debug log messages, defaults to verbose value set during
             the class initiation.
@@ -572,7 +578,7 @@ class ControllerSwitcherResponse:
         success : bool, optional
             Whether the switch operation was successfull, by default True.
         prev_control_type : str, optional
-            The previous used control type, by default "".
+            The previous used control type, by default ``""``.
         """
 
         # Set class attributes

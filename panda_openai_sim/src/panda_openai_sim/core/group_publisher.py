@@ -22,8 +22,8 @@ class GroupPublisher(list):
         """
         Parameters
         ----------
-        iterable : iterable, optional
-            New list initialized from iterable items, by default [].
+        iterable : list, optional
+            New list initialized from iterable items, by default ``[]``.
 
         Raises
         ------
@@ -58,6 +58,7 @@ class GroupPublisher(list):
         Raises
         ------
         ValueError
+            If something went wrong during publishing.
         """
 
         # Validate input messages

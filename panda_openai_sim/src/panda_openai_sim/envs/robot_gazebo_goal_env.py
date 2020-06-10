@@ -1,7 +1,5 @@
-"""This Robot Gazebo Goal environment class is responsible for creating the link
-between the Gazebo simulator and the openAI package. It is different from the
-RobotGazebo env as here the gym.GoalEnv is used instead of the gym.Env. This is done
-since the goal of the robot task now is changing with each episode.
+"""This module contains the Robot Gazebo Goal environment class that is responsible
+for creating the link between the Gazebo simulator and the openAI package.
 """
 
 # Main python imports
@@ -102,7 +100,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         reset_controls : bool
             Boolean specifying whether to reset the controllers when the simulation
             is reset.
-        reset_control_list : np.array
+        reset_control_list : numpy.ndarray
             Names of the controllers of the robot.
         """
 
@@ -302,7 +300,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         model_name : str
             The model type (The name of the xml file you want to use).
         pose : geometry_msgs.msg.Pose, optional
-            The pose of the model, by default :class:`geometry_msgs.msg.Pose`.
+            The pose of the model, by default :py:class:`geometry_msgs.msg.Pose`.
 
         Returns
         -------
@@ -426,7 +424,8 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         pose : geometry_msgs.Pose
             The pose you want the object to have.
         twist : geometry_msgs.Twist, optional
-            The twist you want the object to have, by default Twist().
+            The twist you want the object to have, by default
+            :geometry_msgs:`Twist()<html/msg/Twist.html>`.
 
         Returns
         -------
@@ -476,7 +475,7 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
 
         Parameters
         ----------
-        reward : np.float32
+        reward : :obj:`numpy.float32`
             The episode reward.
         episode_number : int, optional
             The episode number, by default 1.
@@ -607,10 +606,11 @@ class RobotGazeboGoalEnv(gym.GoalEnv):
         Returns
         -------
         bool
-            Bool specifying whether the episode is done (e.i. distance to the goal is
+            Boolean specifying whether the episode is done (e.i. distance to the goal is
             within the distance threshold, robot has fallen etc.).
 
-        .. note::
+        Note
+        -----------
             The reason the name was changed to `_is_done` is twofold. First, with the
             use of an additional wrapper function, this makes the environment compatible
             with both packages that expect the openai :py:mod:`gym` package structure as

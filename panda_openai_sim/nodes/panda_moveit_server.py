@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 """This node sets up a number of services that can be used to control
-the Panda Emika Franka robot.
+the Panda Emika Franka robot using the Moveit framework.
+
+Source code
+----------------------------
+.. literalinclude:: ../../../../panda_openai_sim/nodes/panda_moveit_server.py
+   :language: python
+   :linenos:
+   :lines: 13-
 """
 
 # Import ROS packages

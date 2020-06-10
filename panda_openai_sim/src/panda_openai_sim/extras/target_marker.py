@@ -1,6 +1,7 @@
-﻿"""Class used for displaying a gasp target goal marker in rviz. This class overloads the "
-visualization_msgs.msgs.Marker class in order to pre-initialize some of its attributes.
-To visualize the marker you can publish it on the 'panda_openai_sim/current_goal' topic.
+﻿"""Class used for displaying a gasp target goal marker in rviz. This class overloads
+the :visualization_msgs:`visualization_msgs.msgs.Marker <html/msg/Marker.html>`
+class in order to pre-initialize some of its attributes. To visualize the marker you
+can publish it on the ``panda_openai_sim/current_goal`` topic.
 """
 
 # Main python 2/3 compatibility imports
@@ -32,7 +33,7 @@ class TargetMarker(Marker):
     ----------
     id : int
         The marker object id.
-    type : string
+    type : str
         The marker type.
     action : float
         The marker message action (add or remove).
@@ -45,15 +46,15 @@ class TargetMarker(Marker):
     lifetime : duration
         The lifetime duration.
     frame_locked : bool
-        Bool specifying whether the marker frame is locked to the world.
+        Boolean specifying whether the marker frame is locked to the world.
     point : geometry_msgs.Point
         The marker points.
-    string : string
+    string : str
         A description.
-    mesh_resource : string
+    mesh_resource : str
         Marker mess location.
     mesh_use_embedded_materials : bool
-        Bool specifying whether we want to use a mesh.
+        Boolean specifying whether we want to use a mesh.
     """
 
     def __init__(self, *args, **kwds):

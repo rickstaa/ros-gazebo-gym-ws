@@ -1,5 +1,5 @@
-"""This robot environment contains all the functions which are responsible
-for interaction with the robot (Control and Sensors).
+"""This module contains the Robot environment class which is responsible
+for interaction with the Panda robot (Control and Sensors).
 """
 
 # Main python imports
@@ -136,19 +136,21 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
         Parameters
         ----------
         robot_EE_link : str, optional
-            Robot end effector link name, by default "panda_hand".
+            Robot end effector link name, by default panda_hand.
         robot_arm_control_type : str, optional
             The type of control you want to use for the robot arm. Options are
-            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
-            'joint_group_position_control', 'joint_group_effort_control' or 'ee_control'
-            , by default 'joint_position_control'.
+            ``joint_trajectory_control``, ``joint_position_control``,
+            ``joint_effort_control``, ``joint_group_position_control``,
+            ``joint_group_effort_control`` or ``ee_control``, by default
+            joint_position_control.
         robot_hand_control_type : str, optional
             The type of control you want to use for the robot hand. Options are
-            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
-            'joint_group_position_control', 'joint_group_effort_control' or 'ee_control'
-            , by default 'joint_position_control'.
+            ``joint_trajectory_control``, ``joint_position_control``,
+            ``joint_effort_control``, ``joint_group_position_control``,
+            ``joint_group_effort_control`` or ``ee_control``, by default
+            joint_position_control.
         robot_name_space : str, optional
-            Robot namespace, by default "".
+            Robot namespace, by default ``""``.
         reset_robot_pose : bool
             Boolean specifying whether to reset the robot pose when the simulation is
             reset.
@@ -157,7 +159,7 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
             is reset.
         reset_control_list : list, optional
             List containing the robot controllers you want to reset each time
-            the simulation is reset, by default [].
+            the simulation is reset, by default ``[]``.
         """
 
         # Environment initiation message
@@ -578,7 +580,7 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
 
         Returns
         -------
-        Boolean
+        bool
             Boolean specifying whether reset was successful.
         """
         self._check_all_sensors_ready()
@@ -694,7 +696,8 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
 
         Parameters
         ----------
-        ee_pose :  geometry_msgs.msg.Pose(Stamped), panda_openai_sim.msg.SetEePoseRequest,
+        ee_pose :  geometry_msgs.msg.Pose, panda_openai_sim.msg.SetEePoseRequest
+            The end effector pose.
         dict, list, tuple, int, float or numpy.ndarray
             A list or pose message containing the end effector position (x, y, z)
             and orientation (x, y, z, w).
@@ -889,8 +892,7 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
 
         Parameters
         ----------
-        joint_positions : panda_openai_sim.msg.SetJointPositionsRequest, dict, list,
-        tuple, int, float or numpy.ndarray
+        joint_positions : SetJointPositionsRequest, dict, list, float or numpy.ndarray
             The joint positions of each of the robot joints.
         wait : bool, optional
             Wait till the control has finished, by default False
@@ -1229,9 +1231,8 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
 
         Parameters
         ----------
-        joint_efforts : panda_openai_sim.SetJointEffortsRequest, dict, list, tuple, int,
-        float or numpy.ndarray
-            The joint efforts of each of the robot joints.
+        joint_efforts : SetJointEffortsRequest, dict, list, float or numpy.ndarray
+            The joint efforts of each of the robot joints. Can also be supplied as
         wait : bool, optional
             Wait till the control has finished, by default False
 

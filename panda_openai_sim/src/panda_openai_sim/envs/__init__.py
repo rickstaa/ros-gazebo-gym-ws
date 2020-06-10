@@ -1,4 +1,5 @@
-﻿"""Register Panda openai_ros gym environments.
+﻿"""Module that contains the Panda openai :gym:`gym <>` task, robot and Goal
+environments.
 """
 
 # Python 2 and 3:

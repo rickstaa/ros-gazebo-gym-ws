@@ -1,4 +1,4 @@
-"""Train a RL algorithm on the Panda robot of the 'panda_openai_sim' package using the
+"""Trains a RL algorithm on the Panda robot of the 'panda_openai_sim' package using the
 `stable_baselines <https://stable-baselines.readthedocs.io/en/master/index.html>`_
 `SAC <https://stable-baselines.readthedocs.io/en/master/modules/sac.html>`_ model
 class.

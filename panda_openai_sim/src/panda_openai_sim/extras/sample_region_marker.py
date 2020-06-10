@@ -1,8 +1,8 @@
-"""Class used for displaying the a sampling region in rviz. This class overloads "
-the visualization_msgs.msgs.Marker class in order to pre-initialize some of its "
-attributes. It further also adds the ability to specify the marker scale using x, y, z
-max and min values. To visualize the marker you can publish it on the
- 'panda_openai_sim/goal_region' topic.
+"""Class used for displaying the a sampling region in rviz. This class overloads
+the :visualization_msgs:`visualization_msgs.msgs.Marker <html/msg/Marker.html>`
+class in order to pre-initialize some of its attributes. It further also adds the
+ability to specify the marker scale using ``x``, ``y``, ``z`` max and min values. To
+visualize the marker you can publish it on the ``panda_openai_sim/goal_region`` topic.
 """
 
 # Main python 2/3 compatibility imports
@@ -46,7 +46,7 @@ class SampleRegionMarker(Marker):
         The max z position of the marker.
     id : int
         The marker object id.
-    type : string
+    type : str
         The marker type.
     action : float
         The marker message action (add or remove).
@@ -59,15 +59,15 @@ class SampleRegionMarker(Marker):
     lifetime : duration
         The lifetime duration.
     frame_locked : bool
-        Bool specifying whether the marker frame is locked to the world.
+        Boolean specifying whether the marker frame is locked to the world.
     point : geometry_msgs.Point
         The marker points.
-    string : string
+    string : str
         A description.
-    mesh_resource : string
+    mesh_resource : str
         Marker mess location.
     mesh_use_embedded_materials : bool
-        Bool specifying whether we want to use a mesh.
+        Boolean specifying whether we want to use a mesh.
     """
 
     def __init__(

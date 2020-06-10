@@ -1,4 +1,4 @@
-"""Several functions that are used in the 'panda_training' scripts."""
+"""Several functions that are used in the :panda_training:`panda_training <>` scripts."""
 
 # Main python imports
 import time
@@ -79,8 +79,8 @@ def get_unique_file_suffix(folder_path=None, prefix_type="timestamp"):
     folder_path : str, optional
         The folder in which you want to save the model, by default None.
     prefix_type : str, optional
-        The type of suffix you want to use i.e. 'timestamp' or 'number', by default
-        "timestamp".
+        The type of suffix you want to use i.e. ``timestamp`` or ``number``, by default
+        timestamp.
 
     Raises
     ------
@@ -133,7 +133,7 @@ def move_all_files_in_dir(srcDir, dstDir):
 
     Parameters
     ----------
-    srcDir : st
+    srcDir : str
         The path of the source directory.
     dstDir : str
         The path of the destination directory.

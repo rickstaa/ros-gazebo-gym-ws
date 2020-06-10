@@ -152,7 +152,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         Parameters
         ----------
         reward_type : str, optional
-            The reward type, i.e. sparse or dense, by default None.
+            The reward type, i.e. ``sparse`` or ``dense``, by default None.
         distance_threshold : float, optional
             The threshold after which a goal is considered achieved, by default None.
         has_object : bool, optional
@@ -170,26 +170,26 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             default None.
         target_bounds : dict, optional
             A dictionary with the bounds from which the target is sampled i.e.
-            {x_min, y_min, z_min, x_max, y_max, x_max}, by default None.
+            ``{x_min, y_min, z_min, x_max, y_max, x_max}``, by default None.
         target_sampling_strategy : str, optional
             Whether the target bounds from which we sample the target goal position are
             relative to the global frame 'global' or relative to the current
             end-effector pose 'local', by default None.
         init_pose : dict, optional
             A dictionary of names and values that define the initial configuration i.e.
-            {x, y, z, rx, ry, rz, rw, panda_finger_joint1, panda_fingerjoint_2}, by
+            ``{x, y, z, rx, ry, rz, rw, panda_finger_joint1, panda_fingerjoint_2}``, by
             default None.
         init_pose_bounds : dict, optional
             A dictionary with the bounds from which the initial robot pose is sampled
-            i.e. {x_min, y_min, z_min, x_max, y_max, x_max}, by default None.
+            i.e. ``{x_min, y_min, z_min, x_max, y_max, x_max}``, by default None.
         init_obj_pose : dict, optional
             A dictionary that contains the initial object pose i.e.
-            {x, y, z, rx, ry, rz, rw}, by default None. The object will be spawned
+            ``{x, y, z, rx, ry, rz, rw}``, by default None. The object will be spawned
             relative to this pose in a region defined by the obj_bounds.
         obj_bounds : dict, optional
             A dictionary in which the bounds for sampling the object
-            positions is defined {x_min, y_min, x_max, y_max}, by default None. These
-            bounds are relative to the init_obj_pose.
+            positions is defined ``{x_min, y_min, x_max, y_max}``, by default None.
+            These bounds are relative to the init_obj_pose.
         n_actions : int, optional
             The size of the action space you want to use. When the 'action_space_joints'
             variable is supplied this variable is ignored and the length of the
@@ -206,14 +206,20 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             None.
         robot_arm_control_type : str, optional
             The type of control you want to use for the robot arm. Options are
-            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
-            'joint_group_position_control', 'joint_group_effort_control' or 'ee_control'
-            , by default None.
+            ``joint_trajectory_control``, ``joint_position_control``,
+            ``joint_effort_control``, ``joint_group_position_control``,
+            ``joint_group_effort_control`` or ``ee_control``, by default None.
         robot_hand_control_type : str, optional
             The type of control you want to use for the robot hand. Options are
-            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
-            'joint_group_position_control', 'joint_group_effort_control' or 'ee_control'
-            , by default None.
+            ``joint_trajectory_control``, ``joint_position_control``,
+            ``joint_effort_control``, ``joint_group_position_control``,
+            ``joint_group_effort_control`` or ``ee_control``, by default None.
+
+        Note
+        -------
+            If the default value for a argument is set to None this means the default
+            values are used. These values can be set in the
+            :env_config:`env_config.yaml <>` file.
         """
 
         # Log message
@@ -546,11 +552,11 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         observations : dict
             Dictionary containing the observations
         done : bool
-            Bool specifying whether an episode is terminated.
+            Boolean specifying whether an episode is terminated.
 
         Returns
         -------
-        np.float32
+        :obj:`numpy.float32`
             Reward that is received by the agent.
         """
 
@@ -864,7 +870,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         Returns
         -------
         bool
-            Bool specifying whether the episode is done (e.i. distance to the goal is
+            Boolean specifying whether the episode is done (e.i. distance to the goal is
             within the distance threshold, robot has fallen etc.).
         """
 
@@ -1058,7 +1064,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
 
         Returns
         -------
-        Boolean
+        bool
             Boolean specifying whether reset was successful.
         """
 
@@ -1270,7 +1276,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
 
         Returns
         -------
-        np.array
+        numpy.array
            Robot Positions, Robot Velocities
         """
 
@@ -1289,14 +1295,14 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
 
         Parameters
         ----------
-        goal_a : np.array
+        goal_a : numpy.ndarray
             List containing a gripper and object pose.
-        goal_b : np.array
+        goal_b : numpy.ndarray
             List containing a gripper and object pose.
 
         Returns
         -------
-        np.float32
+        numpyp.float32
             Perpendicular distance to the goal.
         """
         assert goal_a.shape == goal_b.shape
@@ -1308,9 +1314,9 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
 
         Parameters
         ----------
-        ee_pos : np.array
+        ee_pos : numpy.ndarray
             Gripper position.
-        object_pos : np.array
+        object_pos : numpy.ndarray
             Object position.
 
         Returns
@@ -1802,21 +1808,21 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             default None.
         target_bounds : dict
             A dictionary with the bounds from which the target is sampled i.e.
-            {x_min, y_min, z_min, x_max, y_max, x_max}.
+            ``{x_min, y_min, z_min, x_max, y_max, x_max}``.
         target_sampling_strategy : str
             Whether the target bounds from which we sample the target goal position are
             relative to the global frame 'global' or relative to the current
             end-effector pose 'local'.
         init_pose : dict
             A dictionary of names and values that define the initial configuration i.e.
-            {x, y, z, rx, ry, rz, rw, panda_finger_joint1, panda_fingerjoint_2}, by
+            ``{x, y, z, rx, ry, rz, rw, panda_finger_joint1, panda_fingerjoint_2}``, by
             default None.
         init_pose_bounds : dict
             A dictionary with the bounds from which the initial robot pose is sampled
-            i.e. {x_min, y_min, z_min, x_max, y_max, x_max}.
+            i.e. ``{x_min, y_min, z_min, x_max, y_max, x_max}``.
         init_obj_pose : dict
             A dictionary that contains the initial object pose i.e.
-            {x, y, z, rx, ry, rz, rw}. The object will be spawned
+            ``{x, y, z, rx, ry, rz, rw}``. The object will be spawned
             relative to this pose in a region defined by the obj_bounds.
         obj_bounds : dict
             A dictionary in which the bounds for sampling the object
@@ -1837,14 +1843,14 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             to be equal to the length of the 'action_space_joints' list.
         robot_arm_control_type : str
             The type of control you want to use for the robot arm. Options are
-            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
-            'joint_group_position_control', 'joint_group_effort_control' or
-            'ee_control'.
+            ``joint_trajectory_control``, ``joint_position_control``,
+            ``joint_effort_control``, ``joint_group_position_control``,
+            ``joint_group_effort_control`` or ``ee_control``.
         robot_hand_control_type : str
             The type of control you want to use for the robot hand. Options are
-            'joint_trajectory_control', 'joint_position_control', 'joint_effort_control'
-            'joint_group_position_control', 'joint_group_effort_control' or
-            'ee_control'.
+            ``joint_trajectory_control``, ``joint_position_control``,
+            ``joint_effort_control``, ``joint_group_position_control``,
+            ``joint_group_effort_control`` or ``ee_control``.
         """
 
         # Overload configuration with input argument if supplied
@@ -1959,8 +1965,9 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
             )
 
     def _validate_action_space_joints(self):
-        """Checks whether the joints in the 'action_space_joints' arguments are valid. If
-        this is not the case a ROS error will be thrown and the node will be shutdown.
+        """Checks whether the joints in the ``action_space_joints`` arguments are valid.
+        If this is not the case a ROS error will be thrown and the node will be
+        shutdown.
         """
 
         # Validate if the number of action_space_joints is equal to the action space

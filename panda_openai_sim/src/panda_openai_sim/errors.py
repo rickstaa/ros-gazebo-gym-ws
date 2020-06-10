@@ -1,4 +1,4 @@
-"""A number of custom ROS errors that are used in the `panda_openai_sim` package."""
+"""Module containing several custom ROS errors."""
 
 
 # Main python imports
@@ -118,9 +118,10 @@ def arg_keys_error(arg_name, missing_keys=[], extra_keys=[], shutdown=True):
     arg_name : str
         The name of the argument.
     missing_keys : list, optional
-        The dictionary keys that were missing from the input argument, by default [].
+        The dictionary keys that were missing from the input argument, by default
+        ``[]``.
     extra_keys : list
-        The dictionary keys that were present but should not be, by default [].
+        The dictionary keys that were present but should not be, by default ``[]``.
     shutdown : bool, optional
         Whether to shutdown the ROS node after the error has been thrown, by default
         True.

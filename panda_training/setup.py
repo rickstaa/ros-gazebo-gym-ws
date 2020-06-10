@@ -23,11 +23,16 @@ from distutils.sysconfig import get_python_lib
 relative_site_packages = get_python_lib().split(sys.prefix + os.sep)[1]
 date_files_relative_path = os.path.join(relative_site_packages, "panda_openai_sim")
 
-# General setup.py parameters
-TF_MAX_VERSION = "1.15"  # NOTE: Currently the examples used tensorflow 1.
-
 # Package requirements
-requirements = ["numpy", "stable_baselines", "gym"]
+requirements = [
+    "tensorflow<=1.15",
+    "numpy",
+    "mpi4py",
+    "stable_baselines",
+    "cloudpickle<1.4.0",
+    "gym",
+    "rospkg",
+]
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -37,12 +42,28 @@ logger.setLevel(logging.INFO)
 #################################################
 # Setup functions ###############################
 #################################################
-def get_tf_dep():
+def get_tf_dep(tf_entry):
     """Check whether or not the Nvidia driver and GPUs are available and add the
-    corresponding Tensorflow dependency."""
+    corresponding Tensorflow dependency.
+
+    Parameters
+    ----------
+    tf_entry : str
+        The original tensorflow package entry.
+
+    Returns
+    -------
+    str
+        The right tensorflow package (GPU or normal)
+    """
 
     # Find the right tensorflow version to install
-    tf_dep = "tensorflow<={}".format(TF_MAX_VERSION)
+    tf_dep = tf_entry
+
+    # Retrieve requested tensorflow version
+    tf_dep_version = re.sub(r"[^=<>.0-9]", "", tf_dep)
+
+    # Check which tensorflow version is required
     try:
         gpus = (
             subprocess.check_output(
@@ -53,7 +74,7 @@ def get_tf_dep():
             .split("\n")[1:]
         )
         if len(gpus) > 0:
-            tf_dep = "tensorflow-gpu<={}".format(TF_MAX_VERSION)
+            tf_dep = "tensorflow-gpu{}".format(tf_dep_version)
         else:
             no_device_msg = (
                 "Found Nvidia device driver but no"
@@ -135,15 +156,27 @@ class InstallCmd(install, object):
         install.finalize_options(self)
 
     def run(self):
-        """Overload the :py:meth:`setuptools.command.install.install.run` method."""
+        """Overload the :py:meth:`setuptools.command.install.install.run` method.
+        To make sure the right version of tensorflow is installed GPU or CPU.
+        """
 
-        # Install Tensorflow dependency.
-        if any(["tensorflow" in item for item in self.distribution.install_requires]):
+        # Install the right tensorflow dependency (GPU or CPU)
+        tensorflow_entry = [
+            item
+            for item in self.distribution.install_requires
+            if (re.sub(r"[=<>.0-9]", "", item) in ["tensorflow", "tensorflow-gpu"])
+        ]
+        if tensorflow_entry:  # If tensorflow or tensorflow-gpu is in requirements
             if not self.docker and not self.sing:
-                tf_dep = get_tf_dep()
-                subprocess.Popen(
-                    [sys.executable, "-m", "pip", "install", tf_dep]
-                ).wait()
+
+                # Check if tensorflow GPU or CPU needs to be installed
+                tf_dep = get_tf_dep(tensorflow_entry[0])
+
+                # Change the tensorflow entry to the right version
+                self.distribution.install_requires = [
+                    item if "tensorflow" not in item else tf_dep
+                    for item in self.distribution.install_requires
+                ]
             else:
 
                 # If we're using a Docker or singularity container, the right
@@ -165,17 +198,12 @@ class InstallCmd(install, object):
 
 # Get current package version
 # NOTE: We use the version of the panda_openai_sim package.
+# Get current package version
 __version__ = re.sub(
     r"[^\d.]",
     "",
     open(
-        os.path.abspath(
-            os.path.join(
-                os.path.dirname(os.path.realpath(__file__)),
-                "..",
-                "panda_openai_sim/version.py",
-            )
-        )
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), "version.py")
     ).read(),
 )
 

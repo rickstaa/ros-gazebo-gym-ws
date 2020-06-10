@@ -123,7 +123,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES panda_openai_sim
-  CATKIN_DEPENDS rospy message_runtime actionlib actionlib_msgs std_msgs geometry_msgs trajectory_msgs sensor_msgs control_msgs openai_ros
+  CATKIN_DEPENDS rospy message_runtime actionlib actionlib_msgs std_msgs geometry_msgs trajectory_msgs sensor_msgs control_msgs openai_ros rviz
 #  DEPENDS system_lib
 )
 

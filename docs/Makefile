@@ -8,7 +8,7 @@ SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = panda_openai_sim
 SOURCEDIR     = source
 BUILDDIR      = build
-GH_PAGES_SOURCES = docs panda_openai_sim nodes scripts
+GH_PAGES_SOURCES = docs panda_openai_sim panda_training
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -32,7 +32,6 @@ gh-pages:
 	git add docs/build/html && \
 	git clean -ffxd && \
 	mv -fv docs/build/html/* ./ && \
-	touch .nojekyll && \
 	rm -rf $(GH_PAGES_SOURCES) && \
 	git add -A && \
 	git commit -m ":pencil: Generated gh-pages for `git log melodic-devel -1 --pretty=short --abbrev-commit`" && \

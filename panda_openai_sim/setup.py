@@ -71,7 +71,6 @@ setup(
             "sphinxcontrib-napoleon",
             "sphinx_rtd_theme",
             "sphinx-navtree",
-            "sphinx-autobuild",
         ],
         "dev": ["bumpversion", "flake8"],  # IMPROVE: Add black if switched to Noetic
     },

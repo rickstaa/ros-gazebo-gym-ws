@@ -25,7 +25,6 @@ date_files_relative_path = os.path.join(relative_site_packages, "panda_openai_si
 
 # Package requirements
 requirements = [
-    "tensorflow<=1.15",
     "numpy",
     "mpi4py",
     "stable_baselines",
@@ -33,6 +32,10 @@ requirements = [
     "gym",
     "rospkg",
 ]
+
+# Set the tensorflow max version
+# NOTE: The tensorflow entry was removed from the
+TF_MAX_VERSION = "1.15.3"
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -42,28 +45,16 @@ logger.setLevel(logging.INFO)
 #################################################
 # Setup functions ###############################
 #################################################
-def get_tf_dep(tf_entry):
+def get_tf_dep():
     """Check whether or not the Nvidia driver and GPUs are available and add the
     corresponding Tensorflow dependency.
-
-    Parameters
-    ----------
-    tf_entry : str
-        The original tensorflow package entry.
 
     Returns
     -------
     str
         The right tensorflow package (GPU or normal)
     """
-
-    # Find the right tensorflow version to install
-    tf_dep = tf_entry
-
-    # Retrieve requested tensorflow version
-    tf_dep_version = re.sub(r"[^=<>.0-9]", "", tf_dep)
-
-    # Check which tensorflow version is required
+    tf_dep = "tensorflow<={}".format(TF_MAX_VERSION)
     try:
         gpus = (
             subprocess.check_output(
@@ -74,7 +65,7 @@ def get_tf_dep(tf_entry):
             .split("\n")[1:]
         )
         if len(gpus) > 0:
-            tf_dep = "tensorflow-gpu{}".format(tf_dep_version)
+            tf_dep = "tensorflow-gpu<={}".format(TF_MAX_VERSION)
         else:
             no_device_msg = (
                 "Found Nvidia device driver but no"
@@ -115,17 +106,18 @@ class DevelopCmd(develop):
         """Overload the :py:mh:`setuptools.command.develop.develop.run` method."""
 
         # Install Tensorflow dependency.
-        if not self.docker and not self.sing:
+        if not self.docker:
             tf_dep = get_tf_dep()
-            subprocess.Popen([sys.executable, "-m", "pip", "install", tf_dep]).wait()
+            subprocess.Popen(
+                [sys.executable, "-m", "pip", "install", "-v", tf_dep]
+            ).wait()
         else:
-
-            # If we're using a Docker or singularity container, the right
-            # tensorflow version is specified in the recipe file. This is
-            # done since there is no way to check for CUDA/AMD GPU's at
-            # container build time.
+            # If we're using Docker, this will already have been installed
+            # explicitly through the correct `{cpu/gpu}_requirements.txt`;
+            # there is no way to check for CUDA/GPUs at Docker build time
+            # because there is no easy way to set the Nvidia runtime.
             skip_tf_msg = (
-                "Omitting Tensorflow dependency because of Docker" " installation."
+                "Omitting Tensorflow dependency because of Docker installation."
             )
             logger.warning(skip_tf_msg)
 
@@ -160,35 +152,23 @@ class InstallCmd(install, object):
         To make sure the right version of tensorflow is installed GPU or CPU.
         """
 
-        # Install the right tensorflow dependency (GPU or CPU)
-        tensorflow_entry = [
-            item
-            for item in self.distribution.install_requires
-            if (re.sub(r"[=<>.0-9]", "", item) in ["tensorflow", "tensorflow-gpu"])
-        ]
-        if tensorflow_entry:  # If tensorflow or tensorflow-gpu is in requirements
-            if not self.docker and not self.sing:
+        # Install Tensorflow dependency.
+        if not self.docker:
+            tf_dep = get_tf_dep()
+            subprocess.Popen(
+                [sys.executable, "-m", "pip", "install", "-v", tf_dep]
+            ).wait()
+        else:
+            # If we're using Docker, this will already have been installed
+            # explicitly through the correct `{cpu/gpu}_requirements.txt`;
+            # there is no way to check for CUDA/GPUs at Docker build time
+            # because there is no easy way to set the Nvidia runtime.
+            skip_tf_msg = (
+                "Omitting Tensorflow dependency because of Docker installation."
+            )
+            logger.warning(skip_tf_msg)
 
-                # Check if tensorflow GPU or CPU needs to be installed
-                tf_dep = get_tf_dep(tensorflow_entry[0])
-
-                # Change the tensorflow entry to the right version
-                self.distribution.install_requires = [
-                    item if "tensorflow" not in item else tf_dep
-                    for item in self.distribution.install_requires
-                ]
-            else:
-
-                # If we're using a Docker or singularity container, the right
-                # tensorflow version is specified in the recipe file. This is
-                # done since there is no way to check for CUDA/AMD GPU's at
-                # container build time.
-                skip_tf_msg = (
-                    "Omitting Tensorflow dependency because of Docker" " installation."
-                )
-                logger.warning(skip_tf_msg)
-
-        # Run parent run method
+        # Run installation.
         install.run(self)
 
 
@@ -235,7 +215,15 @@ setup(
     ],
     packages=["panda_training"],
     install_requires=requirements,
-    extras_require={},
+    extras_require={
+        "docs": [
+            "sphinx",
+            "sphinxcontrib-napoleon",
+            "sphinx_rtd_theme",
+            "sphinx-navtree",
+        ],
+        "dev": ["bumpversion", "flake8"],  # IMPROVE: Add black if switched to Noetic
+    },
     include_package_data=True,
     data_files=[(date_files_relative_path, ["README.md"])],
     cmdclass={"install": InstallCmd, "develop": DevelopCmd},

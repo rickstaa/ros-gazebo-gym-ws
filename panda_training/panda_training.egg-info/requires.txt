@@ -1,5 +1,16 @@
-tensorflow<=1.15
 numpy
+mpi4py
 stable_baselines
 cloudpickle<1.4.0
 gym
+rospkg
+
+[dev]
+bumpversion
+flake8
+
+[docs]
+sphinx
+sphinxcontrib-napoleon
+sphinx_rtd_theme
+sphinx-navtree

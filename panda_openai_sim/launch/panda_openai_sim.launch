@@ -35,6 +35,7 @@
     </node>
     <node pkg="panda_openai_sim" type="panda_control_server.py" name="panda_control_server" required="true">
         <param name="use_group_controller" value="$(arg use_group_controller)" />
+        <param name="create_all_services" value="false" />
     </node>
 
     <!--## SIMULATION ##-->
@@ -52,6 +53,11 @@
         <arg name="grip_site_xyz" value="$(arg grip_site_xyz)" />
         <arg name="grip_site_rpy" value="$(arg grip_site_rpy)" />
     </include>
+
+    <!-- ## Increase Movit execution time limit (See issue #33)-->
+    <!-- # FIXME: Check if this is the right way -->
+    <param name="move_group/trajectory_execution/allowed_execution_duration_scaling" value="4.0" />
+    <!-- <param name="move_group/trajectory_execution/execution_duration_monitoring" value="false" /> -->
 
     <!-- ## LOAD RVIZ ##
          # NOTE: Only moveit was not used -->

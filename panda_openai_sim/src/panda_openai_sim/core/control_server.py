@@ -138,6 +138,7 @@ class PandaControlServer(object):
         self,
         use_group_controller=False,
         autofill_traj_positions=False,
+        create_all_services=False,
         connection_timeout=10,
     ):
         """Initializes the PandaControlServer object.
@@ -149,6 +150,10 @@ class PandaControlServer(object):
         autofill_traj_positions : bool, optional
             Whether you want to automatically set the current states as positions when
             the positions field of the joint trajectory message is left empty.
+        create_all_services : bool, optional
+            Specifies whether we want to create all the available services or only the
+            ones that are crucial for the panda_openai_sim package, by default
+            False.
         connection_timeout : int, optional
             The timeout for connecting to the controller_manager services,
             by default 3 sec.
@@ -196,6 +201,8 @@ class PandaControlServer(object):
         #############################################
         # Create Panda control services #############
         #############################################
+
+        # Create main PandaControlServer services
         rospy.loginfo("Creating '%s' services." % rospy.get_name())
         rospy.logdebug("Creating '%s/set_joint_positions' service." % rospy.get_name())
         self._set_joint_positions_srv = rospy.Service(
@@ -209,38 +216,6 @@ class PandaControlServer(object):
             SetJointEfforts,
             self._set_joint_efforts_cb,
         )
-        rospy.logdebug(
-            "Creating '%s/panda_arm/set_joint_positions' service." % rospy.get_name()
-        )
-        self._set_arm_joint_positions_srv = rospy.Service(
-            "%s/panda_arm/set_joint_positions" % rospy.get_name()[1:],
-            SetJointPositions,
-            self._arm_set_joint_positions_cb,
-        )
-        rospy.logdebug(
-            "Creating '%s/panda_arm/set_joint_efforts' service." % rospy.get_name()
-        )
-        self._set_arm_joint_efforts_srv = rospy.Service(
-            "%s/panda_arm/set_joint_efforts" % rospy.get_name()[1:],
-            SetJointEfforts,
-            self._arm_set_joint_efforts_cb,
-        )
-        rospy.logdebug(
-            "Creating '%s/panda_hand/set_joint_positions' service." % rospy.get_name()
-        )
-        self._set_hand_joint_positions_srv = rospy.Service(
-            "%s/panda_hand/set_joint_positions" % rospy.get_name()[1:],
-            SetJointPositions,
-            self._hand_set_joint_positions_cb,
-        )
-        rospy.logdebug(
-            "Creating '%s/panda_hand/set_joint_efforts' service." % rospy.get_name()
-        )
-        self._set_hand_joint_efforts_srv = rospy.Service(
-            "%s/panda_hand/set_joint_efforts" % rospy.get_name()[1:],
-            SetJointEfforts,
-            self._hand_set_joint_efforts_cb,
-        )
         rospy.logdebug("Creating '%s/switch_control_type' service." % rospy.get_name())
         self._switch_control_type_srv = rospy.Service(
             "%s/switch_control_type" % rospy.get_name()[1:],
@@ -253,7 +228,6 @@ class PandaControlServer(object):
             ListControlType,
             self._list_control_type_cb,
         )
-        rospy.loginfo("'%s' services created successfully." % rospy.get_name())
         rospy.logdebug(
             "Creating '%s/get_controlled_joints' service." % rospy.get_name()
         )
@@ -262,6 +236,43 @@ class PandaControlServer(object):
             GetControlledJoints,
             self._get_controlled_joints_cb,
         )
+
+        # Create other services
+        if create_all_services:
+            rospy.logdebug(
+                "Creating '%s/panda_arm/set_joint_positions' service."
+                % rospy.get_name()
+            )
+            self._set_arm_joint_positions_srv = rospy.Service(
+                "%s/panda_arm/set_joint_positions" % rospy.get_name()[1:],
+                SetJointPositions,
+                self._arm_set_joint_positions_cb,
+            )
+            rospy.logdebug(
+                "Creating '%s/panda_arm/set_joint_efforts' service." % rospy.get_name()
+            )
+            self._set_arm_joint_efforts_srv = rospy.Service(
+                "%s/panda_arm/set_joint_efforts" % rospy.get_name()[1:],
+                SetJointEfforts,
+                self._arm_set_joint_efforts_cb,
+            )
+            rospy.logdebug(
+                "Creating '%s/panda_hand/set_joint_positions' service."
+                % rospy.get_name()
+            )
+            self._set_hand_joint_positions_srv = rospy.Service(
+                "%s/panda_hand/set_joint_positions" % rospy.get_name()[1:],
+                SetJointPositions,
+                self._hand_set_joint_positions_cb,
+            )
+            rospy.logdebug(
+                "Creating '%s/panda_hand/set_joint_efforts' service." % rospy.get_name()
+            )
+            self._set_hand_joint_efforts_srv = rospy.Service(
+                "%s/panda_hand/set_joint_efforts" % rospy.get_name()[1:],
+                SetJointEfforts,
+                self._hand_set_joint_efforts_cb,
+            )
         rospy.loginfo("'%s' services created successfully." % rospy.get_name())
 
         #############################################

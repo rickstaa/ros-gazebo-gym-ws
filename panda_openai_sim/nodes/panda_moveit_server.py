@@ -37,6 +37,6 @@ if __name__ == "__main__":
 
     # Start moveit planner server
     moveit_planner_server = PandaMoveitPlannerServer(
-        arm_ee_link=arm_ee_link, create_all_services=True
+        arm_ee_link=arm_ee_link, create_all_services=create_all_services
     )
     rospy.spin()  # Maintain the service open

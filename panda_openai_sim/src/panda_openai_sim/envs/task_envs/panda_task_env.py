@@ -62,9 +62,11 @@ from panda_openai_sim.srv import (
     GetControlledJointsRequest,
 )
 
+# TODO: Add current target as ros param
+# TODO: Change reward topic
 # TODO: Check panda_task env with gym and openai_ros
 # TODO: Wait for joint trajectory control
-# TODO: Add fix gripper rotation see self._set_Action of gym
+# TODO: Add fix gripper rotation see self._set_Action of gym makes sure that init pose is set
 # TODO: Check log message
 # TODO: Check control switcher
 # TODO: Check why finger joints can not be controlled
@@ -1133,7 +1135,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         # Put finger joints in the right position if use_gripper_width is True
         if self._use_gripper_width:
             if "gripper_width" not in init_grip_joints_pose.keys():
-                rospy.logwarn(
+                rospy.loginfo(
                     "The joint position of 'panda_finger_joint2' was set to be "
                     "be equal to the value of 'panda_finger_joint1' as the "
                     "'use_gripper_width' variable is set to True."
@@ -1155,10 +1157,12 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
 
         # Make sure the end effector z position is higher than the extra gripper height
         # 'gripper_extra_height'
+        # TODO: Validate wheter this pose is valid with the extra height
         if init_ee_pose["z"] <= self._gripper_extra_height:
             init_ee_pose["z"] = self._gripper_extra_height
 
         # Set initial pose
+        # TODO: Why only wait true for joint_positions
         self.gazebo.unpauseSim()
         ee_pose_retval = self.set_ee_pose(init_ee_pose)
         gripper_pose_retval = self.set_joint_positions(init_grip_joints_pose, wait=True)

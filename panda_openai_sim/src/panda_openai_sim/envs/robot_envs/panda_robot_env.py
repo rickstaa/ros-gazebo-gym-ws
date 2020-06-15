@@ -377,7 +377,7 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
             rospy.logwarn("Failed to connect to '%s' service!" % MOVEIT_GET_EE_TOPIC)
             self._services_connection_status[MOVEIT_GET_EE_TOPIC] = False
 
-        # Connect to Moveit 'set_joints_positions' service
+        # Connect to Moveit 'set_joint_positions' service
         try:
             rospy.logdebug(
                 "Connecting to '%s' service." % MOVEIT_SET_JOINT_POSITIONS_TOPIC
@@ -871,10 +871,10 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
 
                 # Return success bool
                 if not retval.success:
-                    logwarn_msg = "End effector pose not set as " + lower_first_char(
+                    logdebug_msg = "End effector pose not set as " + lower_first_char(
                         retval.message
                     )
-                    rospy.logwarn(logwarn_msg)
+                    rospy.logdebug(logdebug_msg)
                     return False
                 else:
                     return True

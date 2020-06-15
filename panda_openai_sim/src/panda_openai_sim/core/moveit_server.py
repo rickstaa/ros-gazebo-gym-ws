@@ -196,6 +196,34 @@ class PandaMoveitPlannerServer(object):
             SetEe,
             self._arm_set_ee_callback,
         )
+        rospy.logdebug(
+            "Creating '%s/get_random_joint_positions' service." % rospy.get_name()
+        )
+        self._get_random_joints_positions_srv = rospy.Service(
+            "%s/get_random_joint_positions" % rospy.get_name()[1:],
+            GetRandomJointPositions,
+            self._get_random_joint_positions_callback,
+        )
+        rospy.logdebug("Creating '%s/get_random_ee_pose' service." % rospy.get_name())
+        self._get_random_ee_pose_srv = rospy.Service(
+            "%s/get_random_ee_pose" % rospy.get_name()[1:],
+            GetRandomEePose,
+            self._get_random_ee_pose_callback,
+        )
+        rospy.logdebug(
+            "Creating '%s/panda_arm/get_ee_pose' service." % rospy.get_name()
+        )
+        self._arm_get_ee_pose_srv = rospy.Service(
+            "%s/panda_arm/get_ee_pose" % rospy.get_name()[1:],
+            GetEePose,
+            self._arm_get_ee_pose_callback,
+        )
+        rospy.logdebug("Creating '%s/panda_arm/get_ee_rpy' service." % rospy.get_name())
+        self._arm_get_ee_rpy_srv = rospy.Service(
+            "%s/panda_arm/get_ee_rpy" % rospy.get_name()[1:],
+            GetEeRpy,
+            self._arm_get_ee_rpy_callback,
+        )
 
         # Create other services
         if create_all_services:
@@ -216,38 +244,6 @@ class PandaMoveitPlannerServer(object):
                 "%s/panda_hand/set_joint_positions" % rospy.get_name()[1:],
                 SetJointPositions,
                 self._hand_set_joint_positions_callback,
-            )
-            rospy.logdebug(
-                "Creating '%s/panda_arm/get_ee_pose' service." % rospy.get_name()
-            )
-            self._arm_get_ee_pose_srv = rospy.Service(
-                "%s/panda_arm/get_ee_pose" % rospy.get_name()[1:],
-                GetEePose,
-                self._arm_get_ee_pose_callback,
-            )
-            rospy.logdebug(
-                "Creating '%s/panda_arm/get_ee_rpy' service." % rospy.get_name()
-            )
-            self._arm_get_ee_rpy_srv = rospy.Service(
-                "%s/panda_arm/get_ee_rpy" % rospy.get_name()[1:],
-                GetEeRpy,
-                self._arm_get_ee_rpy_callback,
-            )
-            rospy.logdebug(
-                "Creating '%s/get_random_joint_positions' service." % rospy.get_name()
-            )
-            self._get_random_joints_positions_srv = rospy.Service(
-                "%s/get_random_joint_positions" % rospy.get_name()[1:],
-                GetRandomJointPositions,
-                self._get_random_joint_positions_callback,
-            )
-            rospy.logdebug(
-                "Creating '%s/get_random_ee_pose' service." % rospy.get_name()
-            )
-            self._get_random_ee_pose_srv = rospy.Service(
-                "%s/get_random_ee_pose" % rospy.get_name()[1:],
-                GetRandomEePose,
-                self._get_random_ee_pose_callback,
             )
         rospy.loginfo("'%s' services created successfully." % rospy.get_name())
 
@@ -325,6 +321,7 @@ class PandaMoveitPlannerServer(object):
         """
 
         # Plan and execute
+        # TODO: Add multistep _plan function
         if control_group.lower() == "arm":
             self.arm_plan = self.move_group_arm.plan()
             arm_retval = self.move_group_arm.go(wait=True)
@@ -1139,6 +1136,7 @@ class PandaMoveitPlannerServer(object):
             get_random_hand_joint_positions_srvs_exception = True
 
         # Get random joint positions (while taking into possible joint limits)
+        # FIXME: Why do we already set these here?
         random_arm_joint_values = random_arm_joint_values_unbounded
         random_hand_joint_values = random_hand_joint_values_unbounded
         if (
@@ -1319,10 +1317,8 @@ class PandaMoveitPlannerServer(object):
             == 0.0
         ):  # No bounding region was set
 
-            # Use unbounded ee_pose nand set success bool
+            # Create response message
             if not get_random_pose_srvs_exception:
-
-                # Create response message and break out of loop
                 resp.success = True
                 resp.ee_pose = random_ee_pose_unbounded.pose
 

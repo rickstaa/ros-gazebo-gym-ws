@@ -1,9 +1,0 @@
-tensorflow-gpu
-numpy
-mpi4py
-stable_baselines
-cloudpickle<1.4.0
-gym
-rospkg
-tensorflow-gpu
-tensorflow-gpu

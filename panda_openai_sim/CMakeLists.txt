@@ -16,7 +16,6 @@ find_package(catkin REQUIRED COMPONENTS
   trajectory_msgs
   actionlib_msgs
   control_msgs
-  openai_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -123,7 +122,10 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES panda_openai_sim
-  CATKIN_DEPENDS rospy message_runtime actionlib actionlib_msgs std_msgs geometry_msgs trajectory_msgs sensor_msgs control_msgs openai_ros rviz
+  CATKIN_DEPENDS
+    rospy message_runtime actionlib actionlib_msgs std_msgs geometry_msgs
+    trajectory_msgs sensor_msgs control_msgs rviz franka_description openai_ros
+    panda_moveit_config panda_simulation theconstruct_msgs
 #  DEPENDS system_lib
 )
 

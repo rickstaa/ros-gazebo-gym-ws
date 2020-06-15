@@ -1,11 +1,11 @@
-# panda_openai_sim workspace
+# panda_openai_ros workspace
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/panda_openai_sim)](https://github.com/rickstaa/panda_openai_sim/releases)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/panda_openai_ros)](https://github.com/rickstaa/panda_openai_ros/releases)
 [![Python 3](https://img.shields.io/badge/python%203-3.7%20%7C%203.6%20%7C%203.5-brightgreen.svg)](https://www.python.org/)
 [![Python 2](https://img.shields.io/badge/python%202-2.7%20%7C%202.6%20%7C%202.5-brightgreen.svg)](https://www.python.org/)
 [![ROS versions](https://img.shields.io/badge/ROS%20versions-Melodic-brightgreen)](https://wiki.ros.org)
 
-This repository contains the workspace for the `panda_openai_sim` ROS package. It
+This repository contains the workspace for the `panda_openai_ros` ROS package. It
 includes all the components (submodules and code) to create a create a
 Openai gym environment for the Panda Emika Franka robot. This workspace consists of two
 main components the `panda_openai_sim` package and the `panda_training` package. The
@@ -29,5 +29,5 @@ These environments were based on the original [openai_gym robotics environments]
 
 ## Installation and Usage
 
-Please see the [docs](https://rickstaa.github.io/panda_openai_sim/) for installation
+Please see the [docs](https://rickstaa.github.io/panda_openai_ros/) for installation
 and usage instructions.

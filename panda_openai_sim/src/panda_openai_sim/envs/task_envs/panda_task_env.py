@@ -120,6 +120,8 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         The initial robot pose for the current episode.
     initial_qpose : collections.OrderedDict
         The initial generalized joint positions of the robot for the current episode.
+    reward_type : str, optional
+        The reward type, i.e. ``sparse`` or ``dense``, by default None.
     """
 
     def __init__(
@@ -559,7 +561,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
 
         # Calculate the rewards based on the distance from the goal
         d = self._goal_distance(observations["achieved_goal"], self.goal)
-        if self._reward_type == "sparse":
+        if self.reward_type == "sparse":
 
             # Print Debug info
             rospy.logdebug("=Reward info=")
@@ -1374,7 +1376,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         self._init_pose = config["simulation"]["init_pose_sampling"]["init_robot_pose"]
         self._init_obj_pose = config["training"]["object_sampling"]["init_obj_pose"]
         self._obj_bounds = config["training"]["object_sampling"]["bounds"]
-        self._reward_type = config["training"]["reward_type"].lower()
+        self.reward_type = config["training"]["reward_type"].lower()
         self._robot_arm_control_type = config["simulation"]["control"][
             "robot_arm_control_type"
         ].lower()
@@ -1904,7 +1906,7 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         if obj_bounds:
             self._obj_bounds = obj_bounds
         if reward_type:
-            self._reward_type = reward_type.lower()
+            self.reward_type = reward_type.lower()
         if robot_arm_control_type:
             self._robot_arm_control_type = robot_arm_control_type.lower()
         if robot_hand_control_type:
@@ -2449,14 +2451,14 @@ class PandaTaskEnv(PandaRobotEnv, utils.EzPickle):
         valid_types = (str,)
         valid_values = REWARD_TYPES
         retval, depth, invalid_types = has_invalid_type(
-            self._reward_type, variable_types=valid_types
+            self.reward_type, variable_types=valid_types
         )
         if retval:  # Validate type
             arg_type_error(
                 "reward_type", depth, invalid_types, valid_types,
             )
         retval, invalid_values = has_invalid_value(
-            self._reward_type, valid_values=valid_values
+            self.reward_type, valid_values=valid_values
         )
         if retval:  # Validate values
             arg_value_error(

@@ -9,7 +9,7 @@ from collections import OrderedDict
 import numpy as np
 import yaml
 
-from panda_openai_sim.envs import RobotGazeboGoalEnv
+from panda_openai_sim.envs.robot_gazebo_goal_env import RobotGazeboGoalEnv
 from panda_openai_sim.exceptions import EePoseLookupError, EeRpyLookupError
 from panda_openai_sim.functions import (
     action_server_exists,

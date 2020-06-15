@@ -1,8 +1,8 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <package format="2">
   <name>panda_openai_sim</name>
   <version>0.0.0</version>
-  <description>A ROS package that creates an Openai gym environment for the Panda Emika Franka robot</description>
+  <description>A ROS package that creates an Openai gym environment for the Panda Emika Franka robot.</description>
 
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
@@ -17,7 +17,9 @@
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
+  <url type="website">https://rickstaa.github.io/panda_openai_sim</url>
   <url type="repository">https://github.com/rickstaa/panda_openai_sim</url>
+  <url type="bugtracker">https://github.com/rickstaa/panda_openai_sim/issues</url>
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -64,7 +66,6 @@
   <build_depend>actionlib</build_depend>
   <build_depend>actionlib_msgs</build_depend>
   <build_depend>control_msgs</build_depend>
-  <build_depend>openai_ros</build_depend>
 
   <!-- Packages that are needed when building against this package (Included headers) -->
   <!-- <build_export_depend>message_generation</build_export_depend> -->
@@ -81,12 +82,18 @@
   <exec_depend>actionlib</exec_depend>
   <exec_depend>actionlib_msgs</exec_depend>
   <exec_depend>control_msgs</exec_depend>
-  <exec_depend>openai_ros</exec_depend>
   <exec_depend>rviz</exec_depend>
+
+  <!--Local ROS package dependencies -->
+  <exec_depend>franka_description</exec_depend>
+  <exec_depend>openai_ros</exec_depend>
+  <exec_depend>panda_moveit_config</exec_depend>
+  <exec_depend>panda_simulation</exec_depend>
+  <exec_depend>theconstruct_msgs</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags (Used for metapackages and
   Plugins -->
   <export>
-    <!-- Other tools can request additional information be placed here -->
+    <!-- <metapackage /> -->
   </export>
 </package>

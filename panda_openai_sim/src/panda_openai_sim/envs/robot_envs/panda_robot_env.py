@@ -965,8 +965,9 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
             return False
 
         # Add wait variable to SetJointPositions message
-        if wait:  # If not it will take the msg default value of False
-            req.wait = wait
+        req.wait = True  # FIXME: Quick fix wait should be fixed in the service
+        # if wait:  # If not it will take the msg default value of False
+        # req.wait = wait
 
         #########################################
         # Try using set_joint_positions service #
@@ -1076,6 +1077,7 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
                 self._joint_traj_control_client.send_goal(goal_req)
 
                 # Wait for trajectory completion
+                req.wait = True  # FIXME: Quick fix wait should be fixed in the service
                 if req.wait:
                     self._joint_traj_control_client.wait_for_result()
 
@@ -1142,6 +1144,7 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
             )
 
             # Print wait warning message
+            # FIXME: THIS SHOULD BE TRUE
             if req.wait:
                 rospy.logwarn(
                     "You set wait to False but his option is neglected since "
@@ -1297,8 +1300,9 @@ class PandaRobotEnv(RobotGazeboGoalEnv):
             return False
 
         # Add wait variable to SetJointEfforts message
-        if wait:  # If not it will take the msg default value of False
-            req.wait = wait
+        req.wait = True  # FIXME: Quick fix wait should be fixed in the service
+        # if wait:  # If not it will take the msg default value of False
+        #     req.wait = wait
 
         # Try to setting joint efforts if service is available
         if self._services_connection_status[SET_JOINT_EFFORTS_TOPIC]:

@@ -1,5 +1,4 @@
 <!-- Launch file for training using the DDQG method -->
-<!--TODO: Improve namings scheme-->
 <launch>
 
     <!--## ARGUMENTS ##-->

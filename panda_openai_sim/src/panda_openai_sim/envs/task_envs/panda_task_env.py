@@ -69,11 +69,8 @@ from panda_openai_sim.srv import (
 # TODO: Check control switcher
 # TODO: Check why finger joints can not be controlled
 # TODO: Add wait variable to moveit and joint_trajectory control
-# TODO: ADD none note to constructor
 # TODO: ADD wait between commands config variable.
 # TODO: Check ee pose not set warning when using panda_training scripts
-# TODO: Clean up panda_training scripts
-# TODO: ADD log to file in panda_training scripts
 
 # Script Parameters
 DIRNAME = os.path.dirname(__file__)

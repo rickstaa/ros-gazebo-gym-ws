@@ -17,7 +17,7 @@ relative_site_packages = get_python_lib().split(sys.prefix + os.sep)[1]
 date_files_relative_path = os.path.join(relative_site_packages, "panda_openai_sim")
 
 # Additional python requirements that could not be specified in the package.xml
-requirements = ["rospkg"]
+requirements = ["rospkg", "netifaces"]
 
 # Set up logger
 logger = logging.getLogger(__name__)

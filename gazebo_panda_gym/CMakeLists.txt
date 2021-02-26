@@ -1,4 +1,4 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(panda_openai_ros)
+project(gazebo-panda-gym)
 find_package(catkin REQUIRED)
 catkin_metapackage()

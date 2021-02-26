@@ -37,7 +37,7 @@ sys.path.insert(
 )
 
 # -- Project information -----------------------------------------------------
-project = "panda_openai_sim"
+project = "gazebo-panda-gym"
 copyright = "2020, Rick Staa"
 author = "Rick Staa"
 
@@ -121,7 +121,7 @@ html_context = {
 
 # -- External links dictionary -----------------------------------------------
 extlinks = {
-    "panda_openai_sim_ws": ("https://github.com/rickstaa/panda_openai_sim/%s", None),
+    "gazebo-panda-gym": ("https://github.com/rickstaa/panda_openai_sim/%s", None),
     "panda_openai_sim": (
         "https://github.com/rickstaa/panda_openai_sim/tree/melodic-devel/panda_openai_sim/%s",
         None,

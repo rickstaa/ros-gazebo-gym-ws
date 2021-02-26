@@ -1,23 +1,23 @@
 .. _about:
 
 Introduction
-================================
+============
 
-The :panda_openai_sim_ws:`panda_openai_sim <>` package contains several
+The :gazebo-panda-gym:`gazebo-panda-gym <>` package contains several
 :gym:`openai gym <>` environments for the :franka:`Panda Emika franka <>` robot that can
 be used to train RL algorithms. It was based on the :gym:`openai gym <>` and
 :openai_ros:`openai_ros <>` packages and can be used similarly as the original
 :gym:`openai gym Robotics <envs/#robotics>` environments. The
-:panda_openai_sim_ws:`panda_openai_sim <>` package consists of two main sub-packages:
+:gazebo-panda-gym:`gazebo-panda-gym <>` package consists of two main sub-packages:
 
 * **The panda_openai_sim package:** This package contains all of of the available :gym:`openai gym <>` environments and the :franka:`Panda Emika Franka <>` simulation.
-* **The panda_training package:** This package includes several examples of how the :panda_openai_sim:`panda_openai_sim <>` can be used to train RL algorithms.
+* **The panda_training package:** This package includes several examples of how the :panda_openai_sim:`panda_openai_sim <>` environments can be used to train RL algorithms.
 
 Panda_openai_sim package
-------------------------------
+------------------------
 
 Environments
-^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
 
 The :panda_openai_sim:`panda_openai_sim package <>` currently contains the following task
 environments:

@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <package format="2">
-    <name>panda_openai</name>
+    <name>gazebo_panda_gym</name>
     <version>0.0.0</version>
     <description>
-        Panda_openai_ros is the meta package for all the Panda Openai ROS packages.
+        Gazebo_panda_gym is the meta package for all the ROS packages used to create the Panda Openai Gym environment.
     </description>
     <maintainer email="rick.staa@outlook.com">Rick Staa</maintainer>
     <license>MIT</license>
-    <url type="website">https://rickstaa.github.io/panda_openai_sim</url>
-    <url type="repository">https://github.com/rickstaa/panda_openai_sim</url>
-    <url type="bugtracker">https://github.com/rickstaa/panda_openai_sim/issues</url>
+    <url type="website">https://rickstaa.github.io/gazebo-panda-gym</url>
+    <url type="repository">https://github.com/rickstaa/gazebo</url>
+    <url type="bugtracker">https://github.com/rickstaa/gazebo/issues</url>
     <author email="rick.staa@outlook.com">Rick Staa</author>
 
     <buildtool_depend>catkin</buildtool_depend>

@@ -1,17 +1,15 @@
-.. panda_openai_sim documentation master file, created by
-   sphinx-quickstart on Tue Jun  9 11:12:09 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to panda_openai_sim's documentation!
+Welcome to gazebo-panda-gym's documentation!
 ============================================
 
-Welcome to the documentation for the :panda_openai_sim_ws:`panda_openai_sim <>` package.
+Welcome to the documentation for the :gazebo-panda-gym:`gazebo-panda-gym <>` package.
 This package contains a :gym:`openai gym <>` environment for the :franka:`Panda Emika
-Franka <>` robot which can be used to train RL algorithms.
+Franka <>` robot which can be used to train RL algorithms. This environment was implemented
+in ROS using the `Gazebo simulator`_.
+
+.. _`Gazebo simulator`: http://gazebosim.org/
 
 Contents
-===============
+========
 
 .. toctree::
    :maxdepth: 2

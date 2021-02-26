@@ -1,10 +1,10 @@
 .. _release_dev:
 
 Package development
-===================================
+===================
 
 Release the Package
-----------------------
+-------------------
 
 Before releasing the package, make sure the following steps are performed:
 
@@ -18,7 +18,7 @@ Before releasing the package, make sure the following steps are performed:
     #. Create a release using the github draft release tool.
 
 Versioning guidelines
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 Please use the ROS version of the branch you are working on in the version tag
 (Example: ``v1.0.0-kinetic`` for the kinetic branch and ``v1.0.0-melodic`` for the

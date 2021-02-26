@@ -1,15 +1,15 @@
 .. _api:
 
 Python Code API
-======================
+===============
 
-The :panda_openai_sim_ws:`panda_openai_sim <>` package consists of two sub-packages:
+The :gazebo-panda-gym:`panda_openai_sim <>` package consists of two sub-packages:
 the :panda_openai_sim:`panda_openai_sim <>` ROS package and the
 :panda_training:`panda_training <>` python package. Each of the modules, classes and
 scripts in these two packages will be documented here.
 
 Panda_openai_sim package
--------------------------------
+------------------------
 
 Modules
 ^^^^^^^^
@@ -27,7 +27,7 @@ Modules
 
 
 ROS nodes
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^
 
 .. autosummary::
    :toctree: _autosummary
@@ -37,10 +37,10 @@ ROS nodes
     panda_moveit_server
 
 Panda_training package
--------------------------------
+----------------------
 
 Modules
-^^^^^^^^
+^^^^^^^
 
 .. autosummary::
    :toctree: _autosummary
@@ -50,7 +50,7 @@ Modules
 
 
 Scripts
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^
 
 .. autosummary::
    :toctree: _autosummary

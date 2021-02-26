@@ -3,13 +3,13 @@
 .. _`issue #17`: https://github.com/rickstaa/panda_openai_sim/issues/17/
 
 Installation
-===================================
+============
 
 Install dependencies
-----------------------
+--------------------
 
 The following dependencies are required to run the
-:panda_openai_sim_ws:`panda_openai_sim <>` package:
+:gazebo-panda-gym:`panda_openai_sim <>` package:
 
 * `ROS Melodic - Desktop full <https://wiki.ros.org/melodic/Installation/Ubuntu/>`_
 * `Franka_ros (Build from source) <https://frankaemika.github.io/docs/>`_
@@ -26,13 +26,13 @@ system dependencies are needed:
     sudo apt-get update && sudo apt-get install cmake libopenmpi-dev python3-dev zlib1g-dev
 
 ROS melodic
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^
 
 A guide on how to install ROS melodic can be found
 `here <https://wiki.ros.org/melodic/Installation/Ubuntu/>`_.
 
 Franka_ros
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^
 
 The steps for building the `franka_ros <https://github.com/frankaemika/franka_ros/>`_
 package from source can be found in the
@@ -40,10 +40,10 @@ package from source can be found in the
 
 
 Build the package
-------------------------
+-----------------
 
 Compile several ROS packages for python 3
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. _catkin_ws_python:
 
@@ -87,16 +87,16 @@ Finally compile the ROS packages for Python 3 using the following catkin build c
                 -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.6m.so
 
 Build the main catkin package
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After the required ROS packages have been build for python 3 you can build
-the :panda_openai_sim_ws:`panda_openai_sim <>` package. To do this first clone the
-:panda_openai_sim_ws:`panda_openai_sim <>` repository:
+the :gazebo-panda-gym:`panda_openai_sim <>` package. To do this first clone the
+:gazebo-panda-gym:`panda_openai_sim <>` repository:
 
 .. code-block:: bash
 
-    mkdir ~/panda_openai_sim_ws
-    cd ~/panda_openai_sim_ws
+    mkdir ~/gazebo-panda-gym
+    cd ~/gazebo-panda-gym
     git clone --recursive https://github.com/rickstaa/panda_openai_sim.git src
 
 
@@ -115,7 +115,7 @@ the catkin workspace:
     catkin build -j4 -DCMAKE_BUILD_TYPE=Release -DFranka_DIR:PATH=~/libfranka/build
 
 Create a python 3 virtual environments
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. _py3_virtual_env:
 
 Since ROS does not yet fully support python 3

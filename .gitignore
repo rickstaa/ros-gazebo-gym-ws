@@ -1,14 +1,35 @@
-# Folders to ignore
-.vscode/
-.egg-info/
-.VSCodeCounter/*
-/CMakeLists.txt
-build/
-__pycache__/
-panda_training/models*
-panda_training/logs/*
-panda_training/videos/*
+# Logs and data
+control/logs
+data/
+logs/*
 
-# Files to ignore
+# Docs
+_autosummary/
+
+# Cache
+__pycache__/
 *.pyc
+
+# Tests
+pytest/
+*.pytest_cache/
+.coverage
+pytest-coverage.txt
+
+# Dist
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# node related
+node_modules/
+
+# IDE files to ignore
+.vscode
 *.code-workspace
+
+# Other
+runs/
+MUJOCO_LOG.TXT
+client_id

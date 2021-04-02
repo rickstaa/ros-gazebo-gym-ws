@@ -63,7 +63,10 @@ FILE_SUFFIX_TYPE = "number"  # The model folder suffix type "timestamp" or "numb
 # Model name and save path ##################
 #############################################
 MODEL_DIR = os.path.abspath(
-    os.path.join(FILE_PATH, "../models/{}/movran/ddpg".format(TASK_ENV_NAME.lower()),)
+    os.path.join(
+        FILE_PATH,
+        "../models/{}/movran/ddpg".format(TASK_ENV_NAME.lower()),
+    )
 )  # Create model save folder pat
 if not os.path.isdir(MODEL_DIR):  # Create folder if it does not yet exist
     os.makedirs(MODEL_DIR)
@@ -78,7 +81,8 @@ MODEL_FILE = os.path.abspath(
 # Create tensorboard log dir
 TB_LOGDIR = os.path.abspath(
     os.path.join(
-        FILE_PATH, "../logs/{}/morvan/{}".format(TASK_ENV_NAME.lower(), MODEL_NAME),
+        FILE_PATH,
+        "../logs/{}/morvan/{}".format(TASK_ENV_NAME.lower(), MODEL_NAME),
     )
 )  # Tensorboard log path
 
@@ -109,8 +113,7 @@ if LOAD:
 # Actor class  ##################################
 #################################################
 class Actor(object):
-    """Actor class.
-    """
+    """Actor class."""
 
     def __init__(self, sess, action_dim, action_bound, learning_rate, t_replace_iter):
         self.sess = sess
@@ -211,8 +214,7 @@ class Actor(object):
 # Critic class  #################################
 #################################################
 class Critic(object):
-    """Critic class.
-    """
+    """Critic class."""
 
     def __init__(
         self, sess, state_dim, action_dim, learning_rate, gamma, t_replace_iter, a, a_
@@ -315,8 +317,7 @@ class Critic(object):
 # Memory class  #################################
 #################################################
 class Memory(object):
-    """Memory buffer class.
-    """
+    """Memory buffer class."""
 
     def __init__(self, capacity, dims):
         self.capacity = capacity
@@ -339,8 +340,7 @@ class Memory(object):
 # Additional helper functions ###################
 #################################################
 def train():
-    """Function used to start the training.
-    """
+    """Function used to start the training."""
 
     # Variables
     var = VAR_START  # control exploration
@@ -369,7 +369,8 @@ def train():
 
             # Add exploration noise
             a = a + var * np.random.uniform(
-                env.action_space.low, env.action_space.high,
+                env.action_space.low,
+                env.action_space.high,
             )
 
             # add randomness to action selection for exploration
@@ -429,8 +430,7 @@ def train():
 
 
 def eval():
-    """Function used to run the model inference.
-    """
+    """Function used to run the model inference."""
 
     s = env.reset()
     for _ in range(INFERENCE_STEPS):
@@ -452,7 +452,9 @@ if __name__ == "__main__":
     rospy.init_node("morvan_ddpg_panda_train_and_inference", log_level=rospy.DEBUG)
 
     # Create environment6
-    env = gym.make(TASK_ENV_NAME,)
+    env = gym.make(
+        TASK_ENV_NAME,
+    )
 
     # Set max_episode_steps
     env._max_episode_steps = MAX_EP_STEPS

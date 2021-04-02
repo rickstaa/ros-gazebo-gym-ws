@@ -19,7 +19,6 @@
     <exec_depend>panda_moveit_config</exec_depend>
     <exec_depend>panda_openai_sim</exec_depend>
     <exec_depend>panda_simulation</exec_depend>
-    <exec_depend>theconstruct_msgs</exec_depend>
 
     <export>
         <metapackage />

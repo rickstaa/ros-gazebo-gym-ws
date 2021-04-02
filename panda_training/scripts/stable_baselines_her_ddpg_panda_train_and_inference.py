@@ -80,7 +80,10 @@ if LOAD:  # If the user want to load an existing model
         )
     )  # Retrieve model directory path
     MODEL_FILE = os.path.abspath(
-        os.path.join(MODEL_DIR, MODEL_LOAD_FILE_NAME,)
+        os.path.join(
+            MODEL_DIR,
+            MODEL_LOAD_FILE_NAME,
+        )
     )  # Retrieve model file path
 
     # Validate model model_file if LOAD is enabled
@@ -127,8 +130,7 @@ TB_LOGDIR = os.path.abspath(
 # Helper functions ##############################
 #################################################
 def train():
-    """Function used for training a new RL model.
-    """
+    """Function used for training a new RL model."""
     global model
 
     # Create checkpoint callback
@@ -167,8 +169,7 @@ def train():
 
 
 def eval():
-    """Function used to run the model inference.
-    """
+    """Function used to run the model inference."""
     global model
     obs = env.reset()
     for _ in range(INFERENCE_STEPS):
@@ -226,7 +227,9 @@ if __name__ == "__main__":
 
         # Print log and save directories
         rospy.loginfo("RL results will be logged to: %s" % os.path.abspath(TB_LOGDIR))
-        rospy.loginfo("RL model will be saved as: %s" % (os.path.abspath(MODEL_FILE)),)
+        rospy.loginfo(
+            "RL model will be saved as: %s" % (os.path.abspath(MODEL_FILE)),
+        )
 
         # Train model
         if TRANSFER:

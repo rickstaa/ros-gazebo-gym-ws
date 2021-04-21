@@ -1,15 +1,16 @@
 <?xml version="1.0"?>
 <package format="2">
-    <name>gazebo_panda_gym</name>
+    <name>openai_ros_ws</name>
     <version>0.0.0</version>
     <description>
-        Gazebo_panda_gym is the meta package for all the ROS packages used to create the Panda Openai Gym environment.
+        Openai_ros_ws contains all the ros packages needed to use the openai_ros package. This was done since
+        not all packages are deployed to the ROS repositry.
     </description>
     <maintainer email="rick.staa@outlook.com">Rick Staa</maintainer>
     <license>MIT</license>
-    <url type="website">https://rickstaa.github.io/gazebo-panda-gym</url>
-    <url type="repository">https://github.com/rickstaa/gazebo</url>
-    <url type="bugtracker">https://github.com/rickstaa/gazebo/issues</url>
+    <url type="website">https://rickstaa.github.io/openai_ros_ws</url>
+    <url type="repository">https://github.com/rickstaa/openai_ros_ws</url>
+    <url type="bugtracker">https://github.com/rickstaa/openai_ros_ws/issues</url>
     <author email="rick.staa@outlook.com">Rick Staa</author>
 
     <buildtool_depend>catkin</buildtool_depend>
@@ -17,7 +18,6 @@
     <exec_depend>franka_description</exec_depend>
     <exec_depend>openai_ros</exec_depend>
     <exec_depend>panda_moveit_config</exec_depend>
-    <exec_depend>panda_openai_sim</exec_depend>
     <exec_depend>panda_simulation</exec_depend>
 
     <export>

@@ -64,10 +64,7 @@ if LOAD:  # If the user want to load an existing model
         )
     )  # Retrieve model directory path
     MODEL_FILE = os.path.abspath(
-        os.path.join(
-            MODEL_DIR,
-            MODEL_LOAD_FILE_NAME,
-        )
+        os.path.join(MODEL_DIR, MODEL_LOAD_FILE_NAME,)
     )  # Retrieve model file path
 
     # Validate model model_file if LOAD is enabled
@@ -208,9 +205,7 @@ if __name__ == "__main__":
 
         # Print log and save directories
         rospy.loginfo("RL results will be logged to: %s" % os.path.abspath(TB_LOGDIR))
-        rospy.loginfo(
-            "RL model will be saved as: %s" % (os.path.abspath(MODEL_FILE)),
-        )
+        rospy.loginfo("RL model will be saved as: %s" % (os.path.abspath(MODEL_FILE)),)
 
         # Train model
         if TRANSFER:

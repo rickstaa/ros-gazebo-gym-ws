@@ -1,12 +1,6 @@
-[submodule "panda_moveit_config"]
-	path = panda_moveit_config
-	url = ../panda_moveit_config.git
 [submodule "panda_simulation"]
 	path = panda_simulation
 	url = ../panda_simulation.git
-[submodule "franka_ros"]
-	path = franka_ros
-	url = ../franka_ros.git
 [submodule "openai_ros"]
 	path = openai_ros
 	url = ../openai_ros.git

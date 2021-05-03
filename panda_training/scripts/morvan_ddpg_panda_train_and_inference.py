@@ -1,5 +1,5 @@
-"""Trains a RL algorithm on the Panda robot of the 'panda_openai_sim' package using the
-DDPG classes o
+"""Trains a RL algorithm on the Panda robot of the 'openai_ros' package using the
+DDPG classes of
 `Morvanzhou <https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/>`_.
 
 .. note:
@@ -13,22 +13,17 @@ DDPG classes o
     tensorflow >= 1.0.1
 """
 
-# Main python imports
-import tensorflow as tf
+import glob
 import os
 import shutil
-import gym
 import sys
-import glob
+
+import gym
 import numpy as np
-
-from panda_training.functions import get_unique_file_suffix
-
-# ROS python imports
+import panda_openai_sim.envs  # Import panda openai sim task environments
 import rospy
-
-# Import panda openai sim task environments
-import panda_openai_sim.envs
+import tensorflow as tf
+from panda_training.functions import get_unique_file_suffix
 
 # Create random seed
 np.random.seed(1)

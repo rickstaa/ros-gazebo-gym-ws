@@ -1,55 +1,41 @@
-"""Several functions that are used in the :panda_training:`panda_training <>` scripts."""
+"""Several functions that are used in the :panda_training:`panda_training <>`
+scripts.
+"""
 
-# Main python imports
-import time
+import glob
 import os
 import re
 import shutil
-import glob
+import time
 
-# ROS python imports
 import rospy
 
 
-#################################################
-# Functions #####################################
-#################################################
 def find_lowest_positive_missing_no(input_list):
     """Function finds and returns the lowest missing number in a list.
 
-    Parameters
-    ----------
-    input_list : list
-        An input list of int's.
+    Args:
+        input_list (list): An input list of int's.
 
-    Returns
-    -------
-    int
-        The lowest number that is missing from the list.
+    Returns:
+        int: The lowest number that is missing from the list.
     """
-
-    # Validate whether al list items are integers
     if not all([type(item) == int for item in input_list]):
         KeyError("Input list contains non-integer items.")
 
-    # to store next array element in
-    # current traversal
+    # to store next array element in current traversal
     list_length = len(input_list)
     for ii in range(list_length):
 
-        # if value is negative or greater
-        # than array size, then it cannot
-        # be marked in array. So move to
-        # next element.
+        # if value is negative or greater than array size, then it cannot be marked in
+        # array. So move to next element.
         if input_list[ii] <= 0 or input_list[ii] > list_length:
             continue
 
         val = input_list[ii]
 
-        # traverse the array until we
-        # reach at an element which
-        # is already marked or which
-        # could not be marked.
+        # traverse the array until we reach at an element which is already marked or
+        # which could not be marked.
         while input_list[val - 1] != val:
             nextval = input_list[val - 1]
             input_list[val - 1] = val
@@ -57,38 +43,33 @@ def find_lowest_positive_missing_no(input_list):
             if val <= 0 or val > list_length:
                 break
 
-    # find first array index which is
-    # not marked which is also the
-    # smallest positive missing
-    # number.
+    # find first array index which is not marked which is also the smallest positive
+    # missing number
     for ii in range(list_length):
         if input_list[ii] != ii + 1:
             return ii + 1
 
-    # if all indices are marked, then
-    # smallest missing positive
-    # number is array_size + 1.
+    # if all indices are marked, then smallest missing positive number is
+    # array_size + 1
     return list_length + 1
 
 
 def get_unique_file_suffix(folder_path=None, prefix_type="timestamp"):
     """Function used to create an unique file identifier suffix.
 
-    Parameters
-    ----------
-    folder_path : str, optional
-        The folder in which you want to save the model, by default None.
-    prefix_type : str, optional
-        The type of suffix you want to use i.e. ``timestamp`` or ``number``, by default
-        timestamp.
+    Args:
+        folder_path (str, optional): The folder in which you want to save the model.
+            Defaults to ``None``.
+        prefix_type (str, optional): The type of suffix you want to use i.e.
+            ``timestamp`` or ``number``. Defaults to "timestamp".
 
-    Raises
-    ------
-    TypeError
-        If the prefix_type does not exists.
+    Raises:
+        TypeError: If the prefix_type does not exists.
+        FileNotFoundError: If folder_path does not exist.
+
+    Returns:
+        str: The unique file suffix.
     """
-
-    # Validate type variable
     if prefix_type.lower() not in ["timestamp", "number"]:
         raise TypeError(
             "Prefix %s is not valid. Valid values are 'timestamp' and 'number'."
@@ -99,8 +80,7 @@ def get_unique_file_suffix(folder_path=None, prefix_type="timestamp"):
     if prefix_type == "timestamp":
         suffix = int(time.time())
         return str(suffix)
-    else:  # If number
-
+    else:
         # Check if folder was supplied
         if not folder_path:
             rospy.logwarn(
@@ -129,16 +109,12 @@ def get_unique_file_suffix(folder_path=None, prefix_type="timestamp"):
 
 
 def move_all_files_in_dir(srcDir, dstDir):
-    """Function used to move all files in a given directory to a new directory.
+    """Move all files in a given directory to a new directory.
 
-    Parameters
-    ----------
-    srcDir : str
-        The path of the source directory.
-    dstDir : str
-        The path of the destination directory.
+    Args:
+        srcDir (str): The path of the source directory.
+        dstDir (str): The path of the destination directory.
     """
-
     # Check if both the are directories
     if os.path.isdir(srcDir) and os.path.isdir(dstDir):
         # Iterate over all the files in source directory
@@ -152,27 +128,20 @@ def move_all_files_in_dir(srcDir, dstDir):
 def backup_model(model_file_path, backup_model=True, backup_checkpoints=False):
     """Backups a RL model together with its checkpoints.
 
-    Parameters
-    ----------
-    model_file_path : str
-        The path of the RL model.
-    backup_model : bool, optional
-        Whether to backup the RL model, by default True
-    backup_checkpoints : bool, optional
-        Whether to also backup corresponding checkpoints data, by default False
+    Args:
+        model_file_path (str): The path of the RL model.
+        backup_model (bool, optional): Whether to backup the RL model. Defaults to
+            ``True``.
+        backup_checkpoints (bool, optional): Whether to also backup corresponding
+            checkpoints data. Defaults to ``False``.
     """
-
     # Retrieve model name, path and create backup path
-    backup_folder = os.path.abspath(
-        os.path.join(model_file_path, os.pardir, "backups")
-    )  # Create backup folder path
+    backup_folder = os.path.abspath(os.path.join(model_file_path, os.pardir, "backups"))
     model_name = os.path.basename(model_file_path).split(".")[0]  # Retrieve model name
-    backup_file_name = (
-        model_name + "-" + get_unique_file_suffix()
-    )  # Create backup file name
+    backup_file_name = model_name + "-" + get_unique_file_suffix()
     backup_file_path = os.path.abspath(
         os.path.join(backup_folder, backup_file_name + ".zip")
-    )  # Get the backup file path
+    )
 
     # Create model backup folder if it does not yet exist
     if any([backup_model, backup_checkpoints]):
@@ -194,16 +163,12 @@ def backup_model(model_file_path, backup_model=True, backup_checkpoints=False):
             os.path.join(
                 os.path.join(model_file_path, os.pardir), "checkpoints", model_name
             )
-        )  # Retrieve checkpoints path
-
-        # Check if checkpoints are present
-        if os.path.isdir(checkpoints_dir):  # If exists
-            if (
-                len(glob.glob(os.path.join(checkpoints_dir, "*steps.zip"))) > 0
-            ):  # If contains files
+        )
+        if os.path.isdir(checkpoints_dir):
+            if len(glob.glob(os.path.join(checkpoints_dir, "*steps.zip"))) > 0:
                 checkpoints_dst = os.path.join(
                     backup_folder, "checkpoints", backup_file_name
-                )  # Create checkpoints backup path
+                )
 
                 # Create model backup folder if it does not yet exist
                 if not os.path.isdir(checkpoints_dst):

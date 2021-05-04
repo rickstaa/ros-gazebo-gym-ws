@@ -3,8 +3,8 @@
     <name>openai_ros_ws</name>
     <version>0.0.0</version>
     <description>
-        Openai_ros_ws contains all the ros packages needed to use the openai_ros package. This was done since
-        not all packages are deployed to the ROS repositry.
+        Openai_ros_ws contains all the ros packages needed to use the openai_ros package.
+        This was done since not all packages are deployed to the ROS repositry.
     </description>
     <maintainer email="rick.staa@outlook.com">Rick Staa</maintainer>
     <license>MIT</license>
@@ -18,8 +18,6 @@
     <exec_depend>franka_description</exec_depend>
     <exec_depend>openai_ros</exec_depend>
     <exec_depend>panda_moveit_config</exec_depend>
-    <exec_depend>panda_simulation</exec_depend>
-
     <export>
         <metapackage />
     </export>

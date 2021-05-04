@@ -1,4 +1,4 @@
-# Panda_training
+# Openai_training
 
 This package contains several examples of RL training scripts that can be used together
 with the simulation and Openai gym environments of the `openai_ros` package.

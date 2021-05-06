@@ -3,4 +3,7 @@
 	url = ../panda_simulation.git
 [submodule "openai_ros"]
 	path = openai_ros
-	url = git@github.com:rickstaa/openai_ros.git
+	url = git@bitbucket.org:rickstaa/openai_ros.git
+[submodule "openai_examples_projects"]
+	path = openai_examples_projects
+	url = git@bitbucket.org:rickstaa/openai_examples_projects.git

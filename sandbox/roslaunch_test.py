@@ -15,10 +15,12 @@ import rospy
 
 ## Starting launchfile
 
-rospy.init_node('test', anonymous=True)
+rospy.init_node("test", anonymous=True)
 uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
 roslaunch.configure_logging(uuid)
-launch = roslaunch.parent.ROSLaunchParent(uuid, ["/home/haier/catkin_ws/src/testapi/launch/test_node.launch"])
+launch = roslaunch.parent.ROSLaunchParent(
+    uuid, ["/home/haier/catkin_ws/src/testapi/launch/test_node.launch"]
+)
 launch.start()
 rospy.loginfo("started")
 

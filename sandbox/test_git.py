@@ -15,4 +15,6 @@ from tqdm import tqdm
 
 
 repo_url = "https://bitbucket.org/theconstructcore/spawn_robot_tools.git"
-pygit2.clone_repository(repo_url, "./"+repo_url.split("/")[-1].replace(".git", ""), bare=True)
+pygit2.clone_repository(
+    repo_url, "./" + repo_url.split("/")[-1].replace(".git", ""), bare=True
+)

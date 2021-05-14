@@ -2,6 +2,6 @@ tensorflow-gpu<=1.15.3
 numpy
 mpi4py
 stable_baselines
-cloudpickle<1.4.0
+cloudpickle==1.6.0
 gym
 rospkg

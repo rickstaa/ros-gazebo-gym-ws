@@ -28,7 +28,7 @@ requirements = [
     "numpy",
     "mpi4py",
     "stable_baselines",
-    "cloudpickle<1.4.0",
+    "cloudpickle<1.7.0",
     "gym",
     "rospkg",
 ]

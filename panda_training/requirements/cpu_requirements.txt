@@ -1,4 +1,4 @@
-tensorflow<=1.15.3
+tensorflow==1.15.5
 numpy
 mpi4py
 stable_baselines

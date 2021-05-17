@@ -8,17 +8,17 @@
 This repository contains the workspace for the `gazebo_panda_gym` ROS package. It
 includes all the components (submodules and code) to create a create a
 Openai gym environment for the Panda Emika Franka robot. This workspace consists of two
-main components the `panda_openai_sim` package and the `panda_training` package. The
-the first package (`panda_openai_sim`) contains a in Gazebo simulated version of the Panda
+main components the `panda_gazebo` package and the `panda_training` package. The
+the first package (`panda_gazebo`) contains a in Gazebo simulated version of the Panda
 robot together with a Panda gym environment that can be used to train RL algorithms as is done
 with the original [openai_gym robotics environments](https://gym.openai.com/envs/#robotics).
 The second package (`panda_training`) contains several examples of RL training scripts
 that can be used together with the simulation and Openai gym environments of the
-`panda_openai_sim` package.
+`panda_gazebo` package.
 
 ## Environments
 
-The `panda_openai_sim` package currently contains the following task environments:
+The `panda_gazebo` package currently contains the following task environments:
 
 -   **PandaPickAndPlace-v0:** Lift a block into the air.
 -   **PandaPush-v0:** Push a block to a goal position.

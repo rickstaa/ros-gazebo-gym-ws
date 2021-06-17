@@ -6,7 +6,7 @@
 	url = git@bitbucket.org:rickstaa/openai_examples_projects.git
 [submodule "franka_ros"]
 	path = franka_ros
-	url = git@github.com:rickstaa/franka_ros.git
+	url = ../franka_ros.git
 [submodule "panda_moveit_config"]
 	path = panda_moveit_config
-	url = git@github.com:rickstaa/panda_moveit_config.git
+	url = ../panda_moveit_config.git

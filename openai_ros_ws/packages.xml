@@ -15,9 +15,7 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
-    <exec_depend>franka_description</exec_depend>
     <exec_depend>openai_ros</exec_depend>
-    <exec_depend>panda_moveit_config</exec_depend>
     <export>
         <metapackage />
     </export>

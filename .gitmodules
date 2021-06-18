@@ -4,9 +4,3 @@
 [submodule "openai_examples_projects"]
 	path = openai_examples_projects
 	url = git@bitbucket.org:rickstaa/openai_examples_projects.git
-[submodule "franka_ros"]
-	path = franka_ros
-	url = ../franka_ros.git
-[submodule "panda_moveit_config"]
-	path = panda_moveit_config
-	url = ../panda_moveit_config.git

@@ -1,1 +1,8 @@
 print("Hello there!")
+print("I think the visual of the python debugger is more calm!")
+print("Hello there!")
+print("Hello there!")
+print("Hello there!")
+print("Hello there!")
+print("Hello there!")
+print("Hello there!")

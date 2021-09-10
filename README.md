@@ -1,33 +1,42 @@
-# Gazebo Panda Gym workspace
+# Openai_ros workspace
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/gazebo-panda-gym)](https://github.com/rickstaa/gazebo-panda-gym/releases)
 [![Python 3](https://img.shields.io/badge/python%203-3.7%20%7C%203.6%20%7C%203.5-brightgreen.svg)](https://www.python.org/)
 [![Python 2](https://img.shields.io/badge/python%202-2.7%20%7C%202.6%20%7C%202.5-brightgreen.svg)](https://www.python.org/)
 [![ROS versions](https://img.shields.io/badge/ROS%20versions-Melodic-brightgreen)](https://wiki.ros.org)
 
-This repository contains the workspace for the `gazebo_panda_gym` ROS package. It
+This repository contains the workspace for the [openai_ros](https://wiki.ros.org/openai_ros) ROS package. It
 includes all the components (submodules and code) to create a create a
 Openai gym environment for the Panda Emika Franka robot. This workspace consists of two
-main components the `panda_gazebo` package and the `panda_training` package. The
-the first package (`panda_gazebo`) contains a in Gazebo simulated version of the Panda
-robot together with a Panda gym environment that can be used to train RL algorithms as is done
-with the original [openai_gym robotics environments](https://gym.openai.com/envs/#robotics).
-The second package (`panda_training`) contains several examples of RL training scripts
-that can be used together with the simulation and Openai gym environments of the
-`panda_gazebo` package.
+main components the [openai_ros](https://wiki.ros.org/openai_ros) package and the [openai_examples_projects](https://bitbucket.org/rickstaa/openai_examples_projects/src/master/) package. The first package contains all the OpenAi ROS gym environments, and the second package several examples of RL training scripts in which these environments are used.
 
-## Environments
+## Clone the repository
 
-The `panda_gazebo` package currently contains the following task environments:
+To use this workspace, clone the repository inside your a catkin workspace folder. Since the repository contains several git submodules to use all the features, it needs to be cloned using the `--recurse-submodules` argument:
 
--   **PandaPickAndPlace-v0:** Lift a block into the air.
--   **PandaPush-v0:** Push a block to a goal position.
--   **PandaReach-v0:** Move fetch to a goal position.
--   **PandaSlide-v0:** Slide a puck to a goal position.
+```bash
+git clone --recurse-submodules https://github.com/rickstaa/bayesian-learning-control.git
+```
 
-These environments were based on the original [openai_gym robotics environments](https://gym.openai.com/envs/#robotics).
+If you already cloned the repository and forgot the `--recurse-submodule` argument you
+can pull the submodules using the following git command:
 
-## Installation and Usage
+```bash
+git submodule update --init --recursive
+```
 
-Please see the [docs](https://rickstaa.github.io/gazebo-panda-gym/) for installation
-and usage instructions.
+## Installation
+
+After you cloned the repository, you have to install the system dependencies using the `rosdep install --from-path src --ignore-src -r -y` command. After these dependencies are installed, you can build the ROS packages inside the catkin workspace using the following build command:
+
+```bash
+catkin build
+```
+
+## Use
+
+To see the Openai Ros gym environments in action, you can pick any of the examples found in the [openai_examples_projects](https://bitbucket.org/rickstaa/openai_examples_projects/src/master/) package. These examples can be launched using the `roslaunch` command. The example below uses the [SAC algorithm of the stable-baselines](https://stable-baselines3.readthedocs.io/en/master/modules/sac.html) package to train a reaching task on a (simulated) [Panda Emika Franka](https://www.franka.de/) robot.
+
+```bash
+roslaunch panda_openai_ros_example start_training.launch
+```

@@ -1,0 +1,55 @@
+{
+  "name": "openai-ros-ws",
+  "version": "1.0.0",
+  "description": "Workspace package for the openai_ros and openai_examples_projects.",
+  "main": "index.js",
+  "scripts": {
+    "prepare": "husky install",
+    "changelog": "HUSKY=0 standard-version --skip.bump --skip.commit --skip.tag",
+    "release": "HUSKY=0 standard-version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rickstaa/openai_ros_ws.git"
+  },
+  "keywords": [
+    "reinforcement",
+    "learning",
+    "ros",
+    "openai_ros",
+    "robotics",
+    "openai-gym",
+    "environments"
+  ],
+  "author": "Rick Staa",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/rickstaa/openai_ros_ws/issues"
+  },
+  "homepage": "https://github.com/rickstaa/openai_ros_ws#readme",
+  "devDependencies": {
+    "@commitlint/cli": "13.1.0",
+    "@commitlint/config-conventional": "13.1.0",
+    "commitizen": "4.2.4",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "7.0.2",
+    "lint-staged": "11.1.2",
+    "remark-cli": "10.0.0",
+    "remark-lint": "9.0.1",
+    "remark-preset-lint-recommended": "6.0.1",
+    "standard-version": "^9.3.1"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "lint-staged": {
+    "*.md": "./node_modules/.bin/remark -o ."
+  }
+}

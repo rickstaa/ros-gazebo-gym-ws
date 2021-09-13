@@ -22,7 +22,7 @@ dist/
 .eggs/
 *.egg-info/
 
-# node related
+# node
 node_modules/
 
 # IDE files to ignore

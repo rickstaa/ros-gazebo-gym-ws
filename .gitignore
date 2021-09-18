@@ -1,5 +1,5 @@
 # Logs and data
-control/logs
+control/logs/
 data/
 logs/*
 
@@ -26,11 +26,11 @@ dist/
 node_modules/
 
 # IDE files to ignore
-.vscode
+.vscode/
 *.code-workspace
 
 # Other
 runs/
+# rosdeps/
 MUJOCO_LOG.TXT
 client_id
-rosdeps/

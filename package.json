@@ -1,6 +1,6 @@
 {
   "name": "openai-ros-ws",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Workspace package for the openai_ros and openai_examples_projects.",
   "main": "index.js",
   "scripts": {

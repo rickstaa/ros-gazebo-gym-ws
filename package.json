@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/rickstaa/openai_ros_ws#readme",
   "devDependencies": {
-    "@commitlint/cli": "13.2.0",
+    "@commitlint/cli": "13.2.1",
     "@commitlint/config-conventional": "13.2.0",
     "commitizen": "4.2.4",
     "cz-conventional-changelog": "3.3.0",

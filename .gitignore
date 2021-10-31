@@ -36,3 +36,5 @@ runs/
 rosdeps/
 MUJOCO_LOG.TXT
 client_id
+*.profile
+*.prof

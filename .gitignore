@@ -30,6 +30,7 @@ node_modules/
 # IDE files to ignore
 .vscode/
 *.code-workspace
+compile_commands.json
 
 # Other
 runs/

@@ -33,7 +33,7 @@
     ]
   },
   "lint-staged": {
-    "*.md": "./node_modules/.bin/remark -o ."
+    "!(CHANGELOG)*.md": "./node_modules/.bin/remark . -o --"
   },
   "config": {
     "commitizen": {

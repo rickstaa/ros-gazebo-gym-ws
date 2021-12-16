@@ -1,6 +1,6 @@
 {
   "name": "openai-ros-ws",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Workspace package for the openai_ros and openai_examples_projects.",
   "keywords": [
     "reinforcement",

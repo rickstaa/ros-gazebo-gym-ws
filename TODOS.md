@@ -8,8 +8,6 @@
 
 *   Gazebo gravity compensation not working see https://github.com/frankaemika/franka\_ros/issues/160
 
-*   Compare goal and normal env.
-
 # Open Upstream issues
 
 *   Gazeo torque calculation is wrong (https://github.com/frankaemika/franka\_ros/issues/160#issuecomment-961780423).

@@ -1,6 +1,6 @@
 # Create a virutal env
 
-You are recommended to use the openai_ros package inside a virtual env. This virtual env can be created using the following command:
+You are recommended to use the openai\_ros package inside a virtual env. This virtual env can be created using the following command:
 
 ```python
 python -m venv ./openai_ros --system-site-packages

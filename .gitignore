@@ -42,3 +42,5 @@ MUJOCO_LOG.TXT
 client_id
 *.profile
 *.prof
+*.aprof
+*.calltree

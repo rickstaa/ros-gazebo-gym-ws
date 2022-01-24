@@ -1,13 +1,10 @@
 # TODOS
 
 *   Rename start\_openai\_ros\_env module to make or REMOVE!.
-*   Put negative reward for collision.
 
-<!---->
-
-*   Check joint dynamic effect.
 *   Fix environmemt import.
-*   Gripper nan problem.
+
+*   Put negative reward for collision.
 
 # Open Upstream issues
 

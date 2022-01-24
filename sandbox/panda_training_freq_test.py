@@ -28,8 +28,8 @@ N_EPISODES = 5
 if __name__ == "__main__":
     rospy.init_node("panda_train_freq_test", anonymous=True, log_level=rospy.WARN)
 
-    # Init OpenAI_ROS ENV
-    env = start_openai_ros_env(TASK_ENV, control_type=CONTROL_TYPE)
+    # Create openai_ros gym environments
+    env = gym.make(TASK_ENV, control_type=CONTROL_TYPE)
 
     # Create the Gym environment
     rospy.loginfo("Gym environment done")

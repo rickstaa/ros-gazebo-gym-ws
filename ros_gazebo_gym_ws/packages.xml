@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>ros_gazebo_gym_ws</name>
+    <version>0.0.0</version>
+    <description>
+        Ros_gazebo_gym_ws contains all the ros packages needed to use the ros_gazebo_gym package.
+        This was done since not all packages are deployed to the ROS repositry.
+    </description>
+    <maintainer email="rick.staa@outlook.com">Rick Staa</maintainer>
+    <license>MIT</license>
+    <url type="website">https://rickstaa.github.io/ros-gazebo-gym</url>
+    <url type="repository">https://github.com/rickstaa/ros-gazebo-gym</url>
+    <url type="bugtracker">https://github.com/rickstaa/ros-gazebo-gym/issues</url>
+    <author email="rick.staa@outlook.com">Rick Staa</author>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <exec_depend>ros_gazebo_gym</exec_depend>
+    <exec_depend>ros_gazebo_gym_examples</exec_depend>
+    <export>
+        <metapackage />
+    </export>
+</package>

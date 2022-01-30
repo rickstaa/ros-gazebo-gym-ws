@@ -1,25 +1,25 @@
 {
-  "name": "openai-ros-ws",
+  "name": "ros_gazebo_gym_ws",
   "version": "1.1.6",
-  "description": "Workspace package for the openai_ros and openai_examples_projects.",
+  "description": "Workspace package for the ros_gazebo_gym and ros_gazebo_gym_examples.",
   "keywords": [
     "reinforcement",
     "learning",
     "ros",
-    "openai_ros",
+    "ros_gazebo_gym",
     "robotics",
     "openai-gym",
     "environments"
   ],
-  "homepage": "https://github.com/rickstaa/openai_ros_ws#readme",
+  "homepage": "https://github.com/rickstaa/ros-gazebo-gym-ws#readme",
   "bugs": {
-    "url": "https://github.com/rickstaa/openai_ros_ws/issues"
+    "url": "https://github.com/rickstaa/ros-gazebo-gym/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rickstaa/openai_ros_ws.git"
+    "url": "git+https://github.com/rickstaa/ros-gazebo-gym-ws.git"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "Rick Staa",
   "main": "index.js",
   "scripts": {

@@ -6,12 +6,13 @@ You can get the training frequency by checking the frequency of the
 `rostopic hz /panda_arm_joint1_effort_controller/command` command.
 """
 
+from pathlib import Path
+
 import gym
 import numpy
-import rospkg
+import ros_gazebo_gym
 import rospy
 import torch
-from openai_ros.core import start_openai_ros_env
 
 # Script parameters
 # CONTROL_TYPE = "trajectory"
@@ -26,9 +27,9 @@ N_STEPS = 5000
 N_EPISODES = 5
 
 if __name__ == "__main__":
-    rospy.init_node("panda_train_freq_test", anonymous=True, log_level=rospy.WARN)
+    # rospy.init_node("panda_train_freq_test", anonymous=True, log_level=rospy.WARN)
 
-    # Create openai_ros gym environments
+    # Create ros_gazebo_gym environments
     env = gym.make(TASK_ENV, control_type=CONTROL_TYPE)
 
     # Create the Gym environment
@@ -36,9 +37,7 @@ if __name__ == "__main__":
     rospy.loginfo("Starting Learning")
 
     # Set the logging system
-    rospack = rospkg.RosPack()
-    pkg_path = rospack.get_path("panda_openai_ros_example")
-    outdir = pkg_path + "/training_results"
+    outdir = Path(__file__).parent.joinpath("data/training_results")
     last_time_steps = numpy.ndarray(0)
 
     # Set max_episode_steps

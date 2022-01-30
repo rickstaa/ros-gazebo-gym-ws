@@ -1,6 +1,6 @@
-[submodule "openai_ros"]
-	path = openai_ros
-	url = git@bitbucket.org:rickstaa/openai_ros.git
-[submodule "openai_examples_projects"]
-	path = openai_examples_projects
-	url = git@bitbucket.org:rickstaa/openai_examples_projects.git
+[submodule "ros-gazebo-gym"]
+	path = ros-gazebo-gym
+	url = git@github.com:rickstaa/ros-gazebo-gym.git
+[submodule "ros-gazebo-gym-examples"]
+	path = ros-gazebo-gym-examples
+	url = git@github.com:rickstaa/ros-gazebo-gym-examples.git

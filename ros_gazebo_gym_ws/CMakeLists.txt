@@ -1,4 +1,4 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(openai_ros_ws)
+project(ros_gym_ws)
 find_package(catkin REQUIRED)
 catkin_metapackage()

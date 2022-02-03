@@ -7,3 +7,4 @@
     - [ ] Update ros_Gazebo_Gym info inside BLC.
     - [ ] Check TODOS.
     - [ ] Add versioning to ros-gazebo-gym, ros-gazebo-gym-ws, ros-gazebo-gym-examples.
+    - [ ] Edit on github check!

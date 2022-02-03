@@ -1,8 +1,9 @@
 # Ros\_gazebo\_gym workspace
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/gazebo-panda-gym)](https://github.com/rickstaa/gazebo-panda-gym/releases)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/ros-gazebo-gym-ws)](https://github.com/rickstaa/ros-gazebo-gym/releases)
 [![Python 3](https://img.shields.io/badge/Python-3.8%20%7C%203.7%20%7C%203.6-green)](https://www.python.org/)
 [![ROS version](https://img.shields.io/badge/ROS%20versions-Noetic-brightgreen)](https://wiki.ros.org)
+[![Contributions](https://img.shields.io/badge/contributions-welcome-orange.svg)](contributing.md)
 
 This repository contains the workspace for the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gym) framework. It
 includes all the components (submodules and code) to create
@@ -14,7 +15,7 @@ main components the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gy
 To use this workspace, clone the repository inside a catkin workspace folder. Since the repository contains several git submodules to use all the features, it needs to be cloned using the `--recurse-submodules` argument:
 
 ```bash
-git clone --recurse-submodules https://github.com/rickstaa/bayesian-learning-control.git
+git clone --recurse-submodules https://github.com/rickstaa/ros-gazebo-gym-ws.git
 ```
 
 If you already cloned the repository and forgot the `--recurse-submodule` argument you
@@ -24,20 +25,10 @@ can pull the submodules using the following git command:
 git submodule update --init --recursive
 ```
 
-## Installation instructions
+## Installation and Usage
 
-After you cloned the repository, you have to install the system dependencies using the `rosdep install --from-path src --ignore-src -r -y` command. After these dependencies are installed, you can build the ROS packages inside the catkin workspace using the following build command:
+Please see the [docs](https://rickstaa.github.io/panda-gazebo-gym) for installation and usage instructions.
 
-```bash
-catkin build
-```
+## Contributing
 
-## Usage instructions
-
-To see the ros\_gazebo\_gym gym environments in action, you can pick any of the examples found in the [ros\_gazebo\_gym\_examples](https://github.com/rickstaa/ros-gazebo-gym-examples) package. These examples can be launched using the `roslaunch` command. The example below uses the [SAC algorithm of the stable-baselines](https://stable-baselines3.readthedocs.io/en/master/modules/sac.html) package to train a reaching task on a (simulated) [Panda Emika Franka](https://www.franka.de/) robot.
-
-```bash
-roslaunch ros_gazebo_gym_panda_example start_training.launch
-```
-
-# TODO: ADD LINK TO ros\_gazebo\_GYM documentation
+We use [husky](https://github.com/typicode/husky) pre-commit hooks and github actions to enforce high code quality. Please check the [contributing.md](https://github.com/rickstaa/ros-gazebo-gym/blob/noetic/contributing.md) before contributing to this repository.

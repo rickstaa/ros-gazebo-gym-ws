@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v1.1.6...v2.0.0) (2022-02-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* openai_ros was replaced by ros_gym
+
+* migrate openai_ros to ros_gym ([772e591](https://github.com/rickstaa/ros-gazebo-gym-ws/commit/772e59132104121d74db626917f81b51284e08f2))
+
 ### [1.1.6](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v1.1.5...v1.1.6) (2022-01-26)
 
 ### [1.1.5](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v1.1.4...v1.1.5) (2021-12-16)

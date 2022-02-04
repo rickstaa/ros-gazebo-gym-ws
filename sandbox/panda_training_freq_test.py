@@ -19,10 +19,10 @@ import torch
 # CONTROL_TYPE = "end_effector"
 # CONTROL_TYPE = "position"
 CONTROL_TYPE = "effort"
-TASK_ENV = "PandaReach-v0"
-# TASK_ENV = "PandaPickAndPlace-v0"
-# TASK_ENV = "PandaPush-v0"
-# TASK_ENV = "PandaSlide-v0"
+TASK_ENV = "PandaReach-v1"
+# TASK_ENV = "PandaPickAndPlace-v1"
+# TASK_ENV = "PandaPush-v1"
+# TASK_ENV = "PandaSlide-v1"
 N_STEPS = 5000
 N_EPISODES = 5
 

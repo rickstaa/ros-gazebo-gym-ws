@@ -1,6 +1,6 @@
 {
   "name": "ros_gazebo_gym_ws",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Workspace package for the ros_gazebo_gym and ros_gazebo_gym_examples.",
   "keywords": [
     "reinforcement",

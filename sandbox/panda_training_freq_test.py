@@ -10,20 +10,20 @@ from pathlib import Path
 
 import gym
 import numpy
-import ros_gazebo_gym
+import ros_gazebo_gym  # noqa: F401
 import rospy
 import torch
 
 # Script parameters
 # CONTROL_TYPE = "trajectory"
-# CONTROL_TYPE = "end_effector"
+CONTROL_TYPE = "end_effector"
 # CONTROL_TYPE = "position"
-CONTROL_TYPE = "effort"
+# CONTROL_TYPE = "effort"
 TASK_ENV = "PandaReach-v1"
 # TASK_ENV = "PandaPickAndPlace-v1"
 # TASK_ENV = "PandaPush-v1"
 # TASK_ENV = "PandaSlide-v1"
-N_STEPS = 5000
+N_STEPS = 1000
 N_EPISODES = 5
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/ros-gazebo-gym-ws)](https://github.com/rickstaa/ros-gazebo-gym/releases)
 [![Python 3](https://img.shields.io/badge/Python-3.8%20%7C%203.7%20%7C%203.6-brightgreen)](https://www.python.org/)
 [![ROS version](https://img.shields.io/badge/ROS%20versions-Noetic-brightgreen)](https://wiki.ros.org)
-[![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](contributing.md)
+[![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](https://https://github.com/rickstaa/ros-gazebo-gym/blob/noetic/contributing.md)
 
 This repository contains the workspace for the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gym) framework. It
 includes all the components (submodules and code) to create

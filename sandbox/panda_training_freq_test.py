@@ -16,9 +16,9 @@ import torch
 
 # Script parameters
 # CONTROL_TYPE = "trajectory"
-CONTROL_TYPE = "end_effector"
+# CONTROL_TYPE = "end_effector"
 # CONTROL_TYPE = "position"
-# CONTROL_TYPE = "effort"
+CONTROL_TYPE = "effort"
 TASK_ENV = "PandaReach-v1"
 # TASK_ENV = "PandaPickAndPlace-v1"
 # TASK_ENV = "PandaPush-v1"

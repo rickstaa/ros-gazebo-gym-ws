@@ -26,6 +26,8 @@ build/
 dist/
 .eggs/
 *.egg-info/
+/CMakeLists.txt
+/tester
 
 # node
 node_modules/

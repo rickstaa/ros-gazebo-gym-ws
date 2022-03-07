@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.19](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v2.0.18...v2.0.19) (2022-03-07)
+
+
+### Bug Fixes
+
+* remove corrupt top CMakelists file ([4dc269f](https://github.com/rickstaa/ros-gazebo-gym-ws/commit/4dc269fad43e2b1b55b831102dd139384fc35ee0))
+
 ### [2.0.18](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v2.0.17...v2.0.18) (2022-03-07)
 
 ### [2.0.17](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v2.0.16...v2.0.17) (2022-02-18)

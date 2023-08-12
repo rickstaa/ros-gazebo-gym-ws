@@ -9,5 +9,17 @@
       "prerelease": false
     }
   },
-  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "extra-files": [
+    {
+      "type": "json",
+      "path": "package.json",
+      "jsonpath": "$.version"
+    },
+    {
+      "type": "xml",
+      "path": "ros_gazebo_gym_ws/package.xml",
+      "xpath": "//version"
+    }
+  ]
 }

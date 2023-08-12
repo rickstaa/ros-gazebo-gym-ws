@@ -1,14 +1,18 @@
 {
   "name": "ros_gazebo_gym_ws",
   "version": "2.0.19",
-  "description": "Workspace package for the ros_gazebo_gym and ros_gazebo_gym_examples.",
+  "description": "Workspace package for the ros_gazebo_gym and ros_gazebo_gym_examples packages.",
   "keywords": [
-    "reinforcement",
-    "learning",
-    "ros",
-    "ros_gazebo_gym",
-    "robotics",
+    "reinforcement learning",
+    "RL",
+    "simulation",
     "openai-gym",
+    "gymnasium",
+    "ros",
+    "gazebo",
+    "panda",
+    "emika-franka",
+    "robotics",
     "environments"
   ],
   "homepage": "https://github.com/rickstaa/ros-gazebo-gym-ws#readme",
@@ -23,10 +27,8 @@
   "author": "Rick Staa",
   "main": "index.js",
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
-    "changelog": "HUSKY=0 standard-version --skip.bump --skip.commit --skip.tag",
     "prepare": "husky install",
-    "release": "HUSKY=0 standard-version"
+    "sort": "sort-package-json"
   },
   "commitlint": {
     "extends": [
@@ -46,12 +48,13 @@
     "@commitlint/config-conventional": "17.6.1",
     "commitizen": "4.3.0",
     "cz-conventional-changelog": "3.3.0",
-    "husky": "8.0.1",
-    "lint-staged": "13.2.0",
-    "remark": "14.0.2",
+    "husky": "8.0.3",
+    "lint-staged": "13.2.2",
+    "release-please": "15.12.0",
+    "remark": "14.0.3",
     "remark-cli": "11.0.0",
-    "remark-lint": "9.1.0",
-    "remark-preset-lint-recommended": "6.1.1",
-    "standard-version": "9.5.0"
+    "remark-lint": "9.1.2",
+    "remark-preset-lint-recommended": "6.1.3",
+    "sort-package-json": "2.5.0"
   }
 }

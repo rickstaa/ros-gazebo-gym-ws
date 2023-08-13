@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>ros_gazebo_gym_ws</name>
-    <version>0.0.0</version>
+    <version>2.0.19</version>
     <description>
         Ros_gazebo_gym_ws contains all the ros packages needed to use the ros_gazebo_gym package.
         This was done since not all packages are deployed to the ROS repositry.

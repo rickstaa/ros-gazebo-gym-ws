@@ -4,7 +4,7 @@ name: Ros Gazebo Gym release
 on:
   push:
     branches:
-      - main
+      - noetic
 
 permissions:
   contents: write

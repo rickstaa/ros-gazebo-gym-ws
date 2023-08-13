@@ -22,3 +22,9 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-patch"]
+
+  # Ensure submodules are up-to-date.
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+        interval: "weekly"

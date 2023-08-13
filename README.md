@@ -1,7 +1,7 @@
 # Ros\_gazebo\_gym workspace
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/ros-gazebo-gym-ws)](https://github.com/rickstaa/ros-gazebo-gym/releases)
-[![Python 3](https://img.shields.io/badge/Python-3.8%20%7C%203.7%20%7C%203.6-brightgreen)](https://www.python.org/)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/ros-gazebo-gym-ws)](https://github.com/rickstaa/panda-gazebo/releases)
+[![Python 3](https://img.shields.io/badge/Python->=3.8-brightgreen)](https://www.python.org/)
 [![ROS version](https://img.shields.io/badge/ROS%20versions-Noetic-brightgreen)](https://wiki.ros.org)
 [![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](https://github.com/rickstaa/ros-gazebo-gym/blob/noetic/contributing.md)
 
@@ -27,7 +27,7 @@ git submodule update --init --recursive
 
 ## Installation and Usage
 
-Please see the [docs](https://rickstaa.github.io/panda-gazebo-gym) for installation and usage instructions.
+Please see the [docs](https://rickstaa.dev/ros-gazebo-gym/) for installation and usage instructions.
 
 ## Contributing
 

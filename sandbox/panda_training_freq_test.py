@@ -5,7 +5,6 @@ You can get the training frequency by checking the frequency of the
 `/panda_arm_joint1_effort_controller/command` topic. This is done using the
 `rostopic hz /panda_arm_joint1_effort_controller/command` command.
 """
-
 from pathlib import Path
 
 import gym

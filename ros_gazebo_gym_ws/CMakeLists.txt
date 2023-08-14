@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
-project(ros_gym_ws)
+cmake_minimum_required(VERSION 3.5)
+project(ros_gazebo_gym_ws)
 find_package(catkin REQUIRED)
 catkin_metapackage()

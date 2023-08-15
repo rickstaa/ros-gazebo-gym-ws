@@ -7,8 +7,8 @@
 
 This repository contains the workspace for the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gym) framework. It
 includes all the components (submodules and code) to create
-all of the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gym) gym task environment. This workspace consists of two
-main components the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gym) package and the [ros\_gazebo\_gym\_examples](https://github.com/rickstaa/ros-gazebo-gym-examples) package. The first package contains all the ros\_gazebo\_gym ROS gym environments, and the second package several examples of RL training scripts in which these environments are used.
+all of the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gym) gymnasium task environment. This workspace consists of two
+main components the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gym) package and the [ros\_gazebo\_gym\_examples](https://github.com/rickstaa/ros-gazebo-gym-examples) package. The first package contains all the ros\_gazebo\_gym ROS gymnasium environments, and the second package several examples of RL training scripts in which these environments are used.
 
 ## Clone instructions
 

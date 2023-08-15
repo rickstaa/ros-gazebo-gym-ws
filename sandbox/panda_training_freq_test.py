@@ -7,13 +7,13 @@ You can get the training frequency by checking the frequency of the
 """
 from pathlib import Path
 
-import gym
+import gymnasium as gym
 import numpy
 import ros_gazebo_gym  # noqa: F401
 import rospy
 import torch
 
-# Script parameters
+# Script parameters.
 # CONTROL_TYPE = "trajectory"
 # CONTROL_TYPE = "end_effector"
 # CONTROL_TYPE = "position"
@@ -28,25 +28,25 @@ N_EPISODES = 5
 if __name__ == "__main__":
     # rospy.init_node("panda_train_freq_test", anonymous=True, log_level=rospy.WARN)
 
-    # Create ros_gazebo_gym environments
+    # Create ros_gazebo_gym environments.
     env = gym.make(TASK_ENV, control_type=CONTROL_TYPE)
 
-    # Create the Gym environment
+    # Create the Gym environment.
     rospy.loginfo("Gym environment done")
     rospy.loginfo("Starting Learning")
 
-    # Set the logging system
+    # Set the logging system.
     outdir = Path(__file__).parent.joinpath("data/training_results")
     last_time_steps = numpy.ndarray(0)
 
-    # Set max_episode_steps
+    # Set max_episode_steps.
     env._max_episode_steps = N_STEPS
 
-    # Convert goal gym env to normal gym env
+    # Convert goal gym env to normal gym env.
     env = gym.wrappers.FlattenObservation(env)
 
-    # Perform simulated training loop
-    # NOTE: Here we use random actions and do not train a network
+    # Perform simulated training loop.
+    # NOTE: Here we use random actions and do not train a network.
     torch.cuda.empty_cache()
     rospy.logwarn("Starting training loop")
     obs = env.reset()

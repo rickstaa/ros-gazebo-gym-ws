@@ -9,7 +9,6 @@ from pathlib import Path
 
 import gymnasium as gym
 import numpy
-import ros_gazebo_gym  # noqa: F401
 import rospy
 import torch
 
@@ -18,10 +17,10 @@ import torch
 # CONTROL_TYPE = "end_effector"
 # CONTROL_TYPE = "position"
 CONTROL_TYPE = "effort"
-TASK_ENV = "PandaReach-v1"
-# TASK_ENV = "PandaPickAndPlace-v1"
-# TASK_ENV = "PandaPush-v1"
-# TASK_ENV = "PandaSlide-v1"
+TASK_ENV = "ros_gazebo_Gym:PandaReach-v1"
+# TASK_ENV = "os_gazebo_Gym:PandaPickAndPlace-v1"
+# TASK_ENV = "os_gazebo_Gym:PandaPush-v1"
+# TASK_ENV = "os_gazebo_Gym:PandaSlide-v1"
 N_STEPS = 1000
 N_EPISODES = 5
 

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.0](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v2.1.0...v2.2.0) (2023-08-22)
+
+
+### Features
+
+* improve codebase and ci ([#119](https://github.com/rickstaa/ros-gazebo-gym-ws/issues/119)) ([46a70e0](https://github.com/rickstaa/ros-gazebo-gym-ws/commit/46a70e03ba50c597a6cd60bba2f50e252d1265db))
+
 ## [2.1.0](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v2.0.20...v2.1.0) (2023-08-20)
 
 

@@ -1,6 +1,6 @@
 [submodule "ros-gazebo-gym"]
 	path = ros-gazebo-gym
-	url = git@github.com:rickstaa/ros-gazebo-gym.git
+	url = ../ros-gazebo-gym.git
 [submodule "ros-gazebo-gym-examples"]
 	path = ros-gazebo-gym-examples
-	url = git@github.com:rickstaa/ros-gazebo-gym-examples.git
+	url = ../ros-gazebo-gym-examples.git

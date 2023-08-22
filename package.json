@@ -25,7 +25,6 @@
   },
   "license": "MIT",
   "author": "Rick Staa",
-  "main": "index.js",
   "scripts": {
     "prepare": "husky install",
     "sort": "sort-package-json"

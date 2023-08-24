@@ -5,17 +5,22 @@
   "keywords": [
     "reinforcement learning",
     "RL",
+    "robotics",
     "simulation",
-    "openai-gym",
     "gymnasium",
+    "gymnasium-environments",
+    "openai-gym",
+    "gym-environments",
+    "gym",
     "ros",
     "gazebo",
+    "environments",
+    "ros-gazebo-gym",
     "panda",
     "emika-franka",
-    "robotics",
-    "environments"
+    "catkin workspace"
   ],
-  "homepage": "https://github.com/rickstaa/ros-gazebo-gym-ws#readme",
+  "homepage": "https://github.com/rickstaa/ros-gazebo-gym-ws#ros-gazebo-gym-workspace",
   "bugs": {
     "url": "https://github.com/rickstaa/ros-gazebo-gym/issues"
   },
@@ -49,7 +54,7 @@
     "cz-conventional-changelog": "3.3.0",
     "husky": "8.0.3",
     "lint-staged": "14.0.0",
-    "release-please": "15.12.0",
+    "release-please": "15.13.0",
     "remark": "14.0.3",
     "remark-cli": "11.0.0",
     "remark-lint": "9.1.2",

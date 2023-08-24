@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>ros_gazebo_gym_ws</name>
-    <version>2.0.20</version>
+    <version>2.2.0</version>
     <description>
         Workspace package that contains all the ROS packages needed to use the ros_gazebo_gym framework.
     </description>
@@ -16,6 +16,7 @@
 
     <exec_depend>ros_gazebo_gym</exec_depend>
     <exec_depend>ros_gazebo_gym_examples</exec_depend>
+
     <export>
         <metapackage />
     </export>

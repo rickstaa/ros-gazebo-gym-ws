@@ -15,18 +15,18 @@ jobs:
           mkdir -p ${{github.workspace}}/src
           mkdir -p ${{github.workspace}}/devel
 
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          submodules: 'recursive'
-          fetch-depth: 0
-
       - uses: docker/setup-buildx-action@v2
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: src
+          submodules: true
 
       - name: Build Docker Image
         uses: docker/build-push-action@v4
         with:
-          tags: ros_gazebo_gym_examples:noetic
+          tags: ros_gazebo_gym:noetic
           file: .ci/Dockerfile.noetic
           push: false
           load: true
@@ -36,7 +36,7 @@ jobs:
       - name: Compile ROS package with Catkin Tools
         uses: addnab/docker-run-action@v3
         with:
-          image: ros_gazebo_gym_examples:noetic
+          image: ros_gazebo_gym:noetic
           options: -v ${{github.workspace}}/src:/src/ -v ${{github.workspace}}/devel:/devel/
           run: |
             rosdep install --from-paths /src --ignore-src --rosdistro noetic -y --simulate  # Check if all dependencies were in the Docker File.

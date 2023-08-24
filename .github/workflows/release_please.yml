@@ -1,6 +1,6 @@
 # Github action that uses the 'release-please' tool to update the version, changelog
 # and create new releases.
-name: Ros Gazebo Gym WS release
+name: ROS Gazebo Gym WS release
 on:
   push:
     branches:

@@ -1,4 +1,4 @@
-# Ros-gazebo-gym workspace
+# ROS-gazebo-gym workspace
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/rickstaa/ros-gazebo-gym-ws)](https://github.com/rickstaa/ros-gazebo-gym-ws/releases)
 [![Python 3](https://img.shields.io/badge/Python->=3.8-brightgreen)](https://www.python.org/)

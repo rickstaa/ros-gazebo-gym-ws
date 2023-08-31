@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.1](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v2.2.0...v2.2.1) (2023-08-31)
+
+
+### Documentation
+
+* add pre-commit note ([#123](https://github.com/rickstaa/ros-gazebo-gym-ws/issues/123)) ([212a240](https://github.com/rickstaa/ros-gazebo-gym-ws/commit/212a240ca0712b6b3820da740a26b3b417fc720b))
+* add zenodo reference ([#128](https://github.com/rickstaa/ros-gazebo-gym-ws/issues/128)) ([308a17b](https://github.com/rickstaa/ros-gazebo-gym-ws/commit/308a17bf4a94ee7993717435ec0844cdbf76b0e9))
+* update documentation and submodules ([#129](https://github.com/rickstaa/ros-gazebo-gym-ws/issues/129)) ([cd57216](https://github.com/rickstaa/ros-gazebo-gym-ws/commit/cd572167de42d9a186d9ea51b3aff72f245847e8))
+
 ## [2.2.0](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v2.1.0...v2.2.0) (2023-08-22)
 
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Small script that can be used to profile the training frequency.
 
 You can get the training frequency by checking the frequency of the
@@ -25,7 +24,7 @@ N_STEPS = 1000
 N_EPISODES = 5
 
 if __name__ == "__main__":
-    # rospy.init_node("panda_train_freq_test", anonymous=True, log_level=rospy.WARN)
+    # rospy.init_node("panda_train_freq_test", anonymous=True)
 
     # Create ros_gazebo_gym environments.
     env = gym.make(TASK_ENV, control_type=CONTROL_TYPE)

@@ -7,7 +7,7 @@
 [![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](https://github.com/rickstaa/ros-gazebo-gym/blob/noetic/CONTRIBUTING.md)
 [![DOI](https://zenodo.org/badge/453634930.svg)](https://zenodo.org/badge/latestdoi/453634930)
 
-Welcome to the ROS Gazebo Gym Workspace repository! This repository is designed to simplify the installation and usage of the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gym) framework, providing a convenient workspace for experimenting with various ROS gymnasium task environments.
+Welcome to the ROS Gazebo Gym (Catkin) Workspace repository! This repository is designed to simplify the installation and usage of the [ros\_gazebo\_gym](https://github.com/rickstaa/ros-gazebo-gym) framework, providing a convenient workspace for experimenting with various ROS gymnasium task environments.
 
 ## Repository Overview
 

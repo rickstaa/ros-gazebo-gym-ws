@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v2.2.3...v2.3.0) (2024-03-24)
+
+
+### Features
+
+* add devcontainer ([69d89d1](https://github.com/rickstaa/ros-gazebo-gym-ws/commit/69d89d1e5783691d135ecb169d8e966ffe92e6dc))
+
 ## [2.2.3](https://github.com/rickstaa/ros-gazebo-gym-ws/compare/v2.2.2...v2.2.3) (2024-02-04)
 
 

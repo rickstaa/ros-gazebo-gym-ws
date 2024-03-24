@@ -1,6 +1,6 @@
 {
   "name": "ros_gazebo_gym_ws",
-  "version": "2.2.3",
+  "version": "2.3.0",
   "description": "Workspace package for the ros_gazebo_gym and ros_gazebo_gym_examples packages.",
   "keywords": [
     "reinforcement learning",
